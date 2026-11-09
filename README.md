@@ -4,15 +4,17 @@
 
 从人物立场与心理表演，到场景母版、道具状态、逐图检查和定点修复：Taleprism 把制作经验整理成可复制的提示词工作流，并提供本地制作台。
 
-**v0.1.0 公开试用版** · [English](README.en.md) · [直接阅读《末班灯》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
+**v0.1.0 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
 
-![末班灯：谁来开灯](samples/last-light/negotiation-v2.png)
+![赤壁：七星坛祭风，三江口纵火](examples/chibi/cover.png)
+
+**赤壁展示阅读体验，《末班灯》讲解制作方法。** 在线主示例包含 12 幅情境插图、8 位主要角色、9 张立绘和三个阶段的战区地图；[短篇教程与素材](examples/last-light/README.md)完整保留在仓库。
 
 ## 选择你的开始方式
 
 | 我想做什么 | 从这里开始 |
 | --- | --- |
-| 先看成品 | [在线阅读《末班灯》](https://ethereal-space-one.github.io/taleprism/)，无需安装 |
+| 先看成品 | [在线阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/)，无需安装 |
 | 在自己的 AI 工具里尝试 | [八个提示词模板](prompts/README.md) → [完整三镜头教程](examples/last-light/README.md)，无需安装制作台 |
 | 制作、审校并导出一章 | 按下方步骤安装本地制作台，再导入示例工程或自己的 TXT |
 
@@ -47,12 +49,13 @@ cd taleprism
 
 ## 下载哪一个包
 
-附件在 [v0.1.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)，下载后可对照 `SHA256SUMS`。
+附件在 [v0.1.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)，原有附件可对照 `SHA256SUMS`；新增赤壁阅读包对照 `CHIBI-SHA256SUMS` 与 `chibi-demo-manifest.json`。
 
 | 文件结尾 | 用途 |
 | --- | --- |
 | `prompt-starter.zip` | 模板、原创原文、参考图、完整教程；不安装程序也能用 |
 | `last-light-project.zip` | 可继续编辑的《末班灯》工程，导入制作台 |
+| `chibi-reader.zip` | 赤壁在线主体验的完整独立阅读包 |
 | `last-light-reader.zip` | 已完成的独立阅读成品；解压后用 HTTP 服务打开 |
 | GitHub 的 Source code ZIP | 制作台源码与教程参考图；完整工程另行下载 |
 
@@ -74,7 +77,7 @@ python3 -m http.server 8080 --bind 127.0.0.1
 - 兼容：内部 `storygal` 模块、`STORYGAL_*` 配置、旧工程格式和阅读进度键保留，见[兼容说明](docs/COMPATIBILITY.md)。Windows 原生启动未支持。
 - 试用状态：助手制作检查不等于创作者最终美术复核；外部用户独立上手尚待验证。
 
-可选 WebGAL 兼容导出使用 `./start.sh --with-webgal`。赤壁保留为历史适配与本机进阶案例，本次主要公开入口是《末班灯》；不要将专用历史地图当作通用地图生成服务。
+可选 WebGAL 兼容导出使用 `./start.sh --with-webgal`。[赤壁](examples/chibi/README.md)是在线主体验，专用历史地图用于理解驻扎与进军关系；它不是通用地图生成服务。
 
 ## 参与与来源
 

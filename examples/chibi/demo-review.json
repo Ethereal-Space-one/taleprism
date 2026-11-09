@@ -1,0 +1,19 @@
+{
+  "reviewer": "assistant",
+  "date": "2026-11-09",
+  "scope": "Temporary public showcase copy only; original projects and source bundle remain unchanged. This is a production inspection, not creator final art approval.",
+  "creator_final_art_review": "pending",
+  "source_bundle_sha256": "f1c848cf8f13aaf0f456e0b0ccd8b38d922ee2ad62fbc3afe39a7d63915232b8",
+  "images": [
+    {
+      "sample_key": "narrative:sickbed-dialogue",
+      "sha256": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834",
+      "inspection": "孔明神态克制而略带自信，周瑜蹙眉回应；衣着、病榻、灯具与对话关系相符。未提前表现后续行动，适用于本次公开试读。"
+    },
+    {
+      "sample_key": "narrative:huarong-encounter",
+      "sha256": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac",
+      "inspection": "曹操躬身仰视求情，关羽持兵器肃立；疲惫败军与有序守军对照明确，道路尚未放行。适用于本次公开试读。"
+    }
+  ]
+}

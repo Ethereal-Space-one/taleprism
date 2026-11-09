@@ -2,7 +2,7 @@
 
 目标：理解一篇小说如何经过人物表演、场景设定、逐图检查，成为可连续阅读的作品。无须安装制作台即可使用本教程。[English](README.en.md)
 
-[在线阅读](https://ethereal-space-one.github.io/taleprism/) · [v0.1.0 下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0) · [八个模板](../../prompts/README.md)
+[下载《末班灯》阅读成品](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-last-light-reader.zip) · [v0.1.0 下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0) · [八个模板](../../prompts/README.md)
 
 《末班灯》是项目原创虚构短篇：改建项目成员林遥、退休值班员陈伯与骑车女孩小满，在海边旧站讨论一盏仍在使用的灯。没有当场批准改建方案，也没有承诺旧灯永久保留。正文以[原文件](../../samples/last-light/source.txt)为准。
 

@@ -11,18 +11,26 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def reader_spec(root=ROOT, example=None):
+    key = example or json.loads((root / "examples/site.json").read_text())["featured"]
+    catalog = json.loads((root / "samples/content-packs/catalog.json").read_text())
+    entry = next((s for s in catalog if s["id"] == key), None)
+    if not entry or not entry.get("reader"):
+        raise ValueError("No pinned reader for showcase: " + str(key))
+    return entry["reader"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
+        "--example", help="Optional example ID; defaults to examples/site.json"
+    )
+    parser.add_argument(
         "--archive", type=Path, help="Verify a local candidate instead of downloading"
     )
     args = parser.parse_args()
-    spec = next(
-        s
-        for s in json.loads((ROOT / "samples/content-packs/catalog.json").read_text())
-        if s["id"] == "last-light"
-    )["reader"]
+    spec = reader_spec(example=args.example)
     if args.archive:
         raw = args.archive.read_bytes()
     else:

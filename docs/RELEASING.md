@@ -12,3 +12,9 @@
 The first release must not depend on downloading itself to build its assets. Core CI uses source fixtures and synthetic sound; local historical full-pack tests remain optional. The post-release Pages job may consume the published reader because its exact checksum is already committed in `samples/content-packs/catalog.json`.
 
 No publication credentials belong in files. CI uses GitHub's scoped job token; local maintainers use their GitHub login. Normal installation and tests never call paid AI services.
+
+## Updating the featured online example
+
+`examples/site.json` selects the public showcase (currently `chibi`). `tools/prepare_pages.py` reads that entry’s pinned reader from `samples/content-packs/catalog.json`; `--example last-light` explicitly selects the tutorial reader. Manual Pages runs check out the selected branch, then verify the exact release asset and its internal inventory.
+
+For the reviewed historical Chibi source bundle, build the isolated public copy with `uv run --project backend python tools/build_chibi_demo.py`. This requires the maintainer’s matching local bundle; ordinary installation and CI do not require that private working copy. Inspect the actual images first and retain hash-bound review notes. Add a uniquely named reader and integrity files to the release, preserving existing attachments and tags; commit its catalog pin and documentation, run checks, and then trigger Pages with `gh workflow run pages.yml --ref main`. Check the deployed URL on desktop and mobile. Changes to application behavior still require a normal versioned release.

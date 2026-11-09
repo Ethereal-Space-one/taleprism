@@ -2,9 +2,11 @@
 
 **An open workflow for turning fiction into illustrated reading experiences, with character direction, scene continuity, and optional voice.**
 
-v0.1.0 Public Preview · [中文](README.md) · [Read Last Light](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
+v0.1.0 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
 
-![A conversation at the old station](samples/last-light/negotiation-v2.png)
+![Chibi: the Red Cliffs reading showcase](examples/chibi/cover.png)
+
+**Chibi showcases the reading experience; Last Light teaches the production workflow.** The public demo includes 12 scene illustrations, eight principal characters, nine portraits and three historical map stages. The [Last Light short-story tutorial and materials](examples/last-light/README.en.md) remain in Git.
 
 ## Two ways to use it
 
@@ -43,10 +45,11 @@ For external text AI, export a complete workbench task and import `{source_sha25
 
 - `prompt-starter.zip`: templates, complete tutorial, source and actual reference images.
 - `last-light-project.zip`: import into the workbench to continue editing.
+- `chibi-reader.zip`: the complete standalone Chibi reading showcase.
 - `last-light-reader.zip`: extract and serve over HTTP to read without the workbench.
 - GitHub Source code ZIP: application source and tutorial references; project packages download separately.
 
-Check `SHA256SUMS`. Inside the extracted reader directory run:
+Check `SHA256SUMS` for the original files, or `CHIBI-SHA256SUMS` and `chibi-demo-manifest.json` for the added Chibi reader. Inside the extracted reader directory run:
 
 ```sh
 python3 verify_package.py
@@ -61,7 +64,7 @@ Last Light demonstrates a fixed-camera scene workflow, including actual repairs 
 
 The [second-story worksheet](examples/archive-room/README.md) checks general evidence/state handling without model calls; it does not claim a second successful image generation run. External-user usability is still unverified.
 
-Local speech uses macOS voices and ffmpeg. Existing audio travels with editable projects. The OpenAI voice adapter is prepared but has not been live-validated. No voice cloning is included. Optional WebGAL export is installed with `./start.sh --with-webgal`. Historical Chibi adapters remain available for compatibility, not as a general map-generation service.
+Local speech uses macOS voices and ffmpeg. Existing audio travels with editable projects. The OpenAI voice adapter is prepared but has not been live-validated. No voice cloning is included. Optional WebGAL export is installed with `./start.sh --with-webgal`. [Chibi](examples/chibi/README.md) is the public showcase; its approximate historical maps explain camps and movements, and are not a general map-generation service.
 
 The legacy `storygal` module, `STORYGAL_*` environment variables, bundle format identifiers and browser progress keys stay compatible in this release. See [compatibility](docs/COMPATIBILITY.md).
 

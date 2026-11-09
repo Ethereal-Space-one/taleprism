@@ -1,5 +1,11 @@
 # Changelog
 
+## Online showcase update — 2026-11-09
+
+- Chibi becomes the public reading entry and repository cover: 12 scene illustrations, eight principal characters, nine portraits and three historical map stages.
+- Last Light remains the short-story tutorial with its source, reference images, continuity exercises and existing downloads.
+- Add a separately checksummed Chibi reader attachment; preserve the original v0.1.0 tag and released files. Pages selects its pinned example through `examples/site.json`.
+
 ## 0.1.0 — Public Preview
 
 First public Taleprism trial, based on the earlier local Storygal project.

@@ -16,6 +16,11 @@
     "id": "chibi",
     "title": "赤壁 · 本机历史工程",
     "file": "chibi.storygal.zip",
-    "description": "仅在保留旧内容包的本机出现；两幅心理表演修订图仍待审，保留原制作状态。"
+    "description": "在线主体验见独立阅读包；本机可编辑历史工程仍保留原始审校状态。",
+    "reader": {
+      "file": "taleprism-v0.1.0-chibi-reader.zip",
+      "sha256": "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a",
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-chibi-reader.zip"
+    }
   }
 ]

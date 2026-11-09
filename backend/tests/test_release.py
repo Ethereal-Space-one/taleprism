@@ -1,12 +1,23 @@
 import importlib.util
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 
 from storygal import bundles, prompts
 from storygal.app import create_app
 from storygal.production import plan_task_schema
 from storygal.reader import REPO
+
+
+def test_pages_selects_featured_reader_and_keeps_tutorial_available():
+    spec = importlib.util.spec_from_file_location("prepare_pages", REPO / "tools/prepare_pages.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.reader_spec()["file"] == "taleprism-v0.1.0-chibi-reader.zip"
+    assert module.reader_spec(example="last-light")["file"].endswith("last-light-reader.zip")
+    with pytest.raises(ValueError, match="No pinned reader"):
+        module.reader_spec(example="missing")
 
 
 def test_generated_prompt_kit_matches_runtime_and_schema_refs_resolve():
