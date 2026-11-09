@@ -1,0 +1,45 @@
+{
+  "tool": "Codex built-in image_gen",
+  "date": "2026-11-04",
+  "status": "pending_art_review",
+  "batch": "first character expansion: 6 identities / 7 figures total, 5 new files",
+  "images": [
+    {
+      "file": "caocao-base-v1.png",
+      "character": "曹操",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: visual novel character sprite. Primary request: Cao Cao from Romance of the Three Kingdoms, an imposing Chinese commander in his early fifties with a sharp thoughtful gaze, broad brow, strong cheekbones, neat dark moustache and medium-length dark beard with a little grey. Dark hair secured in a restrained period topknot and simple black headpiece; charcoal-black layered robe, muted bronze-gold narrow trim, ivory inner collar, dark belt and black boots. Quiet authority, controlled self-confidence; no imperial crown, no throne, no weapon or fan. Style/medium: match the existing original Storygal Chinese historical sprites: refined hand-painted illustration, fine precise linework, restrained gentle cel shading, subtle watercolor pigment and cloth texture, realistic adult proportions, soft even front lighting, muted parchment undertones. Full-body single-character transparent cutout, portrait 2:3 composition, head to boots fully visible with margins, calm reusable three-quarter standing pose, eyes attentive, both hands anatomically correct and visible near waist. Genuine transparent background with clean alpha; no dark halo, no gradient backdrop, no landscape, no ground shadow. No text, symbols, labels, logos, watermark, UI, panels, extra figures or references to actor likenesses. Original artistic interpretation of a public-domain literary character, not a claim of exact historical costume reconstruction. ",
+      "references": []
+    },
+    {
+      "file": "guanyu-base-v1.png",
+      "character": "关羽",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: visual novel character sprite. Primary request: Guan Yu / Guan Yunchang from Romance of the Three Kingdoms, a tall powerful Chinese general in his forties, dignified and inwardly conflicted rather than angry, long flowing black beard, subtly warm ruddy complexion with natural skin texture, narrow focused eyes. Dark-green headscarf, deep forest-green outer robe over understated dark lamellar armor, brown leather belt and dark boots. One hand rests naturally near his belt, other relaxed. No weapon, no horse, no glowing eyes or theatrical red face paint. Style/medium: match the existing original Storygal Chinese historical sprites: refined hand-painted illustration, fine precise linework, restrained gentle cel shading, subtle watercolor pigment and cloth texture, realistic adult proportions, soft even front lighting, muted parchment undertones. Full-body single-character transparent cutout, portrait 2:3 composition, head to boots fully visible with margins, calm reusable three-quarter standing pose, eyes attentive, both hands anatomically correct and visible near waist. Genuine transparent background with clean alpha; no dark halo, no gradient backdrop, no landscape, no ground shadow. No text, symbols, labels, logos, watermark, UI, panels, extra figures or references to actor likenesses. Original artistic interpretation of a public-domain literary character, not a claim of exact historical costume reconstruction. ",
+      "references": []
+    },
+    {
+      "file": "lusu-base-v1.png",
+      "character": "鲁肃",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: visual novel character sprite. Primary request: Lu Su / Lu Zijing from Romance of the Three Kingdoms, a mature Chinese adviser around forty-five, approachable thoughtful expression, rounded yet clearly adult features, short tidy moustache and modest beard, neatly bound dark hair and simple modest cloth scholar cap. Warm grey-brown scholar robe with restrained ochre edging, parchment inner robe, simple brown belt, dark shoes. Upright but relaxed, concerned and diplomatic, no scroll or fan or weapon. Distinct silhouette and face from the younger burgundy-robed Zhou Yu and long-haired blue-robed Kongming. Style/medium: match the existing original Storygal Chinese historical sprites: refined hand-painted illustration, fine precise linework, restrained gentle cel shading, subtle watercolor pigment and cloth texture, realistic adult proportions, soft even front lighting, muted parchment undertones. Full-body single-character transparent cutout, portrait 2:3 composition, head to boots fully visible with margins, calm reusable three-quarter standing pose, eyes attentive, both hands anatomically correct and visible near waist. Genuine transparent background with clean alpha; no dark halo, no gradient backdrop, no landscape, no ground shadow. No text, symbols, labels, logos, watermark, UI, panels, extra figures or references to actor likenesses. Original artistic interpretation of a public-domain literary character, not a claim of exact historical costume reconstruction. ",
+      "references": []
+    },
+    {
+      "file": "huanggai-base-v1.png",
+      "character": "黄盖",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: visual novel character sprite. Primary request: Huang Gai / Huang Gongfu from Romance of the Three Kingdoms, an elderly battle-seasoned Chinese naval commander about sixty, weathered face, firm determined gaze, short silver-grey hair in a practical topknot under a low plain dark cloth headpiece, grey moustache and medium grey beard. Restrained bronze-brown lamellar armor over a dark ochre tunic, muted brown-red sash, dark boots, a small plain dark shoulder cloth. Strong experienced posture without exaggeration. Uninjured reusable appearance before the fire attack; no bow, no weapon, no fire, no blood or action pose. Style/medium: match the existing original Storygal Chinese historical sprites: refined hand-painted illustration, fine precise linework, restrained gentle cel shading, subtle watercolor pigment and cloth texture, realistic adult proportions, soft even front lighting, muted parchment undertones. Full-body single-character transparent cutout, portrait 2:3 composition, head to boots fully visible with margins, calm reusable three-quarter standing pose, eyes attentive, both hands anatomically correct and visible near waist. Genuine transparent background with clean alpha; no dark halo, no gradient backdrop, no landscape, no ground shadow. No text, symbols, labels, logos, watermark, UI, panels, extra figures or references to actor likenesses. Original artistic interpretation of a public-domain literary character, not a claim of exact historical costume reconstruction. ",
+      "references": []
+    },
+    {
+      "file": "zhouyu-ill-v1.png",
+      "character": "周瑜",
+      "state": "ill-seated",
+      "prompt": "Use case: identity-preserve. Asset type: transparent visual novel character state variant. Edit target: the provided Zhou Yu sprite. Primary request: preserve exactly the same young adult face, moustache, tied hair, restrained headpiece, burgundy embroidered outer robe and ivory inner layers. Change only the pose and physical state: he is visibly pale and fatigued, propped in a half-reclining position on a low simple wooden sick couch, torso leaning against a plain ivory bolster, one hand lightly over upper abdomen, other resting on couch, expression pained but composed, eyes open. Full person and low couch visible, no helper, no standing pose, no blood. Keep the reference linework, fabric texture, palette and soft front lighting. Portrait 2:3 canvas with transparent headroom above the seated figure, body at the same natural scale as the standing reference rather than enlarged to fill the height. Genuine transparent background, preserve alpha, no tent, no floor, no atmospheric halo, text, labels, frame, watermark or extra person. This state is used only while Zhou Yu is ill or supported on his bed, not after he rises.",
+      "references": [
+        "../zhouyu-v1.png"
+      ]
+    }
+  ]
+}

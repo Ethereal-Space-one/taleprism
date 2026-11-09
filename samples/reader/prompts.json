@@ -1,0 +1,49 @@
+{
+  "tool": "Codex built-in image_gen",
+  "created_on": "2026-11-04",
+  "images": [
+    {
+      "key": "tent-v1",
+      "refs": [
+        "samples/scenes/chibi-fire-ink-v1.png"
+      ],
+      "prompt": "Use case: illustration-story. A finished wide 16:9 historical Chinese ink-and-watercolor illustration for a literary visual novel. Match the reference's refined hand-painted brush grain, restrained indigo and warm parchment colors, atmospheric depth, realistic late-Han materials; not photorealistic, not 3D, not anime cel shading. No text, calligraphy, logos, captions, modern objects or watermark. This is artistic scene illustration, not an archaeological reconstruction. Scene: inside an Eastern Han riverside command tent, quiet tense night, amber oil lamp on a low wooden table, loosely rolled blank silk scrolls, dark timber folding screen, draped weathered indigo canvas, distant river dimly visible through an opening. No prominent people; no diagrams or readable writing. Wide cinematic view, empty central foreground and lower third reserved for separately composited character portraits. Warm lamp pools against deep blue night; credible simple furnishings, no throne or extravagant palace."
+    },
+    {
+      "key": "altar-v1",
+      "refs": [
+        "samples/scenes/chibi-fire-ink-v1.png"
+      ],
+      "prompt": "Use case: illustration-story. A finished wide 16:9 historical Chinese ink-and-watercolor illustration for a literary visual novel. Match the reference's refined hand-painted brush grain, restrained indigo and warm parchment colors, atmospheric depth, realistic late-Han materials; not photorealistic, not 3D, not anime cel shading. No text, calligraphy, logos, captions, modern objects or watermark. This is artistic scene illustration, not an archaeological reconstruction. Scene: the Seven-Star altar on a low hill overlooking a broad river at deep night, a modest three-tier earthen ritual platform, a few long poles with plain dark banners bending in wind, a small distant incense burner and many subdued stars. No named characters or prominent people, no text on flags. River, layered hill silhouettes, sparse wind-driven clouds. Match the supplied ink watercolor palette and paper grain, quiet blue-gray moonlight with a tiny warm ember. Wide view and unobstructed lower central foreground for character overlay. Not a stone temple, no fantastical magic beams."
+    },
+    {
+      "key": "fleet-v1",
+      "refs": [
+        "samples/scenes/chibi-fire-ink-v1.png"
+      ],
+      "prompt": "Use case: illustration-story. A finished wide 16:9 historical Chinese ink-and-watercolor illustration for a literary visual novel. Match the reference's refined hand-painted brush grain, restrained indigo and warm parchment colors, atmospheric depth, realistic late-Han materials; not photorealistic, not 3D, not anime cel shading. No text, calligraphy, logos, captions, modern objects or watermark. This is artistic scene illustration, not an archaeological reconstruction. Scene: calm before the Red Cliffs battle, wide Yangtze river at blue twilight, rows of anchored ancient wooden warships with simple square cloth sails and sober banners, distant riverbank military tents only as small silhouettes, light water mist, muted indigo reflections and tiny warm lantern lights. No fire, no battle action, no close-up soldiers, no readable text. Strong sense of open water and waiting, no modern junk rigging or modern vessels. Use the supplied reference as exact artistic style guide but portray an earlier peaceful moment. Lower foreground open for character overlay."
+    },
+    {
+      "key": "forest-v1",
+      "refs": [
+        "samples/scenes/chibi-fire-ink-v1.png"
+      ],
+      "prompt": "Use case: illustration-story. A finished wide 16:9 historical Chinese ink-and-watercolor illustration for a literary visual novel. Match the reference's refined hand-painted brush grain, restrained indigo and warm parchment colors, atmospheric depth, realistic late-Han materials; not photorealistic, not 3D, not anime cel shading. No text, calligraphy, logos, captions, modern objects or watermark. This is artistic scene illustration, not an archaeological reconstruction. Scene: a muddy wooded retreat road in hilly country at cold dawn after a storm, fork of a narrow earth path winding between wet bare branches and bamboo, low gray mist, sparse puddles and trampled ground, muted indigo and umber. No prominent people, no bodies, no burning ships, no signage or text. Wide cinematic composition with clear lower foreground for character overlays, distant hills fading into mist, restrained dramatic ink washes and hand-painted paper texture matching the reference. A narrative landscape, not a precise real geographic site."
+    },
+    {
+      "key": "cover-v1",
+      "refs": [
+        "samples/characters/kongming-v1.png",
+        "samples/characters/zhouyu-v1.png",
+        "samples/scenes/chibi-fire-ink-v1.png"
+      ],
+      "prompt": "Use case: illustration-story. A finished wide 16:9 historical Chinese ink-and-watercolor illustration for a literary visual novel. Match the reference's refined hand-painted brush grain, restrained indigo and warm parchment colors, atmospheric depth, realistic late-Han materials; not photorealistic, not 3D, not anime cel shading. No text, calligraphy, logos, captions, modern objects or watermark. This is artistic scene illustration, not an archaeological reconstruction. Asset type: final chapter cover for the Red Cliffs chapters. Use reference 1 to preserve Kongming's recognizable face, long dark hair, narrow moustache and pointed beard, indigo scholar robes; reference 2 to preserve Zhou Yu's recognizable face, small moustache, formal headwear and burgundy robes. Reference 3 supplies the ink-watercolor medium and palette, not a battle scene to copy. Create one coherent painterly composition, not a collage: Kongming in a three-quarter upper-body view on the right-center in the foreground, Zhou Yu further right and behind him, both looking toward a vast river with distant ancient sail silhouettes and layered cliffs in blue dusk. Refined restrained expressions, atmospheric wind, a faint warm horizon, no overt battle or spoilers. Leave the LEFT 42 percent mostly dark blue open sky and misty river with low detail for separately typeset chapter title and buttons. Portraits in the right 55 percent, all faces safely inside frame and away from the extreme right edge. Wide 16:9, natural shared lighting and brushwork, no text anywhere."
+    },
+    {
+      "key": "tent-v2",
+      "reference": "tent-v1.png",
+      "reason": "移除战前场景中提前出现的远处火光",
+      "prompt": "Use case: precise-object-edit. Edit the supplied command-tent illustration only. Keep the entire interior, table, lamp, screens, canvas, framing, paint texture, indigo/amber palette and empty foreground unchanged. In the distant OUTDOOR view on the left, remove the visible shoreline fires and all smoke plumes; show a peaceful dark riverbank with a few tiny dim lantern lights and quiet anchored ships instead. This scene takes place before the battle, so there must be NO burning ships or burning camps outside. The indoor oil-lamp flame stays. No new characters, no text."
+    }
+  ]
+}

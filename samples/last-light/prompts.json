@@ -1,0 +1,21 @@
+{
+  "tool": "Codex built-in image_gen",
+  "date": "2026-11-06",
+  "status": "pending_user_art_review",
+  "images": [
+    {
+      "key": "linyao",
+      "file": "linyao-v1.png",
+      "prompt": "Use case: illustration-story. Original literary visual reader art, refined ink line and translucent watercolor on subtly textured paper, contemporary coastal China, natural adult proportions, muted sea-teal, slate, ivory and warm lamp amber. Quiet emotionally attentive visual storytelling, not anime caricature, not photorealism. No readable text, letters, labels, watermark, logos or recognizable real people. A full-body isolated character design with genuinely transparent background, a 32-year-old Chinese female architect named Lin Yao, thoughtful almond eyes, short straight dark bob tucked behind one ear, warm light-medium skin, slate-blue lightweight rain jacket open over ivory knit shirt, charcoal straight trousers and simple dark practical shoes, slim canvas measuring-plan tube held low in left hand. Upright yet approachable, slight concerned concentration, free right hand relaxed, no glamorous posing, no tools/weapons, no scenery or floor plane, clean silhouette, natural hands. Identity reference to use in later scenes.",
+      "transparent": true,
+      "generation_artifact": "exec-0545d22c-26dd-4e6c-8dd9-cefb278f2569.png"
+    },
+    {
+      "key": "chenbo",
+      "file": "chenbo-v1.png",
+      "prompt": "Use case: illustration-story. Original literary visual reader art, refined ink line and translucent watercolor on subtly textured paper, contemporary coastal China, natural adult proportions, muted sea-teal, slate, ivory and warm lamp amber. Quiet emotionally attentive visual storytelling, not anime caricature, not photorealism. No readable text, letters, labels, watermark, logos or recognizable real people. A full-body isolated character design with genuinely transparent background, 62-year-old Chinese retired station attendant Chen Bo. Weathered warm face, short silver-grey hair, gentle slightly hooded eyes, no beard, a faded olive-brown cotton work jacket with sleeves folded neatly, washed grey shirt, navy work trousers, practical dark worn shoes. Lean body with slight age in shoulders; right hand holds a folded small off-white cleaning cloth, left hand resting naturally beside hip. Reserved dignity and watchful concern, not a comic elderly man, no cap or uniform insignia, no scenery/floor plane, clean silhouette. Identity reference to use in later scenes.",
+      "transparent": true,
+      "generation_artifact": "exec-56b9f9ff-9f95-45f2-9af7-96df99d78094.png"
+    }
+  ]
+}

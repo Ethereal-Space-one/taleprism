@@ -1,0 +1,20 @@
+name: 视觉连续性问题 / Visual continuity
+description: Help improve acting, identity, space and prop instructions.
+title: "[Visual] "
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: Template version and image tool / 模板版本与图片工具
+  - type: textarea
+    id: failure
+    attributes:
+      label: Expected state and visible failure / 预期状态与可见问题
+      description: Describe identity, acting, layout or props. Attach master/previous/current images only if you wish and have rights to share them.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Reference order and repair attempts / 参考顺序与修复尝试
+      description: Small source excerpts or prompts are optional. Never provide keys or a complete private novel.

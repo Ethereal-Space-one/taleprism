@@ -1,0 +1,40 @@
+{
+  "base": "../../samples/last-light/",
+  "files": [
+    {
+      "file": "linyao-v1.png",
+      "role": "Lin Yao identity",
+      "sha256": "a6c8cb70aed6e48b49aed42e30156d4c591b3f97161a13b5c0ebec0d3129d8b6"
+    },
+    {
+      "file": "chenbo-v1.png",
+      "role": "Chen Bo identity",
+      "sha256": "f2f60b7d2a02ee030d1bed38d6f2d41d42e03ec3a6bebb8cad92a029e2341254"
+    },
+    {
+      "file": "arrival-v1.png",
+      "role": "environment master and first frame",
+      "sha256": "556de6cf96af3220dab851317af0bc2e6d290034d17b0a23ddc9575d45905145"
+    },
+    {
+      "file": "negotiation-v2.png",
+      "role": "checked negotiation, next edit target",
+      "sha256": "d0b0c5c0c58d2f073b67a0341f3bc43697853f0acf70320c24471216fdd1d3f5"
+    },
+    {
+      "file": "recording-v2.png",
+      "role": "recording with repaired basket",
+      "sha256": "7e0d5ebe579b770f524ecba92a05a736da44a3e1b887cafc6d2873903cc836e6"
+    },
+    {
+      "file": "negotiation-v1.png",
+      "role": "earlier workflow comparison, not intermediate bench defect",
+      "sha256": "aaab36dd4774710c2cb2fdbf4669e242515eba2f4a490b2635ae9ec688590d40"
+    },
+    {
+      "file": "recording-v1.png",
+      "role": "earlier workflow comparison, not intermediate basket defect",
+      "sha256": "7ce6ac08636be015a719c7db27c9697200a5c556030d0c7a937eb55585f5c556"
+    }
+  ]
+}

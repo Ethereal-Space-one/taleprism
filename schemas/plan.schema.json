@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Acting": {
+      "additionalProperties": false,
+      "properties": {
+        "character_id": {
+          "title": "Character Id",
+          "type": "string"
+        },
+        "goal": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Goal",
+          "type": "string"
+        },
+        "knows": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Knows",
+          "type": "string"
+        },
+        "public_face": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Public Face",
+          "type": "string"
+        },
+        "private_tension": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Private Tension",
+          "type": "string"
+        },
+        "visible_action": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Visible Action",
+          "type": "string"
+        },
+        "evidence": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Evidence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "character_id"
+      ],
+      "title": "Acting",
+      "type": "object"
+    },
+    "Check": {
+      "additionalProperties": false,
+      "properties": {
+        "fingerprint": {
+          "title": "Fingerprint",
+          "type": "string"
+        },
+        "reviewer": {
+          "enum": [
+            "creator",
+            "assistant"
+          ],
+          "title": "Reviewer",
+          "type": "string"
+        },
+        "notes": {
+          "maxLength": 2000,
+          "minLength": 8,
+          "title": "Notes",
+          "type": "string"
+        },
+        "checked_at": {
+          "title": "Checked At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fingerprint",
+        "reviewer",
+        "notes",
+        "checked_at"
+      ],
+      "title": "Check",
+      "type": "object"
+    },
+    "Continuity": {
+      "additionalProperties": false,
+      "properties": {
+        "scene_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scene Id"
+        },
+        "method": {
+          "default": "edit",
+          "enum": [
+            "reuse",
+            "edit",
+            "new_view"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "camera": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Camera",
+          "type": "string"
+        },
+        "changes": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Changes",
+          "type": "string"
+        },
+        "states": {
+          "items": {
+            "$ref": "#/$defs/ObjectState"
+          },
+          "maxItems": 32,
+          "title": "States",
+          "type": "array"
+        }
+      },
+      "title": "Continuity",
+      "type": "object"
+    },
+    "Object": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "default": "movable",
+          "enum": [
+            "fixed",
+            "movable"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "appearance": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Appearance",
+          "type": "string"
+        },
+        "home": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Home",
+          "type": "string"
+        },
+        "origin": {
+          "default": "artistic",
+          "enum": [
+            "source",
+            "artistic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "evidence": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Evidence",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Object",
+      "type": "object"
+    },
+    "ObjectState": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "title": "Object Id",
+          "type": "string"
+        },
+        "visibility": {
+          "default": "visible",
+          "enum": [
+            "visible",
+            "offscreen",
+            "absent"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        },
+        "position": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Position",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id"
+      ],
+      "title": "ObjectState",
+      "type": "object"
+    },
+    "Scene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "layout": {
+          "default": "",
+          "maxLength": 3000,
+          "title": "Layout",
+          "type": "string"
+        },
+        "reference_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Asset Id"
+        },
+        "objects": {
+          "items": {
+            "$ref": "#/$defs/Object"
+          },
+          "maxItems": 32,
+          "title": "Objects",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "Scene",
+      "type": "object"
+    },
+    "Shot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "after_byte": {
+          "minimum": 0,
+          "title": "After Byte",
+          "type": "integer"
+        },
+        "moment": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Moment",
+          "type": "string"
+        },
+        "evidence": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "framing": {
+          "default": "",
+          "maxLength": 500,
+          "title": "Framing",
+          "type": "string"
+        },
+        "environment": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Environment",
+          "type": "string"
+        },
+        "interpretation": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Interpretation",
+          "type": "string"
+        },
+        "avoid": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Avoid",
+          "type": "string"
+        },
+        "actors": {
+          "items": {
+            "$ref": "#/$defs/Acting"
+          },
+          "maxItems": 12,
+          "title": "Actors",
+          "type": "array"
+        },
+        "image_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Asset Id"
+        },
+        "status": {
+          "default": "draft",
+          "enum": [
+            "draft",
+            "approved"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "continuity": {
+          "$ref": "#/$defs/Continuity"
+        },
+        "continuity_check": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Check"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "after_byte"
+      ],
+      "title": "Shot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "style": {
+      "default": "自然人物比例，统一画风，克制而明确的人物表演。",
+      "maxLength": 2000,
+      "title": "Style",
+      "type": "string"
+    },
+    "budget": {
+      "default": 6,
+      "maximum": 64,
+      "minimum": 0,
+      "title": "Budget",
+      "type": "integer"
+    },
+    "shots": {
+      "items": {
+        "$ref": "#/$defs/Shot"
+      },
+      "maxItems": 64,
+      "title": "Shots",
+      "type": "array"
+    },
+    "scenes": {
+      "items": {
+        "$ref": "#/$defs/Scene"
+      },
+      "maxItems": 32,
+      "title": "Scenes",
+      "type": "array"
+    }
+  },
+  "title": "Plan",
+  "type": "object"
+}

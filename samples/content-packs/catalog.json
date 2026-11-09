@@ -1,0 +1,21 @@
+[
+  {
+    "id": "last-light",
+    "title": "末班灯 · 现代原创短篇",
+    "description": "三位人物、两张立绘、三幅情境图；含母版、11件物品状态与助手检查。公开版不含系统演示音频。",
+    "file": "taleprism-v0.1.0-last-light-project.zip",
+    "sha256": "bdf7e9a5e9156aac2b4f532a9637a4beed36f6b6ff7a845058768b67e3f2f2b5",
+    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-last-light-project.zip",
+    "reader": {
+      "file": "taleprism-v0.1.0-last-light-reader.zip",
+      "sha256": "a5f49e24e8ac2665d00e9a5ae89bd79f2a931256ae1e90c4aa7a8ca499c30f59",
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-last-light-reader.zip"
+    }
+  },
+  {
+    "id": "chibi",
+    "title": "赤壁 · 本机历史工程",
+    "file": "chibi.storygal.zip",
+    "description": "仅在保留旧内容包的本机出现；两幅心理表演修订图仍待审，保留原制作状态。"
+  }
+]

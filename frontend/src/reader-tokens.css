@@ -1,0 +1,32 @@
+:root {
+  --reader-paper: oklch(18% 0.018 250);
+  --reader-panel: oklch(22% 0.018 250);
+  --reader-raised: oklch(27% 0.018 250);
+  --reader-rule: oklch(43% 0.018 250);
+  --reader-ink: oklch(93% 0.014 82);
+  --reader-muted: oklch(74% 0.016 82);
+  --reader-accent: oklch(79% 0.09 79);
+  --reader-focus: oklch(85% 0.12 79);
+  --reader-error: oklch(82% 0.09 35);
+  --reader-clear: transparent;
+  --reader-shadow: oklch(10% 0.018 250 / 0.65);
+  --reader-cover-dark: oklch(13% 0.022 250 / 0.92);
+  --reader-cover-clear: oklch(13% 0.022 250 / 0.08);
+  --reader-stage-dim: oklch(12% 0.018 250 / 0.58);
+  --reader-highlight: oklch(79% 0.09 79 / 0.15);
+  --reader-map-paper: oklch(91% 0.028 80);
+  --reader-map-ink: oklch(29% 0.025 75);
+  --reader-map-water: oklch(61% 0.055 230);
+  --reader-map-bank: oklch(80% 0.035 230);
+  --reader-map-north: oklch(48% 0.055 250);
+  --reader-map-south: oklch(50% 0.1 40);
+  --reader-font-literary: var(--font-display, 'Songti SC', serif);
+  --reader-font-ui: var(--font-body, 'PingFang SC', sans-serif);
+  --reader-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --reader-duration: 180ms;
+  --reader-radius: 4px;
+  --reader-space-sm: 8px;
+  --reader-space-md: 16px;
+  --reader-space-lg: 24px;
+  --reader-space-xl: 40px;
+}

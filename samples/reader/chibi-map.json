@@ -1,0 +1,24 @@
+{
+  "title": "赤壁战区",
+  "subtitle": "驻扎、进军与古今地名",
+  "note": "按通行蒲圻说组织的阅读地图。地望、江道、营区和箭头均为约略示意，不作精确历史复原；进一步史地考证留待后续调研。",
+  "viewBox": "0 0 960 560",
+  "river": "M45 145 C180 120 220 230 240 315 S340 420 420 360 S500 270 565 295 S665 240 715 180 S800 240 920 370",
+  "places": [
+    {"id":"jiangling","label":"江陵","x":100,"y":140,"today":"今湖北荆州一带","description":"上游的重要据点。小说中的南郡、江陵与战后的退军叙事有关；本图不把现代市中心当作古代军营。","source_ids":["novel","geography" ]},
+    {"id":"wulin","label":"乌林","x":490,"y":265,"today":"今湖北洪湖乌林一带","description":"按蒲圻说，与赤壁隔江相望。图中的曹军营区只表示江北一带的驻扎关系，不表示军营确切边界。","source_ids":["geography","overview"]},
+    {"id":"chibi","label":"赤壁","x":535,"y":355,"today":"今湖北赤壁一带（采用蒲圻说）","description":"本图采用常见的蒲圻赤壁解释；战地另有不同考证，不能据此认定唯一精确战场。","source_ids":["geography","overview"]},
+    {"id":"xiakou","label":"夏口","x":735,"y":170,"today":"今武汉一带；古城细部位置待考","description":"阅读中孙刘联络与军队活动的重要地点。现代城市区域仅供理解古今大致位置。","source_ids":["novel","geography"]},
+    {"id":"chaisang","label":"柴桑","x":880,"y":345,"today":"今江西九江一带","description":"位于长江下游方向的孙吴活动区域。这里显示区域关系，不给出未经核实的古代驻军坐标。","source_ids":["geography"]}
+  ],
+  "phases": [
+    {"title":"夹江对峙","description":"以两岸驻扎关系帮助理解战前态势；营区为约略范围。"},
+    {"title":"火攻推进","description":"展示黄盖火船接近曹军水寨的行动方向，箭头不表示精确航迹。"},
+    {"title":"战后撤军","description":"展示向上游退军的概括方向；小说华容道情节与历史路线考证分别理解。"}
+  ],
+  "sources": [
+    {"id":"novel","title":"本项目原文：《三国演义》第四十九、五十回","url":null,"note":"提供阅读位置与小说中的行动叙事，不单独用于认定历史位置。"},
+    {"id":"geography","title":"夏建国：读正史方志看赤壁之战中的鄂县（鄂州政府网）","url":"https://www.ezhou.gov.cn/zjez/ezrw/ezss/202208/t20220811_490580.html","note":"提供江夏、夏口、柴桑等区域关系及战地不同说法；文中的推测未作为精确坐标。"},
+    {"id":"overview","title":"中国文化研究院：奠定三国鼎立的关键一役——赤壁之战","url":"https://chiculture.org.hk/tc/china-five-thousand-years/3980","note":"用作两岸对峙及火攻经过的通俗资料入口。"}
+  ]
+}

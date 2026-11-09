@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "sha256": "0d56fec26d0019f9267f8cab95c0616f968daaabbf1e58e5ffefb812d50feaa3",
+  "templates": [
+    "01-source",
+    "02-character",
+    "03-shot-plan",
+    "04-scene",
+    "05-first-image",
+    "06-continuation",
+    "07-review",
+    "08-repair"
+  ]
+}

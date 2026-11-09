@@ -1,0 +1,43 @@
+# 运行期数据：工程、生成物、导出包，只留在本机
+/data/
+/.env
+/.env.*
+!/.env.example
+/.release/
+
+# WebGAL 引擎由 tools/fetch_engine.sh 下载
+/engine/*
+!/engine/README.md
+!/engine/LICENSE-MPL-2.0.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+
+# Node
+node_modules/
+/frontend/dist/
+*.tsbuildinfo
+
+.DS_Store
+
+# Local design workspace and downloadable sample binaries
+/.hallmark/
+/samples/content-packs/*.zip
+/samples/content-packs/*.build.json
+/samples/reader/**/*.png
+/samples/reader/*.png
+/samples/characters/**/*.png
+/samples/characters/*.png
+/samples/scenes/*.png
+
+# Historical local planning/review records (public docs use the release inventory)
+/docs/P[0-9]*
+/docs/阶段实现记录.md
+/docs/统一审查入口.md
+/docs/Taleprism-v0.1.0-发布计划.md
+/V0.1-计划与技术规划.md

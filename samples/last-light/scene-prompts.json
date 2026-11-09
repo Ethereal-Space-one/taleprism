@@ -1,0 +1,34 @@
+{
+  "tool": "Codex built-in image_gen",
+  "date": "2026-11-06",
+  "images": [
+    {
+      "key": "arrival",
+      "file": "arrival-v1.png",
+      "prompt": "Use case: illustration-story. Original literary visual reader art, refined ink line and translucent watercolor on subtly textured paper, contemporary coastal China, natural adult proportions, muted sea-teal, slate, ivory and warm lamp amber. Quiet emotionally attentive visual storytelling, not anime caricature, not photorealism. No readable text, letters, labels, watermark, logos or recognizable real people. Opaque complete 16:9 landscape painting. References provide ONLY face identities and clothing; paint natural scene-specific poses, not a sprite collage. Image1 Lin Yao, image2 Chen Bo. Early evening rainy abandoned coastal railway station. Wide eye-level establishing shot from under the platform roof: Lin Yao at left near a wet entry, slate rain jacket and plan tube tucked under arm, pauses and looks at the single amber lamp and the attendant rather than at viewer. Chen Bo farther right in faded olive work jacket bends slightly to wipe rain from a wooden bench, cloth in hand, attention on his task. Weathered small boarded ticket window, wet tile reflections, empty track disappearing into sea mist, muted teal horizon. Distinct two human tasks, tentative arrival versus quiet routine. No other people, no modern luxury station, no signs or writing, no train in operation, no renovation equipment. One lamp glows warmly under eaves. Moment BEFORE any conversation or decision.",
+      "generation_artifact": "exec-0383f082-850d-47c8-b53a-e252fe56c1a8.png"
+    },
+    {
+      "key": "negotiation",
+      "file": "negotiation-v1.png",
+      "prompt": "Use case: illustration-story. Original literary visual reader art, refined ink line and translucent watercolor on subtly textured paper, contemporary coastal China, natural adult proportions, muted sea-teal, slate, ivory and warm lamp amber. Quiet emotionally attentive visual storytelling, not anime caricature, not photorealism. No readable text, letters, labels, watermark, logos or recognizable real people. Opaque complete 16:9 landscape painting. References provide ONLY face identities and clothing; paint natural scene-specific poses, not a sprite collage. Image1 Lin Yao, image2 Chen Bo. The exact moment of a difficult but courteous conversation inside the same small old seaside station shelter: Lin Yao has just offered putting the old lamp in a display case, Chen Bo asks who would switch it on. Intimate eye-level oblique two-shot across a wooden bench used to spread a rolled plan. Both three-quarter faces large and readable. Lin Yao at left sits or leans close to the bench, fingers previously pointing at the paper now pause slightly withdrawn, lips parted, attentive eyes searching Chen's face as her confident professional explanation shifts to genuine questioning. Chen Bo right standing with one hand on bench back and a folded cloth in other, tight lips and slightly drawn brow, reserved dignity, direct look at Lin, vulnerable concern guarded by a practical question. He does not touch her plan. Both want the place cared for but mean different things by preservation. Soft warm lamp with cool rainy window, abstract blank plan lines without any readable letters, paper safely on bench, no handshake or smile of resolution, no shouting, no villain lighting. Avoid later decision, no construction crew. No other people. Reference image3 supplies continuity for the old station wall, boarded window, wooden bench, single lamp and watercolor style; reframe nearer as described, do not copy its wide composition.",
+      "generation_artifact": "exec-d5fab235-856a-4c90-a0a0-f27d5172cc25.png",
+      "references": [
+        "linyao-v1.png",
+        "chenbo-v1.png",
+        "arrival-v1.png"
+      ]
+    },
+    {
+      "key": "recording",
+      "file": "recording-v1.png",
+      "prompt": "Use case: illustration-story. Original literary visual reader art, refined ink line and translucent watercolor on subtly textured paper, contemporary coastal China, natural adult proportions, muted sea-teal, slate, ivory and warm lamp amber. Quiet emotionally attentive visual storytelling, not anime caricature, not photorealism. No readable text, letters, labels, watermark, logos or recognizable real people. Opaque complete 16:9 landscape painting. References provide ONLY face identities and clothing; paint natural scene-specific poses, not a sprite collage. Image1 Lin Yao, image2 Chen Bo. Medium-wide natural three-person tableau under same old station roof as rain eases. Exact moment after Lin proposes recording how people still use the station, and Chen Bo finally sits and picks up her pencil; this is the start of listening and documenting, NOT approval of renovation or a promise to preserve the lamp forever. Lin Yao at left on bench, tube resting beside her, inclines attentively toward the paper while giving Chen space, open relaxed hands, restrained hopeful attention. Chen Bo center seated at wooden bench, shoulders easing, small tentative concentration on his pencil and a blank unlettered sheet, cloth laid beside him. Xiao Man at right background is a nineteen-year-old Chinese young woman with dark ponytail, yellow raincoat, one hand on her ordinary bicycle, looking at the pair with a small relieved smile; a cloth bundle with three pieces of bread rests on a dry part of bench. Different faces and gaze directions; main pair in focus, Xiao Man secondary but readable. Single amber lamp behind, rain-slick slate tiles and teal dusk, no spectators, no waving flags, no new construction, no signed approval, no text, no words on paper. Reference image3 supplies continuity for the old station wall, boarded window, wooden bench, single lamp and watercolor style; reframe nearer as described, do not copy its wide composition.",
+      "generation_artifact": "exec-3c08696a-3c2d-4402-8130-45af4522dbf7.png",
+      "references": [
+        "linyao-v1.png",
+        "chenbo-v1.png",
+        "arrival-v1.png"
+      ]
+    }
+  ]
+}

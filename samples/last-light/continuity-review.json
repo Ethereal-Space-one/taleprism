@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-09",
+  "reviewer": "assistant",
+  "recipe_sha256": "6c12dc156e344c1b408d65cc3e6754ad81db2d21f33f6a667e54af1cb785cd76",
+  "images": {
+    "arrival-v1.png": "556de6cf96af3220dab851317af0bc2e6d290034d17b0a23ddc9575d45905145",
+    "negotiation-v2.png": "d0b0c5c0c58d2f073b67a0341f3bc43697853f0acf70320c24471216fdd1d3f5",
+    "recording-v2.png": "7e0d5ebe579b770f524ecba92a05a736da44a3e1b887cafc6d2873903cc836e6"
+  },
+  "notes": {
+    "arrival": "场景母版：一灯、一凳、封板窗、檐柱与铁轨关系已核对。林遥持筒、陈伯持布；其余道具尚未入画。助手制作检查，最终用户美术复核待完成。",
+    "negotiation": "已与母版并排核对，返工修正长凳向左加长的问题；图纸由筒内取出铺在凳面，筒靠墙、布仍在陈伯手中。保留两人试探与倾听。细微笔触和家具轮廓非逐像素相同。",
+    "recording": "已与前序和母版核对：大图卷起留在凳右端，小纸在陈伯膝上，铅笔在手中；筒位置保持，擦布放在两人之间，与面包包分开。小满推车入场，车篮已补回；同机位验证通过，任意反打尚未验证。"
+  },
+  "final_user_art_review": "pending"
+}

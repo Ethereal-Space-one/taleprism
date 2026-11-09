@@ -1,0 +1,28 @@
+name: 安装或使用问题 / Installation or usage
+description: Report the exact step that failed; no API keys or private manuscripts.
+title: "[Usage] "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version and platform / 版本与系统
+      placeholder: v0.1.0, macOS, Chrome
+    validations:
+      required: true
+  - type: dropdown
+    id: route
+    attributes:
+      label: Entry / 使用入口
+      options:
+        - Prompt starter / 提示词
+        - Workbench / 制作台
+        - Reader / 阅读器
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected result and actual result / 步骤、预期与实际
+      description: Include the exact instruction that was unclear. Do not paste credentials.
+    validations:
+      required: true

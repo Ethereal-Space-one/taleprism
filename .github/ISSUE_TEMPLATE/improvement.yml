@@ -1,0 +1,14 @@
+name: 模板或功能改进 / Improvement
+description: Explain the reading or creation problem and a useful outcome.
+title: "[Idea] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Situation and desired outcome / 使用场景与期望结果
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround / 目前如何处理

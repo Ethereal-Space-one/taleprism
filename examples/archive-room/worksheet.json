@@ -1,0 +1,220 @@
+{
+  "characters": [
+    "程青",
+    "许岚"
+  ],
+  "style": "克制的室内叙事插图；服装为艺术设计",
+  "budget": 3,
+  "scenes": [
+    {
+      "id": "archive",
+      "title": "夜间档案室",
+      "layout": "矮柜位于门旁，台灯在柜角，窗在柜的另一侧；除文本明确关系外均为艺术设计。",
+      "objects": [
+        {
+          "id": "cabinet",
+          "name": "矮柜",
+          "kind": "fixed",
+          "home": "门旁",
+          "origin": "source",
+          "evidence": "门旁的矮柜"
+        },
+        {
+          "id": "lamp",
+          "name": "台灯",
+          "kind": "fixed",
+          "home": "矮柜角",
+          "origin": "source",
+          "evidence": "台灯仍照着柜角"
+        },
+        {
+          "id": "key",
+          "name": "铜钥匙",
+          "kind": "movable",
+          "origin": "source",
+          "evidence": "铜钥匙"
+        },
+        {
+          "id": "box",
+          "name": "纸盒",
+          "kind": "movable",
+          "origin": "source",
+          "evidence": "纸盒"
+        }
+      ]
+    }
+  ],
+  "shots": [
+    {
+      "id": "frame-1",
+      "title": "闭馆",
+      "paragraph": 1,
+      "moment": "钥匙留在柜上，纸盒抱在怀中",
+      "evidence": "闭馆后，值班员程青把铜钥匙放在门旁的矮柜上，台灯仍照着柜角。修复师许岚站在窗边，手里抱着一只纸盒。",
+      "framing": "同一门内平视中景",
+      "avoid": "不得把纸张画成已取出，不新增家具",
+      "actors": [
+        {
+          "character": "程青",
+          "goal": "按时闭馆",
+          "knows": "修复师仍在场",
+          "public_face": "履行值班责任",
+          "private_tension": "闭馆时间与纸张保护之间的权衡（艺术解释）",
+          "visible_action": "放下钥匙后望向许岚"
+        },
+        {
+          "character": "许岚",
+          "goal": "保护未干的纸张",
+          "knows": "盒中纸张状态",
+          "public_face": "说明具体原因",
+          "private_tension": "担心闭馆使修复中断（艺术解释）",
+          "visible_action": "抱盒站窗边"
+        }
+      ],
+      "continuity": {
+        "scene_id": "archive",
+        "method": "reuse",
+        "camera": "门内平视，固定矮柜、台灯和窗的位置",
+        "changes": "建立空间与初始物件",
+        "states": [
+          {
+            "object_id": "cabinet",
+            "visibility": "visible",
+            "position": "门旁"
+          },
+          {
+            "object_id": "lamp",
+            "visibility": "visible",
+            "position": "矮柜角"
+          },
+          {
+            "object_id": "key",
+            "visibility": "visible",
+            "position": "矮柜面",
+            "reason": ""
+          },
+          {
+            "object_id": "box",
+            "visibility": "visible",
+            "position": "许岚怀中",
+            "reason": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "frame-2",
+      "title": "停手",
+      "paragraph": 2,
+      "moment": "程青收回伸向钥匙的手",
+      "evidence": "许岚把纸盒放到矮柜右侧，说：「先别锁门，里面的纸还没有干。」程青伸向钥匙的手停住了。他看了看墙上的钟，又收回手。",
+      "framing": "同一门内平视中景",
+      "avoid": "不得把纸张画成已取出，不新增家具",
+      "actors": [
+        {
+          "character": "程青",
+          "goal": "按时闭馆",
+          "knows": "修复师仍在场",
+          "public_face": "履行值班责任",
+          "private_tension": "闭馆时间与纸张保护之间的权衡（艺术解释）",
+          "visible_action": "伸手停住后收回"
+        },
+        {
+          "character": "许岚",
+          "goal": "保护未干的纸张",
+          "knows": "盒中纸张状态",
+          "public_face": "说明具体原因",
+          "private_tension": "担心闭馆使修复中断（艺术解释）",
+          "visible_action": "放下盒子说明原因"
+        }
+      ],
+      "continuity": {
+        "scene_id": "archive",
+        "method": "edit",
+        "camera": "门内平视，固定矮柜、台灯和窗的位置",
+        "changes": "只改变盒子位置与人物手势",
+        "states": [
+          {
+            "object_id": "cabinet",
+            "visibility": "visible",
+            "position": "门旁"
+          },
+          {
+            "object_id": "lamp",
+            "visibility": "visible",
+            "position": "矮柜角"
+          },
+          {
+            "object_id": "key",
+            "visibility": "visible",
+            "position": "矮柜面",
+            "reason": ""
+          },
+          {
+            "object_id": "box",
+            "visibility": "visible",
+            "position": "矮柜右侧",
+            "reason": "许岚把纸盒放到矮柜右侧"
+          }
+        ]
+      }
+    },
+    {
+      "id": "frame-3",
+      "title": "等候",
+      "paragraph": 3,
+      "moment": "钥匙进口袋，纸盒已打开",
+      "evidence": "程青拿起铜钥匙装进口袋，留在门内等候。许岚打开纸盒，没有把里面的纸取出来。台灯的位置没有变。",
+      "framing": "同一门内平视中景",
+      "avoid": "不得把纸张画成已取出，不新增家具",
+      "actors": [
+        {
+          "character": "程青",
+          "goal": "按时闭馆",
+          "knows": "修复师仍在场",
+          "public_face": "履行值班责任",
+          "private_tension": "闭馆时间与纸张保护之间的权衡（艺术解释）",
+          "visible_action": "把钥匙收进口袋并在门内等候"
+        },
+        {
+          "character": "许岚",
+          "goal": "保护未干的纸张",
+          "knows": "盒中纸张状态",
+          "public_face": "说明具体原因",
+          "private_tension": "担心闭馆使修复中断（艺术解释）",
+          "visible_action": "打开盒盖但不取纸"
+        }
+      ],
+      "continuity": {
+        "scene_id": "archive",
+        "method": "edit",
+        "camera": "门内平视，固定矮柜、台灯和窗的位置",
+        "changes": "钥匙移进口袋，盒盖打开",
+        "states": [
+          {
+            "object_id": "cabinet",
+            "visibility": "visible",
+            "position": "门旁"
+          },
+          {
+            "object_id": "lamp",
+            "visibility": "visible",
+            "position": "矮柜角"
+          },
+          {
+            "object_id": "key",
+            "visibility": "offscreen",
+            "position": "程青口袋内",
+            "reason": "程青拿起铜钥匙装进口袋"
+          },
+          {
+            "object_id": "box",
+            "visibility": "visible",
+            "position": "矮柜右侧",
+            "reason": ""
+          }
+        ]
+      }
+    }
+  ]
+}

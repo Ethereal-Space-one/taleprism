@@ -1,0 +1,216 @@
+{
+  "title": "末班灯",
+  "subtitle": "海边旧站 · 一次尚未结束的交谈",
+  "source": "source.txt",
+  "rights_status": "owned",
+  "license": "Storygal 原创虚构样例；Codex 内置生图；MIT，见 samples/last-light/PROVENANCE.md；用户最终艺术审查未完成",
+  "style": "现代海边小站，细墨线与透明水彩，海青、石灰、旧木与暖灯色；自然比例、克制神情；保持人物身份与同一场所的空间连续。",
+  "budget": 3,
+  "cover": "cover",
+  "background": "arrival",
+  "characters": [
+    {
+      "name": "林遥",
+      "description": "32岁，负责改建前核对。想完成可靠的保存方案，逐步发现仍在发生的日常使用。短深色发、蓝灰雨衣、测绘筒。",
+      "portrait": "linyao-v1.png"
+    },
+    {
+      "name": "陈伯",
+      "description": "62岁，退休值班员。表面谈灯与天气，真正担心仍经过这里的人失去照应。灰白短发、旧橄榄工作服、擦水布。",
+      "portrait": "chenbo-v1.png"
+    },
+    {
+      "name": "小满",
+      "description": "19岁，街口修车铺的女儿。黄色雨衣、自行车。用实际生活说明站台仍有用途。"
+    }
+  ],
+  "images": [
+    {
+      "key": "cover",
+      "file": "arrival-v1.png",
+      "title": "雨中的旧车站",
+      "kind": "cover"
+    },
+    {
+      "key": "arrival",
+      "file": "arrival-v1.png",
+      "title": "檐下初见",
+      "kind": "scene"
+    },
+    {
+      "key": "negotiation",
+      "file": "negotiation-v1.png",
+      "title": "谁来开灯",
+      "kind": "scene"
+    },
+    {
+      "key": "recording",
+      "file": "recording-v1.png",
+      "title": "把日常记下来",
+      "kind": "scene"
+    }
+  ],
+  "dialogues": [
+    {
+      "text": "陈伯，车已经停了七年，您怎么还每天来开灯？",
+      "character": "林遥"
+    },
+    {
+      "text": "岸上雾一起，人就认不清路。",
+      "character": "陈伯"
+    },
+    {
+      "text": "候车室会留下，外面增加无障碍坡道。旧灯可以放进展柜，有说明，有照片，也不会再淋雨。",
+      "character": "林遥"
+    },
+    {
+      "text": "放进去以后，谁来开？",
+      "character": "陈伯"
+    },
+    {
+      "text": "您担心的，是它以后不亮了吗？",
+      "character": "林遥",
+      "voice_prefix": "Tingting"
+    },
+    {
+      "text": "也不是灯非得留在这儿。",
+      "character": "陈伯"
+    },
+    {
+      "text": "前年台风，小满从学校回来，车把链条断在桥那头。看见这里亮着，才肯往前走。",
+      "character": "陈伯"
+    },
+    {
+      "text": "林姐，外面那道坡真能修好吗？陈伯下雨时总绕后门。",
+      "character": "小满"
+    },
+    {
+      "text": "我不能今天就答应改方案。",
+      "character": "林遥"
+    },
+    {
+      "text": "但是灯也许可以继续使用，位置要重新核对，线路要请人检查。您愿不愿意把晚间有人来这里的情况记几天？时间、做什么，只记这些。",
+      "character": "林遥"
+    },
+    {
+      "text": "不是让我证明自己舍不得？",
+      "character": "陈伯",
+      "voice_prefix": "Eddy"
+    },
+    {
+      "text": "是让没来过这里的人，看见这里还发生什么。",
+      "character": "林遥"
+    },
+    {
+      "text": "那我先记一条，今天有人在这里分面包。",
+      "character": "小满"
+    }
+  ],
+  "shots": [
+    {
+      "id": "arrival",
+      "title": "檐下初见",
+      "marker": "海边的旧车站只剩一盏灯",
+      "image": "arrival",
+      "moment": "林遥刚到，陈伯仍在擦水；尚未交谈",
+      "evidence": "陈伯在长凳旁擦水",
+      "framing": "檐下平视远景，人物嵌入场所，雨与单灯形成空间层次",
+      "environment": "海边旧站、封板售票窗、湿地砖、木长凳、一盏暖灯",
+      "interpretation": "以两人分别停步与工作的动作表现不同的进入方式。衣着为艺术设计。",
+      "avoid": "不能出现小满、施工队、展柜或已经谈妥的神情",
+      "actors": [
+        {
+          "character": "林遥",
+          "goal": "核对清单",
+          "knows": "清单还剩灯的位置未定",
+          "public_face": "保持专业",
+          "private_tension": "最后一项尚未解决",
+          "visible_action": "停在檐口望向灯与陈伯",
+          "evidence": ""
+        },
+        {
+          "character": "陈伯",
+          "goal": "维持站台日常",
+          "knows": "长期熟悉这里",
+          "public_face": "继续擦水",
+          "private_tension": "旧站即将改变（艺术理解）",
+          "visible_action": "弯身擦拭，袖口整齐",
+          "evidence": ""
+        }
+      ]
+    },
+    {
+      "id": "negotiation",
+      "title": "谁来开灯",
+      "marker": "林遥把图纸摊在长凳上",
+      "image": "negotiation",
+      "moment": "陈伯问灯入柜后谁来开，林遥收回指图的手开始追问",
+      "evidence": "林遥指着图纸的手停住了",
+      "framing": "斜侧双人近景，两张脸可读，图纸在两人之间形成讨论边界",
+      "environment": "同一木凳和灯下，雨仍在窗外；图纸仅绘抽象线条",
+      "interpretation": "林遥神情由解释转为倾听，陈伯的担忧克制地从眉眼与手部显露。不是敌我脸谱。",
+      "avoid": "不能握手或笑着达成协议；小满尚未到场；不能把保存方案画为已经落实",
+      "actors": [
+        {
+          "character": "林遥",
+          "goal": "解释保存方案并理解反问",
+          "knows": "灯可以进入展柜",
+          "public_face": "专业且耐心",
+          "private_tension": "开始意识到自己没有回答使用的问题",
+          "visible_action": "手停在纸上再收回，抬眼观察陈伯",
+          "evidence": "她把手收回来"
+        },
+        {
+          "character": "陈伯",
+          "goal": "让对方看见灯仍被使用",
+          "knows": "灯一旦入柜将失去日常作用",
+          "public_face": "提出具体问题",
+          "private_tension": "不愿把诉求说成个人留恋",
+          "visible_action": "一手搭凳背，一手握布，直视林遥但不碰图",
+          "evidence": "一只手搭着长凳背，没有碰那张图"
+        }
+      ]
+    },
+    {
+      "id": "recording",
+      "title": "把日常记下来",
+      "marker": "雨渐渐小了",
+      "image": "recording",
+      "moment": "林遥说明记录的用途，陈伯终于坐下拿起铅笔",
+      "evidence": "陈伯这才坐下来，拿起铅笔",
+      "framing": "中景三人群像，主要两人围绕纸张，小满在后侧推车等候",
+      "environment": "雨渐小，暖灯、旧凳、布包与面包、自行车；纸张不生成文字",
+      "interpretation": "小满仍在场由前后段连贯可知，后侧等候的站位是艺术解释。陈伯肩膀放松，林遥留出空间表达尊重。",
+      "avoid": "没有批复、签约或保留灯的保证；不能画成庆功合影",
+      "actors": [
+        {
+          "character": "林遥",
+          "goal": "把真实使用纳入下一次判断",
+          "knows": "自己不能当场承诺改方案",
+          "public_face": "明确边界并邀请共同记录",
+          "private_tension": "要避免把陈伯的诉求简化为怀旧",
+          "visible_action": "放下铅笔后让出纸面，倾身倾听",
+          "evidence": "林遥摇头，把铅笔横放在两人之间"
+        },
+        {
+          "character": "陈伯",
+          "goal": "确认记录不是自证舍不得",
+          "knows": "对方愿意了解使用情况",
+          "public_face": "询问后尝试合作",
+          "private_tension": "仍担心被当成个人留恋",
+          "visible_action": "坐下握笔，神情由戒备转为专注",
+          "evidence": "陈伯这才坐下来，拿起铅笔"
+        },
+        {
+          "character": "小满",
+          "goal": "等候并见证交谈",
+          "knows": "这里仍被路人使用",
+          "public_face": "安静在旁",
+          "private_tension": "不替双方作决定",
+          "visible_action": "扶着自行车，关注两人（艺术站位）",
+          "evidence": ""
+        }
+      ]
+    }
+  ]
+}

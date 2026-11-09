@@ -1,0 +1,17 @@
+{
+  "tool": "Codex built-in image_gen",
+  "date": "2026-11-03",
+  "status": "pending_review",
+  "images": [
+    {
+      "file": "kongming-v1.png",
+      "character": "孔明",
+      "prompt": "Use case: illustration-story. Asset type: full-body transparent visual novel character sprite, portrait composition about 1024x1536. Subject: Zhuge Liang / Kongming from the public-domain Romance of the Three Kingdoms, chapter 49. This is an original artistic interpretation, not a real actor or an existing game's design. Textual anchor: he wears a Daoist robe, hair loose, bare feet while preparing to pray for the east wind. One adult Chinese male counsellor, composed intelligent expression, long dark hair loose behind shoulders, small neat moustache and beard, simple flowing slate blue Daoist robe with ivory underlayer. Relaxed standing pose, both hands visible and relaxed at waist, no props, no fan, no weapons. Style: refined hand-painted Chinese historical visual-novel illustration, fine precise linework, gentle cel shading with watercolor edges, restrained indigo and parchment palette, realistic adult proportions, soft even front lighting. Entire body from head to bare feet fully visible, centered with 10% empty margin, no cropping. Genuine transparent background and clean alpha, isolated character only, no ground plane, no shadow backdrop. No text, labels, logo, watermark, decorative frame, additional people, UI or reference-sheet panels."
+    },
+    {
+      "file": "zhouyu-v1.png",
+      "character": "周瑜",
+      "prompt": "Use case: illustration-story. Asset type: full-body transparent visual novel character sprite, portrait composition about 1024x1536. Subject: Zhou Yu from the public-domain Romance of the Three Kingdoms, chapter 49. This is an original artistic interpretation, not a real actor or an existing game's design; costume details are visual interpretation. One adult Chinese male commander, dignified, alert thoughtful expression, dark hair tied neatly in a period topknot with a simple dark headpiece, lightly defined moustache, long burgundy-red outer robe over ivory underlayer with a restrained dark belt, modest embroidered edges. Relaxed standing pose with both hands visible at waist, no weapons, no fan, no props. Style: refined hand-painted Chinese historical visual-novel illustration, fine precise linework, gentle cel shading with watercolor edges, restrained burgundy and parchment palette, realistic adult proportions, soft even front lighting. Entire body from head to boots fully visible, centered with 10% empty margin, no cropping. Genuine transparent background and clean alpha, isolated character only, no ground plane, no shadow backdrop. No text, labels, logo, watermark, decorative frame, additional people, UI or reference-sheet panels."
+    }
+  ]
+}

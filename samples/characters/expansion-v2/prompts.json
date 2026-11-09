@@ -1,0 +1,26 @@
+{
+  "tool": "Codex built-in image_gen",
+  "date": "2026-11-04",
+  "status": "pending_art_review",
+  "batch": "second character expansion: 8 identities / 9 figures total, 2 new files",
+  "images": [
+    {
+      "file": "zhaoyun-base-v1.png",
+      "character": "赵云",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: a reusable visual novel full-body character sprite for the Chinese classic Romance of the Three Kingdoms. Style reference: the attached Guan Yu sprite is ONLY for painterly rendering, restrained late-Han artistic costume design, linework and body proportions; create a DIFFERENT character and silhouette. Refined historical hand-painted illustration, precise fine linework, subtle watercolor cloth texture, muted pigment, realistic adult proportions, soft even front light. One person alone, standing calm three-quarter pose, head to boots fully visible, generous margins, portrait 2:3. A genuinely transparent background with clean alpha, NO atmospheric haze, no ground or cast shadow, no landscape or colored backdrop. Hands anatomically correct. No text, watermarks, UI, frame, extra people, horses, actor likeness or battle action. Original literary interpretation, not a claim of exact historical costume reconstruction. Primary request: Zhao Yun / Zhao Zilong, a composed athletic Chinese general in his thirties, clean-shaven handsome adult face, alert almond eyes, straight brows, upright youthful confidence. Dark hair neatly bound under a simple silver-grey helmet with a modest pale plume; ivory-white tabard over restrained silver-grey lamellar armor, cool slate-blue small edging, dark leather belt and dark boots. Both hands relaxed near waist, no weapon, no bow, no red cloak. Distinct from Guan Yu: no beard, no green robe. Standing identity sprite for greeting and receiving orders, NOT a depiction of shooting an arrow or riding.",
+      "references": [
+        "../expansion-v1/guanyu-base-v1.png"
+      ]
+    },
+    {
+      "file": "zhangfei-base-v1.png",
+      "character": "张飞",
+      "state": "base",
+      "prompt": "Use case: illustration-story. Asset type: a reusable visual novel full-body character sprite for the Chinese classic Romance of the Three Kingdoms. Style reference: the attached Guan Yu sprite is ONLY for painterly rendering, restrained late-Han artistic costume design, linework and body proportions; create a DIFFERENT character and silhouette. Refined historical hand-painted illustration, precise fine linework, subtle watercolor cloth texture, muted pigment, realistic adult proportions, soft even front light. One person alone, standing calm three-quarter pose, head to boots fully visible, generous margins, portrait 2:3. A genuinely transparent background with clean alpha, NO atmospheric haze, no ground or cast shadow, no landscape or colored backdrop. Hands anatomically correct. No text, watermarks, UI, frame, extra people, horses, actor likeness or battle action. Original literary interpretation, not a claim of exact historical costume reconstruction. Primary request: Zhang Fei / Zhang Yide, a broad-shouldered powerful Chinese general in his forties, square weathered face, thick dark brows, wide alert eyes, short full black beard and moustache, firmly set mouth, proud but not raging. Dark hair in a practical topknot under a simple black cloth headwrap. Charcoal iron lamellar armor over deep muted russet-brown tunic, narrow dark wine-red sash, sturdy black boots. Stocky imposing silhouette, feet steady, both hands relaxed near belt, no weapon, no spear. Distinct from tall long-bearded green-robed Guan Yu and clean-shaven silver-armored Zhao Yun. Reusable calm standing identity sprite for receiving orders, not mounted combat.",
+      "references": [
+        "../expansion-v1/guanyu-base-v1.png"
+      ]
+    }
+  ]
+}
