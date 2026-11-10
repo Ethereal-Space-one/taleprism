@@ -14,11 +14,13 @@ from fastapi import File, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 
+from .character_identity import resolved_character_id
 from .reader import REPO
 from .reader_api import Configuration
 from .review import top_dialogues
 from .speech import inspect_audio
-from .speech_api import Line, Profile
+from .speech_api import Line
+from .speech_models import StoredProfile, validate_take_profile
 from .text import sha256
 
 LIMIT = 160_000_000
@@ -284,6 +286,7 @@ class Bundles:
                 chars = {c["id"]: c for c in records["characters"]}
                 assets = {a["id"]: a for a in records["assets"]}
                 for c in chars.values():
+                    resolved_character_id(chars, c["id"])
                     if (
                         not c["display_name"].strip()
                         or len(c["display_name"]) > 40
@@ -295,7 +298,7 @@ class Bundles:
                     if aid and (
                         aid not in assets
                         or assets[aid]["character_id"] != c["id"]
-                        or assets[aid]["status"] != "accepted"
+                        or assets[aid]["kind"] == "reference"
                     ):
                         raise ValueError("人物立绘引用无效。")
                 for a in records["assets"]:
@@ -330,10 +333,10 @@ class Bundles:
                 ):
                     raise ValueError("配音角色配置无效。")
                 for profile in speech["profiles"].values():
-                    Profile(revision=0, **profile)
+                    StoredProfile.model_validate(profile)
                 takes = {t["id"]: t for t in records["speech_takes"]}
                 for take in takes.values():
-                    Profile(revision=0, **take["profile"])
+                    validate_take_profile(take)
                     if not re.fullmatch(r"[0-9a-f]{64}", take["cache_key"]) or not re.fullmatch(
                         r"[0-9a-f]{64}", take["text_sha256"]
                     ):
@@ -390,12 +393,23 @@ class Bundles:
                 config = Configuration(
                     revision=0, **doc["states"]["reader_states"]["data"]
                 ).model_dump(exclude={"revision"})
-                staged.reader.validate(pid, config)
+                staged.reader.validate(pid, config, for_restore=True)
                 from .reader_presentation import validate
 
-                validate(staged.reader, pid, config)
-                staged.production.validate(pid, doc["states"]["production_states"]["data"])
-                staged.reader.content(pid)
+                validate(staged.reader, pid, config, for_restore=True)
+                plan = doc["states"]["production_states"]["data"]
+                staged.production.validate(pid, plan, for_restore=True)
+                restore_issues = staged.reader.content(pid)["issues"]
+                # Structural checks above must succeed before publication problems
+                # may be presented as repairable warnings. Never rewrite approvals.
+                for check in (
+                    lambda: staged.reader.content(pid, strict=True),
+                    lambda: staged.production.validate(pid, plan),
+                ):
+                    try:
+                        check()
+                    except ValueError as exc:
+                        restore_issues.append(str(exc))
                 for item in staged.visual.load(pid)[1]["items"]:
                     staged.visual.validate(pid, item)
                 staged.store.verify(pid)
@@ -430,7 +444,7 @@ class Bundles:
                 except Exception:
                     os.replace(destination, staged.store.project_dir(pid))
                     raise
-                return project
+                return project | {"restore_issues": sorted(set(restore_issues))}
             except (KeyError, TypeError, IndexError, AttributeError) as exc:
                 raise ValueError("工程状态或引用不完整，未导入任何项目。") from exc
 

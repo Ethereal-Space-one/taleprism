@@ -292,4 +292,6 @@ kbd { font-family: var(--font-code); font-size: 11px; color: var(--color-muted);
 .production-panel .continuity-checklist label { flex-direction:row; align-items:flex-start; }
 .continuity-checklist input { width:auto; }
 .continuity-record { border-left:3px solid var(--color-accent); padding-left:12px; }
+.continuity-record[data-status="rejected"] { border-left-color:#a33131; }
+.continuity-record[data-status="revoked"], .continuity-record[data-status="stale"] { border-left-color:#94631c; }
 @media(max-width:700px){.continuity-compare{grid-template-columns:1fr}.scene-library{padding:12px}}

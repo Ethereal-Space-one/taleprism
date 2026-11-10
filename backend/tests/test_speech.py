@@ -13,7 +13,7 @@ def setup(tmp_path, monkeypatch):
         module,
         "capabilities",
         lambda: {
-            "provider": "test",
+            "provider": "macos-say",
             "model": "1",
             "version": 1,
             "format": "pcm",

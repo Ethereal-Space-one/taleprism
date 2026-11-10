@@ -3,7 +3,8 @@
 import json
 import shutil
 
-from .exporter import BUNDLE, BUNDLE_HASH, ENGINE, REPO
+from .exporter import BUNDLE, BUNDLE_HASH, ENGINE, REPO, assert_versions
+from .production import Production
 from .review import ConflictError
 from .storage import now
 from .text import sha256
@@ -34,6 +35,11 @@ class Delivery:
                     f"SELECT revision FROM {table} WHERE project_id=?", (pid,)
                 ).fetchone()
                 result[key] = row[0] if row else 0
+            if reader:
+                row = db.execute(
+                    "SELECT revision FROM production_states WHERE project_id=?", (pid,)
+                ).fetchone()
+                result["production_revision"] = row[0] if row else 0
             return result
 
     def completed(self, pid, eid):
@@ -133,6 +139,15 @@ class Delivery:
             return "阅读器已构建。"
 
         if reader_export and self.reader:
+            check(
+                "production",
+                "已应用镜头与制作检查",
+                "production",
+                lambda: (
+                    Production(self.reader).validate_applied(pid, self.reader.load(pid)[1]),
+                    "已应用插图与当前镜头方案、连续性检查一致。",
+                )[1],
+            )
             check(
                 "reader",
                 "阅读器封面与场景",
@@ -239,19 +254,10 @@ class Delivery:
             if (row[0] if row else 0) != editorial["revision"]:
                 raise ConflictError("制作意见已变，请重新检查后复核。")
             # Mutations use this same database, so the check and record are serialized.
-            for table, key in [
-                ("review_states", "review_revision"),
-                ("speech_states", "speech_revision"),
-                ("visual_states", "visual_revision"),
-                ("reader_states", "reader_revision"),
-            ]:
-                if key not in versions:
-                    continue
-                row = db.execute(
-                    f"SELECT revision FROM {table} WHERE project_id=?", (pid,)
-                ).fetchone()
-                if row and row[0] != versions[key]:
-                    raise ConflictError("制作状态已变，请重新导出并复核。")
+            try:
+                assert_versions(db, pid, versions)
+            except ValueError as exc:
+                raise ConflictError("制作状态已变，请重新导出并复核。") from exc
             db.execute(
                 "INSERT OR REPLACE INTO delivery_reviews VALUES(?,?,?)",
                 (pid, eid, json.dumps(record, ensure_ascii=False)),

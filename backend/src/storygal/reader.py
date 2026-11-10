@@ -104,6 +104,7 @@ class Reader:
             ("reader_states", "reader_revision"),
             ("review_states", "review_revision"),
             ("speech_states", "speech_revision"),
+            ("production_states", "production_revision"),
         ]:
             row = db.execute(f"SELECT revision FROM {table} WHERE project_id=?", (pid,)).fetchone()
             result[key] = row[0] if row else 0
@@ -122,6 +123,7 @@ class Reader:
                 if a["kind"] != "reference" and a["status"] != "rejected"
             ],
             "config": config,
+            "issues": self.publication_issues(pid, config, review),
             "chibi_sample": self.is_chibi(pid),
             "assets": [a | {"url": f"/api/projects/{pid}/reader/assets/{a['id']}"} for a in assets],
             "paragraphs": [
@@ -139,7 +141,7 @@ class Reader:
         sample = REPO / "samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt"
         return self.store.get(pid)["canonical_sha256"] == sha256(sample.read_bytes())
 
-    def validate(self, pid, config, check_characters=True):
+    def validate(self, pid, config, check_characters=True, *, for_restore=False):
         starts = {p["byte_start"] for p in self.blocks(pid)}
         scenes = config["scenes"]
         if len(scenes) > 64 or len({s["id"] for s in scenes}) != len(scenes):
@@ -156,20 +158,39 @@ class Reader:
             and assets.get(config["cover_asset_id"], {}).get("kind") != "cover"
         ):
             raise ValueError("封面素材不属于本项目或类型不正确。")
-        confirmed = (
-            {c["id"] for c in self.review.state(pid)["characters"] if c["status"] == "confirmed"}
-            if check_characters
-            else None
-        )
+        characters = {c["id"]: c for c in self.review.state(pid)["characters"]}
+        confirmed = {cid for cid, c in characters.items() if c["status"] == "confirmed"}
         for scene in scenes:
             if scene["start_byte"] not in starts:
                 raise ValueError("场景锚点必须位于当前原文段落开头。")
             if assets.get(scene["asset_id"], {}).get("kind") != "scene":
                 raise ValueError("场景素材不属于本项目或类型不正确。")
-            if confirmed is not None and not set(scene["character_ids"]) <= confirmed:
+            if not set(scene["character_ids"]) <= characters.keys():
+                raise ValueError("场景人物不存在或不属于本项目。")
+            if (
+                check_characters
+                and not for_restore
+                and not set(scene["character_ids"]) <= confirmed
+            ):
                 raise ValueError("场景人物需为已确认角色，请在人物页确认后再保存。")
         if config["map_profile"] and not self.is_chibi(pid):
             raise ValueError("赤壁地图目前仅适用于完整赤壁样例。")
+
+    def publication_issues(self, pid, config, review=None):
+        """Describe current approval problems without changing saved editorial choices."""
+        review = review if review is not None else self.review.state(pid)
+        characters = {c["id"]: c for c in review["characters"]}
+        used = {cid for scene in config["scenes"] for cid in scene["character_ids"]}
+        used.update(
+            member["character_id"] for p in config.get("presentations", []) for member in p["cast"]
+        )
+        return [
+            f"人物“{characters[cid]['display_name']}”尚未确认，仍保留其编排；请在人物页确认或替换。"
+            if cid in characters
+            else "编排引用的人物不存在或不属于本项目。"
+            for cid in sorted(used)
+            if cid not in characters or characters[cid]["status"] != "confirmed"
+        ]
 
     def save(self, pid, revision, config):
         config = presentation.normalize(config)
@@ -354,11 +375,10 @@ class Reader:
         blocks = self.blocks(pid)
         revision, config = self.load(pid)
         self.validate(pid, config, check_characters=strict)
-        if strict:
-            presentation.validate(self, pid, config)
+        presentation.validate(self, pid, config, for_restore=not strict)
         review = self.review.state(pid)
         speech = self.speech.state(pid)
-        media, issues = {}, []
+        media, issues = {}, self.publication_issues(pid, config, review)
         if not config.get("presentations") and any(
             len(s["character_ids"]) > 2 for s in config["scenes"]
         ):
@@ -531,10 +551,13 @@ class Reader:
                 fire["byte_start"] + len(fire["text"].split("黃蓋用刀一招")[0].encode()),
                 retreat["byte_start"],
             ]
+        with self.store.db() as db:
+            production_revision = self.version_state(db, pid)["production_revision"]
         versions = {
             "reader_revision": revision,
             "review_revision": review["revision"],
             "speech_revision": speech["revision"],
+            "production_revision": production_revision,
         }
         presentations = config.get("presentations") or presentation.legacy_presentations(
             config, characters
@@ -561,7 +584,8 @@ class Reader:
             "media": media,
             "map": map_data,
             "issues": sorted(set(issues)),
-            "preview": any(a["status"] != "accepted" for a in assets.values() if a["id"] in used)
+            "preview": bool(issues)
+            or any(a["status"] != "accepted" for a in assets.values() if a["id"] in used)
             or any(a.get("status") != "accepted" for a in media.values() if a["type"] == "figure"),
             "checks": {"source": True, "paragraph_text": True},
         }

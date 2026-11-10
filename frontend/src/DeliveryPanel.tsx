@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Job } from './api'
 
-type Mode = 'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader'
+type Mode = 'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader' | 'production'
 type Record = { export_id: string; reviewed_at: string; notes: string; archive_sha256: string }
 type Delivery = {
   ready: boolean

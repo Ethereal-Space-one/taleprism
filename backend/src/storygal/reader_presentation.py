@@ -2,6 +2,8 @@
 
 import copy
 
+from .character_identity import resolved_character_id
+
 
 def normalize(config):
     return {
@@ -13,7 +15,7 @@ def normalize(config):
     }
 
 
-def validate(reader, pid, config):
+def validate(reader, pid, config, *, for_restore=False):
     raw = reader.review.source(pid)
     blocks = reader.blocks(pid)
 
@@ -26,7 +28,7 @@ def validate(reader, pid, config):
             raise ValueError("编排锚点必须位于完整 UTF-8 字符边界。") from None
 
     review = reader.review.state(pid)
-    chars = {c["id"]: c for c in review["characters"] if c["status"] == "confirmed"}
+    chars = {c["id"]: c for c in review["characters"]}
     figures = {a["id"]: a for a in review["assets"] if a["kind"] != "reference"}
     assets = {a["id"]: a for a in reader.state_assets(pid)}
     plates = config.get("illustrations", [])
@@ -69,9 +71,16 @@ def validate(reader, pid, config):
             raise ValueError("事件插画不叠加人物，请配置后续呈现恢复人物。")
         for member in cast:
             char, figure = chars.get(member["character_id"]), figures.get(member["figure_asset_id"])
-            if not char or not figure or figure["character_id"] != member["character_id"]:
-                raise ValueError("呈现人物需确认，立绘必须属于对应角色。")
-            if figure["status"] == "rejected":
+            owner = (
+                resolved_character_id(chars, member["character_id"])
+                if char and for_restore
+                else member["character_id"]
+            )
+            if not char or not figure or figure["character_id"] != owner:
+                raise ValueError("呈现人物与立绘必须存在于本项目，立绘必须属于对应角色。")
+            if not for_restore and char["status"] != "confirmed":
+                raise ValueError("呈现人物需确认，请在人物页确认或替换。")
+            if not for_restore and figure["status"] == "rejected":
                 raise ValueError("呈现使用了已拒绝的立绘。")
     if presentations and presentations[-1]["kind"] == "event":
         raise ValueError("事件画面后需要配置恢复呈现。")

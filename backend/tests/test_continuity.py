@@ -1,11 +1,18 @@
 import copy
 import io
+import json
 
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from storygal.app import create_app
+
+
+@pytest.fixture(autouse=True)
+def no_model_or_local_secrets(monkeypatch):
+    monkeypatch.setattr("storygal.app.load_env", lambda _path: None)
+    monkeypatch.setattr("storygal.llm.api_key", lambda: "")
 
 
 @pytest.fixture
@@ -86,6 +93,8 @@ def save(c, pid, plan):
 
 
 def action(c, pid, path, **extra):
+    if path.endswith("/continuity-check"):
+        extra.setdefault("decision", "passed")
     return c.post(
         f"/api/projects/{pid}/production/{path}",
         json={"revision": get(c, pid)["revision"], **extra},
@@ -105,6 +114,276 @@ def reviewed(c, pid, plan):
             reviewer="assistant",
         )
         assert r.status_code == 200, r.text
+
+
+def add_character_reference(c, pid, name="她", color="blue"):
+    review = c.app.state.reader.review
+    char = review.character(pid, review.state(pid)["revision"], name, [], "合成人物")
+    return char["id"], add_reference(c, pid, char["id"], color)
+
+
+def add_reference(c, pid, cid, color):
+    review = c.app.state.reader.review
+    image = io.BytesIO()
+    Image.new("RGB", (20, 30), color).save(image, "PNG")
+    asset = review.upload_asset(
+        pid,
+        review.state(pid)["revision"],
+        cid,
+        image.getvalue(),
+        "reference_and_figure",
+        "synthetic",
+    )
+    review.accept_asset(pid, review.state(pid)["revision"], asset["id"], "accepted", True)
+    return asset
+
+
+def test_explicit_rejection_revokes_dependents_and_blocks_apply(scene):
+    c, pid, plan, _ = scene
+    reviewed(c, pid, plan)
+    # Notes alone (positive or negative) never create a passing decision.
+    before = get(c, pid)
+    for notes in ["人物位置不对，本次检查不通过。", "已看过全部画面，连续性核对完成。"]:
+        omitted = c.post(
+            f"/api/projects/{pid}/production/shot-0/continuity-check",
+            json={"revision": before["revision"], "notes": notes},
+        )
+        assert omitted.status_code == 422
+        assert get(c, pid) == before
+    response = action(
+        c,
+        pid,
+        "shot-0/continuity-check",
+        decision="rejected",
+        notes="人物位置不对，本次检查不通过。",
+    )
+    assert response.status_code == 200, response.text
+    shots = response.json()["plan"]["shots"]
+    assert shots[0]["continuity_check"]["status"] == "rejected"
+    assert all(s["continuity_check"]["status"] == "revoked" for s in shots[1:])
+    assert c.get(f"/api/projects/{pid}/production/tasks").json()["tasks"][1]["blocked"]
+    assert (
+        action(c, pid, "apply", reader_revision=c.app.state.reader.load(pid)[0]).status_code == 400
+    )
+
+
+def test_reference_switch_requires_recheck_even_after_switching_back(scene):
+    c, pid, plan, _ = scene
+    cid, original = add_character_reference(c, pid)
+    plan["shots"][0]["actors"] = [{"character_id": cid}]
+    reviewed(c, pid, plan)
+    add_reference(c, pid, cid, "red")
+    review = c.app.state.reader.review
+    review.accept_asset(pid, review.state(pid)["revision"], original["id"], "accepted", True)
+    assert (
+        action(c, pid, "apply", reader_revision=c.app.state.reader.load(pid)[0]).status_code == 400
+    )
+    assert get(c, pid)["plan"]["shots"][0]["continuity_check"]["status"] == "stale"
+
+
+def test_reference_basis_matches_task_and_invalidation_is_dependency_scoped(scene):
+    c, pid, plan, _ = scene
+    cid, portrait = add_character_reference(c, pid)
+    plan["shots"][1]["actors"] = [{"character_id": cid}]
+    reviewed(c, pid, plan)
+    before = get(c, pid)
+    tasks = c.get(f"/api/projects/{pid}/production/tasks").json()["tasks"]
+    basis = before["plan"]["shots"][1]["continuity_check"]["basis"]
+    assert basis["version"] == 1
+    assert basis["source_sha256"] == before["source_sha256"]
+    assert (
+        basis["character_references"]
+        == tasks[1]["references"]
+        == [{"character_id": cid, "figure_asset_id": portrait["id"], "sha256": portrait["sha256"]}]
+    )
+    assert tasks[1]["image_references"][-1]["sha256"] == portrait["sha256"]
+    # A different person's enabled picture never participated in these checks.
+    outsider, _ = add_character_reference(c, pid, "旁人", "green")
+    add_reference(c, pid, outsider, "yellow")
+    assert get(c, pid) == before
+    add_reference(c, pid, cid, "red")
+    changed = get(c, pid)
+    assert changed["revision"] == before["revision"] + 1
+    checks = [s["continuity_check"] for s in changed["plan"]["shots"]]
+    assert [check["status"] for check in checks] == ["passed", "stale", "stale"]
+    assert checks[1]["basis"] == basis  # Never backfill the new reference as checked.
+
+
+def test_revoke_conflicts_reason_and_client_forgery_cannot_restore_checks(scene):
+    c, pid, plan, _ = scene
+    # A separate scene must retain its independent check.
+    plan["scenes"].append({**copy.deepcopy(plan["scenes"][0]), "id": "other"})
+    plan["shots"][2]["continuity"]["scene_id"] = "other"
+    reviewed(c, pid, plan)
+    old = get(c, pid)
+    notes = "撤销先前结论，灯的位置需要修正。"
+    response = action(c, pid, "shot-0/continuity-check", decision="revoked", notes=notes)
+    assert response.status_code == 200, response.text
+    shots = response.json()["plan"]["shots"]
+    assert [s["continuity_check"]["status"] for s in shots] == ["revoked", "revoked", "passed"]
+    assert shots[0]["continuity_check"]["notes"] == notes
+    assert notes in shots[1]["continuity_check"]["invalidated_reason"]
+    # A stale tab cannot overwrite a rejection, and even a fresh PUT cannot forge checks.
+    assert (
+        c.post(
+            f"/api/projects/{pid}/production/shot-0/continuity-check",
+            json={
+                "revision": old["revision"],
+                "decision": "passed",
+                "notes": "不能从旧标签页覆盖撤销的检查记录",
+            },
+        ).status_code
+        == 409
+    )
+    forged = save(c, pid, old["plan"])
+    assert forged.status_code == 200
+    assert forged.json()["plan"]["shots"][0]["continuity_check"]["status"] == "revoked"
+    assert (
+        action(c, pid, "shot-0/continuity-check", decision="rejected", notes=" " * 8).status_code
+        == 422
+    )
+    assert (
+        action(
+            c,
+            pid,
+            "shot-0/continuity-check",
+            decision="passed",
+            notes="已逐项看过画面，现在可以通过复核。",
+        ).status_code
+        == 200
+    )
+    assert get(c, pid)["plan"]["shots"][1]["continuity_check"]["status"] == "revoked"
+
+
+def store_plan(c, pid, plan):
+    with c.app.state.store.db() as db:
+        db.execute(
+            "UPDATE production_states SET data=? WHERE project_id=?", (json.dumps(plan), pid)
+        )
+
+
+def test_legacy_check_is_readable_but_never_backfilled_or_reused(scene):
+    c, pid, plan, _ = scene
+    reviewed(c, pid, plan)
+    old = get(c, pid)["plan"]
+    for shot in old["shots"]:
+        shot["continuity_check"] = {
+            k: shot["continuity_check"][k]
+            for k in ["fingerprint", "notes", "reviewer", "checked_at"]
+        }
+    store_plan(c, pid, old)
+    production = c.app.state.production
+    assert production.validate(pid, old, for_restore=True)
+    with pytest.raises(ValueError):
+        production.validate(pid, old)
+    state = get(c, pid)
+    assert all(
+        s["continuity_check"]["status"] == "stale" and s["continuity_check"]["basis"] is None
+        for s in state["plan"]["shots"]
+    )
+    response = save(c, pid, old)
+    assert response.status_code == 200, response.text
+    assert all(s["continuity_check"]["status"] == "stale" for s in response.json()["plan"]["shots"])
+    assert all(t["blocked"] for t in c.get(f"/api/projects/{pid}/production/tasks").json()["tasks"])
+    assert (
+        action(c, pid, "apply", reader_revision=c.app.state.reader.load(pid)[0]).status_code == 400
+    )
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    ["anchor", "actor", "image", "basis_actor", "basis_image", "fingerprint", "paired_hash"],
+)
+def test_restore_keeps_stale_checks_but_rejects_invalid_structure(scene, invalid):
+    c, pid, plan, _ = scene
+    reviewed(c, pid, plan)
+    restored = get(c, pid)["plan"]
+    shot = restored["shots"][0]
+    if invalid == "anchor":
+        shot["after_byte"] -= 1
+    elif invalid == "actor":
+        shot["actors"] = [{"character_id": "missing"}]
+    elif invalid == "image":
+        shot["image_asset_id"] = "missing"
+    elif invalid == "basis_actor":
+        shot["continuity_check"]["basis"]["character_references"] = [{"character_id": "missing"}]
+    elif invalid == "basis_image":
+        shot["continuity_check"]["basis"]["images"][0]["asset_id"] = "missing"
+    elif invalid == "fingerprint":
+        shot["continuity_check"]["fingerprint"] = "malformed"
+    else:
+        shot["continuity_check"]["basis"]["character_references"] = [
+            {"character_id": "missing", "figure_asset_id": "asset"}
+        ]
+    with pytest.raises(ValueError):
+        c.app.state.production.validate(pid, restored, for_restore=True)
+
+
+def test_restore_allows_rejected_assets_and_checks_without_reviving_them(scene):
+    c, pid, plan, _ = scene
+    cid, _ = add_character_reference(c, pid)
+    plan["shots"][0]["actors"] = [{"character_id": cid}]
+    reviewed(c, pid, plan)
+    old = get(c, pid)["plan"]
+    reader = c.app.state.reader
+    reader.accept(pid, reader.load(pid)[0], plan["shots"][0]["image_asset_id"], "rejected")
+    review = reader.review
+    review.character(
+        pid, review.state(pid)["revision"], "她", [], "合成人物", cid, status="rejected"
+    )
+    assert c.app.state.production.validate(pid, old, for_restore=True)
+    with pytest.raises(ValueError):
+        c.app.state.production.validate(pid, old)
+    assert all(s["continuity_check"]["status"] == "stale" for s in get(c, pid)["plan"]["shots"])
+    # Revocation remains available even when the old image is no longer accepted.
+    assert (
+        action(
+            c,
+            pid,
+            "shot-0/continuity-check",
+            decision="revoked",
+            notes="图片及人物已拒绝，正式撤销之前的检查。",
+        ).status_code
+        == 200
+    )
+
+
+def test_validate_applied_checks_only_actual_plates_and_required_predecessors(scene):
+    c, pid, plan, _ = scene
+    reviewed(c, pid, plan)
+    production = c.app.state.production
+    assert (
+        action(c, pid, "apply", reader_revision=c.app.state.reader.load(pid)[0]).status_code == 200
+    )
+    config = c.app.state.reader.load(pid)[1]
+    assert production.validate_applied(pid, config) == get(c, pid)["revision"]
+    for field, value in [("image_asset_id", "missing"), ("after_byte", 1), ("id", "plan-missing")]:
+        bad = copy.deepcopy(config)
+        bad["illustrations"][0][field] = value
+        with pytest.raises(ValueError):
+            production.validate_applied(pid, bad)
+    assert (
+        action(
+            c,
+            pid,
+            "shot-1/continuity-check",
+            decision="rejected",
+            notes="中间镜头未通过，请重新核对灯的位置。",
+        ).status_code
+        == 200
+    )
+    with pytest.raises(ValueError):
+        production.validate_applied(pid, config)
+    config["illustrations"] = config["illustrations"][:1]
+    assert production.validate_applied(pid, config) == get(c, pid)["revision"]
+    current = get(c, pid)["plan"]
+    current["shots"][2]["after_byte"] = 1  # Simulate an unrelated malformed imported draft.
+    current["shots"][2].update(status="draft", continuity_check=None)
+    current["shots"][2]["continuity"].update(scene_id=None, states=[])
+    store_plan(c, pid, current)
+    assert production.validate_applied(pid, config) == get(c, pid)["revision"]
+    config["illustrations"] = []
+    assert production.validate_applied(pid, config) == get(c, pid)["revision"]
 
 
 def test_sequence_gate_tasks_upstream_invalidation_and_no_forged_checks(scene):

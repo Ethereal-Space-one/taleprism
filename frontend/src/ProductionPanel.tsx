@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type ReviewState } from './api'
 import type { ReaderState } from './reader-types'
@@ -9,6 +9,8 @@ import {
   type Scene,
   type Continuity,
   type Check,
+  type CheckDecision,
+  type CheckDraft,
 } from './ContinuityEditor'
 
 type Acting = {
@@ -38,6 +40,11 @@ type Shot = {
 }
 type Plan = { style: string; budget: number; shots: Shot[]; scenes: Scene[] }
 type State = { revision: number; source_sha256: string; plan: Plan; model_configured: boolean }
+// Keep drafts when switching workspace tabs; server refreshes must never replace local edits.
+const drafts = new Map<
+  string,
+  { base: State; plan: Plan; dirty: boolean; checks: Record<string, CheckDraft> }
+>()
 const actorLabels: [keyof Omit<Acting, 'character_id'>, string][] = [
   ['goal', '想得到什么'],
   ['knows', '此刻知道什么'],
@@ -70,7 +77,7 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
   if (!state.data || !reader.data || !review.data) return <p>正在读取制作方案…</p>
   return (
     <Editor
-      key={projectId + ':' + state.data.revision}
+      key={projectId}
       initial={state.data}
       reader={reader.data}
       review={review.data}
@@ -98,10 +105,16 @@ function Editor({
   prefix: string
   refresh: () => Promise<void>
 }) {
-  const [plan, setPlan] = useState<Plan>(initial.plan),
-    [dirty, setDirty] = useState(false),
+  const cached = drafts.get(prefix)
+  const [base, setBase] = useState<State>(cached?.base || initial),
+    [plan, setPlan] = useState<Plan>(cached?.plan || initial.plan),
+    [dirty, setDirty] = useState(cached?.dirty || false),
+    [checkDrafts, setCheckDrafts] = useState<Record<string, CheckDraft>>(cached?.checks || {}),
     [message, setMessage] = useState(''),
     [importError, setImportError] = useState('')
+  const hasCheckDrafts = Object.values(checkDrafts).some((d) => d.notes || d.checks.length)
+  const unsaved = dirty || hasCheckDrafts
+  const remoteChanged = initial.revision > base.revision
   const change = (next: Plan) => {
     setPlan(next)
     setDirty(true)
@@ -113,38 +126,72 @@ function Editor({
       shots: plan.shots.map((s) => (s.id === id ? { ...s, ...patch, status: 'draft' } : s)),
     })
   const operation = useMutation({
-    mutationFn: async (request: string | { action: string; notes: string }) => {
+    mutationFn: async (
+      request: string | { action: string; notes: string; decision: CheckDecision },
+    ) => {
       const action = typeof request === 'string' ? request : request.action
+      if (dirty && action !== 'save') throw Error('请先保存方案草稿，再进行检查或应用。')
       const headers = { 'Content-Type': 'application/json' }
       if (action === 'save')
-        return api(prefix + '/production', {
+        return api<State>(prefix + '/production', {
           method: 'PUT',
           headers,
           body: JSON.stringify({
-            revision: initial.revision,
-            source_sha256: initial.source_sha256,
+            revision: base.revision,
+            source_sha256: base.source_sha256,
             plan,
           }),
         })
-      return api(prefix + '/production/' + action, {
+      return api<State | { applied: number }>(prefix + '/production/' + action, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          revision: initial.revision,
+          revision: base.revision,
           ...(action === 'apply' ? { reader_revision: reader.revision } : {}),
-          ...(typeof request !== 'string' ? { notes: request.notes, reviewer: 'creator' } : {}),
+          ...(typeof request !== 'string'
+            ? { notes: request.notes, decision: request.decision, reviewer: 'creator' }
+            : {}),
         }),
       })
     },
-    onSuccess: async (_data, action) => {
+    onSuccess: async (data, action) => {
+      if ('plan' in data) {
+        setBase(data)
+        setPlan(data.plan)
+      }
+      if (typeof action !== 'string') {
+        const id = action.action.split('/')[0]
+        setCheckDrafts((current) =>
+          Object.fromEntries(Object.entries(current).filter(([key]) => key !== id)),
+        )
+      }
       setDirty(false)
       setMessage(action === 'apply' ? '已应用到画卷阅读。请继续核对图片并预览。' : '方案已保存。')
       await refresh()
     },
   })
+  useEffect(() => {
+    if (!unsaved && !operation.isPending && initial.revision >= base.revision) {
+      setBase(initial)
+      setPlan(initial.plan)
+    }
+  }, [initial, base.revision, unsaved, operation.isPending])
+  useEffect(() => {
+    if (unsaved) drafts.set(prefix, { base, plan, dirty, checks: checkDrafts })
+    else drafts.delete(prefix)
+  }, [prefix, base, plan, dirty, checkDrafts, unsaved])
+  useEffect(() => {
+    if (!unsaved) return
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', protect)
+    return () => window.removeEventListener('beforeunload', protect)
+  }, [unsaved])
   const chars = review.characters.filter((c) => !['merged', 'rejected'].includes(c.status))
   async function importPlan(file?: File) {
-    if (!file) return
+    if (!file || unsaved || operation.isPending) return
     try {
       const data = JSON.parse(await file.text())
       if (data.source_sha256 !== initial.source_sha256)
@@ -194,7 +241,11 @@ function Editor({
     })
   }
   return (
-    <section className="production-panel">
+    <fieldset
+      className="production-panel"
+      disabled={operation.isPending}
+      style={{ border: 0, margin: 0, minWidth: 0 }}
+    >
       <div className="panel-head">
         <div>
           <h2>章节制作方案</h2>
@@ -202,9 +253,9 @@ function Editor({
         </div>
         <a
           href={prefix + '/bundle'}
-          aria-disabled={dirty || operation.isPending}
+          aria-disabled={unsaved || operation.isPending}
           onClick={(e) => {
-            if (dirty || operation.isPending) e.preventDefault()
+            if (unsaved || operation.isPending) e.preventDefault()
           }}
         >
           下载可编辑工程 ↓
@@ -215,7 +266,7 @@ function Editor({
           保存方案
         </button>
         <button
-          disabled={dirty || operation.isPending || !initial.model_configured}
+          disabled={unsaved || operation.isPending || !initial.model_configured}
           onClick={() => {
             if (
               window.confirm(
@@ -229,9 +280,9 @@ function Editor({
         </button>
         <a
           href={prefix + '/production/tasks?kind=plan'}
-          aria-disabled={dirty || operation.isPending}
+          aria-disabled={unsaved || operation.isPending}
           onClick={(e) => {
-            if (dirty || operation.isPending) e.preventDefault()
+            if (unsaved || operation.isPending) e.preventDefault()
           }}
         >
           导出 AI 任务
@@ -240,7 +291,7 @@ function Editor({
           导入方案
           <input
             aria-label="导入制作方案"
-            disabled={operation.isPending}
+            disabled={unsaved || operation.isPending}
             type="file"
             accept=".json"
             onChange={(e) => importPlan(e.target.files?.[0])}
@@ -248,14 +299,14 @@ function Editor({
         </label>
         <a
           href={prefix + '/production/tasks'}
-          aria-disabled={dirty || operation.isPending}
+          aria-disabled={unsaved || operation.isPending}
           onClick={(e) => {
-            if (dirty || operation.isPending) e.preventDefault()
+            if (unsaved || operation.isPending) e.preventDefault()
           }}
         >
           下载生图提示词
         </a>
-        <button disabled={dirty || operation.isPending} onClick={() => operation.mutate('apply')}>
+        <button disabled={unsaved || operation.isPending} onClick={() => operation.mutate('apply')}>
           应用已确认镜头
         </button>
         <a href={prefix.replace('/api/projects/', '/read/')} target="_blank" rel="noreferrer">
@@ -269,6 +320,25 @@ function Editor({
         </p>
       )}
       {dirty && <p role="status">有未保存修改。保存后才能确认镜头、下载最新提示词或应用编排。</p>}
+      {hasCheckDrafts && (
+        <p role="status">检查说明尚未提交，请选择通过、不通过或撤销；切换页签会保留草稿。</p>
+      )}
+      {remoteChanged && (
+        <p role="alert">制作方案或参考已在其他位置更新。本地草稿已保留，请核对后再操作。</p>
+      )}
+      {unsaved && (
+        <button
+          onClick={() => {
+            if (!window.confirm('放弃本页未保存的方案和检查说明，并读取最新已保存内容？')) return
+            setPlan(initial.plan)
+            setBase(initial)
+            setDirty(false)
+            setCheckDrafts({})
+          }}
+        >
+          放弃本地草稿并刷新
+        </button>
+      )}
       {(operation.error || importError) && (
         <p className="error" role="alert">
           {operation.error?.message || importError}
@@ -488,7 +558,20 @@ function Editor({
             assets={reader.assets}
             update={(continuity) => update(s.id, { continuity, continuity_check: null })}
             locked={dirty || operation.isPending}
-            check={(notes) => operation.mutate({ action: s.id + '/continuity-check', notes })}
+            draft={checkDrafts[s.id] || { notes: '', checks: [] }}
+            changeDraft={(draft) => setCheckDrafts((current) => ({ ...current, [s.id]: draft }))}
+            references={s.actors.map((actor) => {
+              const character = review.characters.find((c) => c.id === actor.character_id)
+              const asset = review.assets.find((a) => a.id === character?.active_figure_id)
+              return {
+                name: character?.display_name || '未知人物',
+                url: asset?.url,
+                sha256: asset?.sha256,
+              }
+            })}
+            check={(notes, decision) =>
+              operation.mutate({ action: s.id + '/continuity-check', notes, decision })
+            }
           />
           {s.image_asset_id && !s.continuity.scene_id && (
             <img
@@ -502,6 +585,6 @@ function Editor({
       <button disabled={plan.shots.length >= plan.budget} onClick={addShot}>
         添加镜头 · {plan.shots.length}/{plan.budget}
       </button>
-    </section>
+    </fieldset>
   )
 }

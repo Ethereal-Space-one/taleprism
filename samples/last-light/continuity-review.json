@@ -7,6 +7,22 @@
     "negotiation-v2.png": "d0b0c5c0c58d2f073b67a0341f3bc43697853f0acf70320c24471216fdd1d3f5",
     "recording-v2.png": "7e0d5ebe579b770f524ecba92a05a736da44a3e1b887cafc6d2873903cc836e6"
   },
+  "dependencies": {
+    "source.txt": "1b2e65bfef863fa666d525aae620793d72038e0442ae4bb5a88f2e12ddbd5880",
+    "linyao-v1.png": "a6c8cb70aed6e48b49aed42e30156d4c591b3f97161a13b5c0ebec0d3129d8b6",
+    "chenbo-v1.png": "f2f60b7d2a02ee030d1bed38d6f2d41d42e03ec3a6bebb8cad92a029e2341254",
+    "arrival-v1.png": "556de6cf96af3220dab851317af0bc2e6d290034d17b0a23ddc9575d45905145",
+    "negotiation-v2.png": "d0b0c5c0c58d2f073b67a0341f3bc43697853f0acf70320c24471216fdd1d3f5",
+    "recording-v2.png": "7e0d5ebe579b770f524ecba92a05a736da44a3e1b887cafc6d2873903cc836e6"
+  },
+  "dependency_record_upgrade": {
+    "date": "2026-11-10",
+    "baseline_commit": "6ee11b7a505cbc83d688eb5cabf74a565ff2ae66",
+    "release_tag": "v0.1.0",
+    "release_archive": "taleprism-v0.1.0-prompt-starter.zip",
+    "release_archive_sha256": "01803a65b6c5ade9f98046e018c335e88a11a497938c5550e45af5cfd6600ed4",
+    "notes": "已逐项比对当前文件、可信提交6ee11b7、v0.1.0标签及本地v0.1.0提示词包内的配方、旧检查记录、原文、全部人物参考和全部场景图，字节一致。仅升级依赖记录并补录原文和人物参考哈希；不是新增美术确认，不代表重新看图或用户最终验收。原reviewer、date、notes及final_user_art_review保持不变。"
+  },
   "notes": {
     "arrival": "场景母版：一灯、一凳、封板窗、檐柱与铁轨关系已核对。林遥持筒、陈伯持布；其余道具尚未入画。助手制作检查，最终用户美术复核待完成。",
     "negotiation": "已与母版并排核对，返工修正长凳向左加长的问题；图纸由筒内取出铺在凳面，筒靠墙、布仍在陈伯手中。保留两人试探与倾听。细微笔触和家具轮廓非逐像素相同。",

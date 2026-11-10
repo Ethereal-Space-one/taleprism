@@ -216,6 +216,13 @@ class Speech:
         caps = capabilities()
         remote_caps = openai_speech.capabilities()
         with self.store.db() as db:
+            # A speaker change revokes acceptance and advances this revision in
+            # one transaction. Never combine an old acceptance map with new review.
+            current_revision = db.execute(
+                "SELECT revision FROM speech_states WHERE project_id=?", (pid,)
+            ).fetchone()[0]
+            if current_revision != revision:
+                raise ConflictError("配音设置已更新，请刷新后再读取。")
             takes = self.review.rows(db, "speech_takes", pid)
         lines = []
         for d in review["dialogues"]:
@@ -266,7 +273,8 @@ class Speech:
                 accepted_id = settings.get("accepted", {}).get(key)
                 accepted = next((t for t in candidates if t["id"] == accepted_id), None)
                 # Imported, already recorded audio can play on another OS. New synthesis
-                # keeps using the current provider/model cache; edits invalidate this match.
+                # keeps using the current provider/model cache; Review clears acceptance
+                # transactionally on speaker changes, even for identical voice profiles.
                 if accepted is None and accepted_id:
                     accepted = next(
                         (

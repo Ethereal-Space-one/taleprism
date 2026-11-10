@@ -40,10 +40,24 @@ ZIP 内包含 `manifest.json`（逐文件 SHA-256）、`project.json`（格式�
 
 可编辑工程导出升级为v2，导入接受v1与v2；旧工程没有场景定义，默认未纳入连续性检查。导入外部AI方案清除检查记录；导入可编辑工程保留原作者检查并验证哈希，不继承最终发布复核。
 
-可复建配方若含场景，需要`continuity-review.json`记录已检查配方与全部图片的SHA-256、逐镜头检查说明及检查人类型。构建器只重放这些已检查内容的制作记录；任意配方或图片变化都会拒绝重放，要求重新检查。它不把新图自动标成已看过。
+可复建配方若含场景，需要`continuity-review.json`记录已检查配方、原文、人物立绘与场景图片的SHA-256、逐镜头检查说明及检查人类型。构建器在创建项目之前校验完整依赖集合，并使用同一批已校验字节构建；依赖缺失、多余或变化都会拒绝重放，要求重新检查。它不把新图自动标成已看过。
 
 ## Taleprism 0.1.0 prompt and release layers
 
 `prompts.py` reads packaged `prompt_library.json`; the workbench and `tools/export_prompt_kit.py` consume the same rules. Exported Markdown contains copyable inputs and examples, and exported schemas come from runtime models. Image tasks retain format v2 and add template version/hash, ordered image responsibilities and a blocked flag when an upstream image is unchecked.
 
 The public checkout includes canonical Last Light references, but excludes packed ZIPs and large historical image sets. `content-packs/catalog.json` gives versioned download URLs and hashes; missing files produce an explicit download/import flow. `tools/build_release.py` rebuilds the original recipe through the API with temporary storage, no system audio and no model calls, then verifies project migration and the independent reader. `tools/release_files.py` defines the public source inventory; local phase reports and runtime evidence remain local.
+
+## 可靠性修复：恢复、检查与发布的边界
+
+可编辑工程恢复验证结构、原文、锚点、引用存在与所属、文件类型和完整性；人物暂未确认、引用素材已拒绝属于可恢复的制作状态。导入保留这些记录并返回修复提示，不能把不完整的制作工作自动变为发布许可。图片不存在或属于错误人物、原文锚点不合法、文件损坏仍拒绝导入。持久化语音配置使用独立模型，保存云端模型标识，不把带有请求版本号的表单模型当作文件格式。
+
+连续性检查明确区分通过、不通过、撤销和过期。检查保留署名、观察说明及依据；依据包括原文校验值、实际使用的情境图和人物参考。更换参与人物的启用参考在同一事务中撤销依赖它的检查，换回旧参考也不能自动恢复原来的通过状态。复审不通过或撤销时，后续依赖镜头必须重新按序核对。旧检查缺少完整依据时可读取其原记录，但要求重新复核，不自动补造历史检查依据。
+
+配方重建在创建项目之前验证完整输入清单：原文、所有人物参考及情境图。清单和文件不一致或旧清单缺少这些依据时停止重放；构建器不能自行生成新校验值并冒充既有审查。末班灯既有记录的依赖补录保留原署名、说明与最终美术待审状态。
+
+对白归属实际改变时，在同一事务中清除相应音频的接受映射并更新配音版本，原音频文件保留。无关对白或没有改变归属的操作不撤销其接受记录；迁移后的未改音频仍可跨系统播放。
+
+独立阅读器导出和交付检查验证已应用的方案插图及其必要前序。未应用的无关草稿不阻断成品；已经应用的镜头检查被撤销或失效后，不能通过旧的阅读编排绕过复核。制作方案版本加入导出期间的一致性校验与交付复核，打包中途发生修改会清理未完成产物；已完成的旧成品保持原快照。
+
+合并人物时在同一事务中使相关检查失效。恢复旧编排与历史检查时只接受存在且无循环的合并链，不改写原人物引用或自动确认；不存在的目标、循环合并、无关人物的图片仍拒绝导入。最终复核写入事务与导出共用版本校验，防止前置检查后发生的撤销被遗漏。

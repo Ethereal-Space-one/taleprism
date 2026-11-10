@@ -34,6 +34,7 @@ def assert_versions(db, pid, expected):
         ("speech_states", "speech_revision"),
         ("visual_states", "visual_revision"),
         ("reader_states", "reader_revision"),
+        ("production_states", "production_revision"),
     ]:
         if key not in expected:
             continue

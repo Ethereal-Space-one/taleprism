@@ -5,10 +5,11 @@ from typing import Literal
 
 import httpx
 from fastapi.responses import Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import continuity as cont
 from . import llm, prompts
+from .character_identity import resolved_character_id
 from .review import ConflictError
 from .storage import now
 
@@ -86,6 +87,44 @@ class Apply(Revision):
 class CheckRequest(Revision):
     notes: str = Field(min_length=8, max_length=2000)
     reviewer: Literal["creator", "assistant"] = "creator"
+    decision: Literal["passed", "rejected", "revoked"]
+
+    @field_validator("notes")
+    @classmethod
+    def meaningful_notes(cls, value):
+        if len(value.strip()) < 8:
+            raise ValueError("请填写至少8个字的检查说明或撤销原因。")
+        return value.strip()
+
+
+def invalidate_reference_checks(db, project_id, character_id):
+    """Called inside the asset selection transaction; invalidation survives A→B→A and bundles."""
+    if not db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='production_states'"
+    ).fetchone():
+        return
+    row = db.execute(
+        "SELECT data FROM production_states WHERE project_id=?", (project_id,)
+    ).fetchone()
+    if not row:
+        return
+    plan = Plan.model_validate_json(row[0]).model_dump()
+    changed = False
+    for shot in plan["shots"]:
+        check = shot["continuity_check"]
+        if not check or check["status"] != "passed":
+            continue
+        dependencies = cont.sequence(plan, shot) if shot["continuity"]["scene_id"] else [shot]
+        if any(a["character_id"] == character_id for s in dependencies for a in s["actors"]):
+            check.update(
+                status="stale", invalidated_reason="参与人物的启用参考已更换，请重新核对。"
+            )
+            changed = True
+    if changed:
+        db.execute(
+            "UPDATE production_states SET revision=revision+1,data=? WHERE project_id=?",
+            (json.dumps(plan, ensure_ascii=False), project_id),
+        )
 
 
 class Production:
@@ -106,20 +145,105 @@ class Production:
             row = db.execute(
                 "SELECT revision,data FROM production_states WHERE project_id=?", (pid,)
             ).fetchone()
-        return row[0], Plan.model_validate_json(row[1]).model_dump()
+        plan = Plan.model_validate_json(row[1]).model_dump()
+        self.refresh_checks(pid, plan)
+        return row[0], plan
 
-    def validate(self, pid, plan):
+    def inputs(self, pid, db=None):
+        if db is None:
+            with self.store.db() as connection:
+                connection.execute("BEGIN")
+                return self.inputs(pid, connection)
+        rows = self.reader.review.rows
+        return {
+            "source_sha256": self.store.get(pid)["canonical_sha256"],
+            "characters": {c["id"]: c for c in rows(db, "characters", pid)},
+            "figures": {a["id"]: a for a in rows(db, "assets", pid)},
+            "images": {a["id"]: a for a in rows(db, "reader_assets", pid)},
+        }
+
+    @staticmethod
+    def reference(inputs, cid):
+        character = inputs["characters"].get(cid)
+        if not character or character["status"] in {"merged", "rejected"}:
+            raise ValueError("镜头引用的人物已失效，请重新选择。")
+        aid = character["active_figure_id"]
+        asset = inputs["figures"].get(aid)
+        if aid and (
+            not asset
+            or asset["character_id"] != cid
+            or asset["kind"] not in {"figure", "reference_and_figure"}
+            or asset["status"] != "accepted"
+            or character["status"] != "confirmed"
+        ):
+            raise ValueError("启用的人物参考无效或尚未确认。")
+        return {
+            "character_id": cid,
+            "figure_asset_id": aid,
+            "sha256": asset["sha256"] if aid else None,
+        }
+
+    def basis(self, plan, shot, inputs):
+        dependencies = cont.sequence(plan, shot) if shot["continuity"]["scene_id"] else [shot]
+        cids = {a["character_id"] for s in dependencies for a in s["actors"]}
+        scene = next((s for s in plan["scenes"] if s["id"] == shot["continuity"]["scene_id"]), None)
+        aids = {s["image_asset_id"] for s in dependencies if s["image_asset_id"]}
+        if scene and scene["reference_asset_id"]:
+            aids.add(scene["reference_asset_id"])
+        images = []
+        for aid in sorted(aids):
+            asset = inputs["images"].get(aid)
+            if not asset or asset["kind"] != "scene" or asset["status"] == "rejected":
+                raise ValueError("检查引用的图片无效或已拒绝。")
+            images.append({"asset_id": aid, "sha256": asset["sha256"]})
+        return cont.CheckBasis(
+            source_sha256=inputs["source_sha256"],
+            character_references=[self.reference(inputs, cid) for cid in sorted(cids)],
+            images=images,
+        ).model_dump()
+
+    def refresh_checks(self, pid, plan, inputs=None):
+        """Project legacy/stale records as non-passing without manufacturing missing evidence."""
+        inputs = inputs or self.inputs(pid)
+        for shot in sorted(plan["shots"], key=lambda s: s["after_byte"]):
+            check = shot["continuity_check"]
+            if not check or check["status"] != "passed":
+                continue
+            try:
+                valid = (
+                    check["basis"] is not None
+                    and check["fingerprint"] == cont.fingerprint(plan, shot)
+                    and check["basis"] == self.basis(plan, shot, inputs)
+                    and shot["status"] == "approved"
+                    and shot["image_asset_id"]
+                    and any(
+                        s["id"] == shot["continuity"]["scene_id"] and s["reference_asset_id"]
+                        for s in plan["scenes"]
+                    )
+                    and all(cont.passed(s) for s in cont.sequence(plan, shot)[:-1])
+                )
+            except ValueError:
+                valid = False
+            if not valid:
+                check.update(
+                    status="stale",
+                    invalidated_reason="检查依据缺失、已变化或前序未通过，请重新复核。",
+                )
+        return plan
+
+    def validate(self, pid, plan, *, for_restore=False):
         plan = Plan.model_validate(plan).model_dump()
+        inputs = self.inputs(pid)
         blocks = {b["byte_end"]: b for b in self.reader.blocks(pid)}
         characters = {
             c["id"]
-            for c in self.reader.review.state(pid)["characters"]
-            if c["status"] not in {"merged", "rejected"}
+            for c in inputs["characters"].values()
+            if for_restore or c["status"] not in {"merged", "rejected"}
         }
         assets = {
             a["id"]
-            for a in self.reader.state_assets(pid)
-            if a["kind"] == "scene" and a["status"] != "rejected"
+            for a in inputs["images"].values()
+            if a["kind"] == "scene" and (for_restore or a["status"] != "rejected")
         }
         if len(plan["shots"]) > plan["budget"]:
             raise ValueError("镜头数超过本章配图预算。")
@@ -140,13 +264,54 @@ class Production:
             for actor in shot["actors"]:
                 if actor["character_id"] not in characters:
                     raise ValueError("镜头引用的人物已失效，请重新选择。")
+                cid = actor["character_id"]
+                aid = inputs["characters"][cid]["active_figure_id"]
+                asset = inputs["figures"].get(aid)
+                if aid and (
+                    not asset
+                    or asset["character_id"] != cid
+                    or asset["kind"] not in {"figure", "reference_and_figure"}
+                ):
+                    raise ValueError("启用的人物图片不存在、类型或所属不正确。")
+                if not for_restore:
+                    self.reference(inputs, cid)
                 if actor["evidence"] and actor["evidence"] not in block["text"]:
                     raise ValueError("人物依据必须逐字来自所选段落；推断请放入艺术解释。")
             if shot["status"] == "approved" and not all(
                 shot[k].strip() for k in ["moment", "evidence", "framing", "avoid"]
             ):
                 raise ValueError("确认镜头前请填写情节瞬间、原文依据、镜头和不可提前表现的内容。")
-        cont.validate(plan, assets, "\n".join(b["text"] for b in blocks.values()))
+            check = shot["continuity_check"]
+            if check and check["basis"]:
+                for ref in check["basis"]["character_references"]:
+                    if ref["character_id"] not in inputs["characters"]:
+                        raise ValueError("检查依据引用的人物不属于本项目。")
+                    aid = ref["figure_asset_id"]
+                    asset = inputs["figures"].get(aid)
+                    # A merge transfers image ownership; the old evidence remains historical.
+                    owner = resolved_character_id(inputs["characters"], ref["character_id"])
+                    if aid and (
+                        not asset
+                        or asset["character_id"] != owner
+                        or asset["kind"] not in {"figure", "reference_and_figure"}
+                    ):
+                        raise ValueError("检查依据中的人物图片不存在、类型或所属不正确。")
+                if any(
+                    ref["asset_id"] not in inputs["images"]
+                    or inputs["images"][ref["asset_id"]]["kind"] != "scene"
+                    for ref in check["basis"]["images"]
+                ):
+                    raise ValueError("检查依据中的场景图片不存在或类型不正确。")
+            if (
+                not for_restore
+                and check
+                and check["status"] == "passed"
+                and check["basis"] != self.basis(plan, shot, inputs)
+            ):
+                raise ValueError("连续性检查依据已变化，请重新复核。")
+        cont.validate(
+            plan, assets, "\n".join(b["text"] for b in blocks.values()), for_restore=for_restore
+        )
         return plan
 
     def save(self, pid, revision, source_hash, plan, approve=None, checked=None):
@@ -168,15 +333,36 @@ class Production:
             raise ValueError("镜头不存在。")
         if checked:
             target = next((s for s in plan["shots"] if s["id"] == checked[0]), None)
-            if not target or not target["continuity"]["scene_id"] or target["status"] != "approved":
+            if not target or not target["continuity"]["scene_id"]:
+                raise ValueError("请先绑定场景。")
+            if checked[1].decision == "passed" and target["status"] != "approved":
                 raise ValueError("请先绑定场景并确认镜头方案。")
             target["continuity_check"] = {
                 "fingerprint": cont.fingerprint(plan, target),
                 "notes": checked[1].notes,
                 "reviewer": checked[1].reviewer,
                 "checked_at": now(),
+                "status": checked[1].decision,
+                "basis": self.basis(plan, target, self.inputs(pid))
+                if checked[1].decision == "passed"
+                else None,
             }
-        plan = self.validate(pid, plan)
+            # Any explicit review replaces the prior decision; downstream checks must be renewed.
+            for shot in plan["shots"]:
+                if (
+                    shot["id"] != target["id"]
+                    and target in cont.sequence(plan, shot)
+                    and shot["continuity_check"]
+                ):
+                    shot["continuity_check"].update(
+                        status="revoked",
+                        invalidated_reason=f"前序镜头 {target['id']} 的检查已变更：{checked[1].notes}"[
+                            :2000
+                        ],
+                    )
+        plan = self.validate(
+            pid, plan, for_restore=bool(checked and checked[1].decision != "passed")
+        )
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             if (
@@ -186,6 +372,10 @@ class Production:
                 != revision
             ):
                 raise ConflictError("制作方案已更新，请刷新后重试。")
+            before_passed = {s["id"] for s in plan["shots"] if cont.passed(s)}
+            self.refresh_checks(pid, plan, self.inputs(pid, db))
+            if before_passed != {s["id"] for s in plan["shots"] if cont.passed(s)}:
+                raise ConflictError("检查依据已更新，请刷新后重新核对。")
             db.execute(
                 "UPDATE production_states SET revision=revision+1,data=? WHERE project_id=?",
                 (json.dumps(plan, ensure_ascii=False), pid),
@@ -204,6 +394,8 @@ class Production:
 
     def tasks(self, pid):
         revision, plan = self.load(pid)
+        inputs = self.inputs(pid)
+        self.refresh_checks(pid, plan, inputs)
         characters = {c["id"]: c for c in self.reader.review.state(pid)["characters"]}
         tasks = []
         for shot in plan["shots"]:
@@ -212,15 +404,12 @@ class Production:
                 {**a, "name": characters.get(a["character_id"], {}).get("display_name", "未知人物")}
                 for a in shot["actors"]
             ]
-            refs = [
-                {
-                    "character_id": a["character_id"],
-                    "figure_asset_id": characters.get(a["character_id"], {}).get(
-                        "active_figure_id"
-                    ),
-                }
-                for a in acting
-            ]
+            blocked_reason = None
+            refs = []
+            try:
+                refs = [self.reference(inputs, a["character_id"]) for a in acting]
+            except ValueError as exc:
+                blocked_reason = str(exc)
             image_refs = []
             method = shot["continuity"]["method"]
             previous_image = scene_context.get("previous_image_asset_id")
@@ -241,6 +430,7 @@ class Production:
                     "asset_id": r["figure_asset_id"],
                     "role": "character identity",
                     "character_id": r["character_id"],
+                    "sha256": r["sha256"],
                 }
                 for r in refs
                 if r["figure_asset_id"]
@@ -262,7 +452,11 @@ class Production:
                     + json.dumps(scene_context, ensure_ascii=False)
                 )
             if scene_context.get("previous_check_required"):
-                prompt = "先检查上一幅图片；当前任务暂停，不要生成后续镜头。\n" + prompt
+                blocked_reason = "先复核上一幅图片；当前任务暂停。"
+            elif shot["continuity_check"] and not cont.passed(shot):
+                blocked_reason = "当前检查未通过或已失效，请先修正画面／方案并重新复核。"
+            if blocked_reason:
+                prompt = blocked_reason + "不要生成后续镜头。\n" + prompt
             tasks.append(
                 {
                     "id": shot["id"],
@@ -273,7 +467,11 @@ class Production:
                     "image_references": image_refs,
                     "template": stage,
                     "action": method if (master_image or previous_image) else "generate",
-                    "blocked": bool(scene_context.get("previous_check_required")),
+                    "blocked": bool(blocked_reason),
+                    "blocked_reason": blocked_reason,
+                    "check_status": shot["continuity_check"]["status"]
+                    if shot["continuity_check"]
+                    else "unchecked",
                     "continuity": scene_context,
                 }
             )
@@ -353,7 +551,7 @@ class Production:
         selected = [s for s in plan["shots"] if s["status"] == "approved" and s["image_asset_id"]]
         if not selected:
             raise ValueError("请先确认至少一个镜头并选择图片。")
-        if any(s["continuity"]["scene_id"] and not s["continuity_check"] for s in selected):
+        if any(s["continuity"]["scene_id"] and not cont.passed(s) for s in selected):
             raise ValueError("已绑定场景的镜头须先完成连续性检查，再应用编排。")
         rrev, config = self.reader.load(pid)
         if rrev != reader_revision:
@@ -393,6 +591,33 @@ class Production:
 
         self.reader.mutate(pid, rrev, "production.apply", commit)
         return {"applied": len(selected)}
+
+    def validate_applied(self, pid, config):
+        """Validate only actual plan plates and their dependencies; return the guarded revision."""
+        revision, plan = self.load(pid)
+        plates = [p for p in config.get("illustrations", []) if p["id"].startswith("plan-")]
+        if not plates:
+            return revision
+        shots = {s["id"]: s for s in plan["shots"]}
+        required = set()
+        for plate in plates:
+            shot = shots.get(plate["id"][5:])
+            if (
+                not shot
+                or shot["status"] != "approved"
+                or any(plate[k] != shot[k] for k in ("after_byte", "image_asset_id"))
+            ):
+                raise ValueError("已应用的制作插图与当前镜头不一致，请重新确认并应用编排。")
+            dependencies = cont.sequence(plan, shot) if shot["continuity"]["scene_id"] else [shot]
+            for dependency in dependencies:
+                if dependency["continuity"]["scene_id"] and not cont.passed(dependency):
+                    raise ValueError("已应用插图的连续性检查或必要前序未通过／已失效，请重新复核。")
+                required.add(dependency["id"])
+        scoped = {**plan, "shots": [s for s in plan["shots"] if s["id"] in required]}
+        scene_ids = {s["continuity"]["scene_id"] for s in scoped["shots"]}
+        scoped["scenes"] = [s for s in plan["scenes"] if s["id"] in scene_ids]
+        self.validate(pid, scoped)
+        return revision
 
 
 def mount_production(app, reader):

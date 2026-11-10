@@ -9,28 +9,40 @@ from pathlib import Path
 import httpx
 
 
-def build(recipe_path, base, destination, with_audio=False, client_factory=httpx.Client):
+def build(
+    recipe_path, base, destination, with_audio=False, client_factory=httpx.Client
+):
     recipe_path = Path(recipe_path)
     root = recipe_path.parent
-    recipe = json.loads(recipe_path.read_text())
+    recipe_raw = recipe_path.read_bytes()
+    recipe = json.loads(recipe_raw)
     continuity_review = None
+    dependencies = None
     if recipe.get("scenes"):
         review_file = recipe.get("continuity_review")
         if not review_file:
             raise ValueError(
                 "此配方包含连续场景，需先在制作台检查图像并保存带哈希的制作检查记录。"
             )
-        continuity_review = json.loads((root / review_file).read_text())
+        try:
+            continuity_review = json.loads((root / review_file).read_bytes())
+        except (OSError, ValueError) as exc:
+            raise ValueError(
+                "连续性制作检查失效：检查记录缺失或无法读取，请重新核对。"
+            ) from exc
+        if not isinstance(continuity_review, dict):
+            raise ValueError("连续性制作检查失效：检查记录格式无效，请重新核对。")
         if (
-            continuity_review["recipe_sha256"]
-            != hashlib.sha256(recipe_path.read_bytes()).hexdigest()
+            continuity_review.get("recipe_sha256")
+            != hashlib.sha256(recipe_raw).hexdigest()
         ):
-            raise ValueError("配方已改变，连续性制作检查失效。")
+            raise ValueError("配方已改变或缺少哈希，连续性制作检查失效，请重新核对。")
         expected_shots = {
             s["id"] for s in recipe["shots"] if s.get("continuity", {}).get("scene_id")
         }
         if (
             continuity_review.get("reviewer") not in {"creator", "assistant"}
+            or not isinstance(continuity_review.get("notes"), dict)
             or set(continuity_review.get("notes", {})) != expected_shots
             or any(
                 not isinstance(v, str) or len(v.strip()) < 8
@@ -39,11 +51,48 @@ def build(recipe_path, base, destination, with_audio=False, client_factory=httpx
         ):
             raise ValueError("制作检查的署名或逐镜头说明不完整。")
         expected = {image["file"] for image in recipe["images"]}
-        if set(continuity_review["images"]) != expected or any(
-            hashlib.sha256((root / name).read_bytes()).hexdigest() != digest
-            for name, digest in continuity_review["images"].items()
+        if (
+            not isinstance(continuity_review.get("images"), dict)
+            or set(continuity_review["images"]) != expected
         ):
-            raise ValueError("图片已改变，连续性制作检查失效。")
+            raise ValueError("连续性制作检查失效：场景图哈希清单不完整，请重新核对。")
+        dependencies = continuity_review.get("dependencies")
+        if not isinstance(dependencies, dict):
+            raise ValueError(
+                "连续性制作检查失效：缺少完整依赖清单，请重新核对并升级检查记录，"
+                "覆盖原文、全部人物参考与全部场景图。"
+            )
+
+    # Paths are recipe-relative, with one digest per file even when reused by multiple roles.
+    expected_inputs = (
+        {recipe["source"]}
+        | {c["portrait"] for c in recipe["characters"] if c.get("portrait")}
+        | {image["file"] for image in recipe["images"]}
+    )
+    if dependencies is not None and set(dependencies) != expected_inputs:
+        raise ValueError(
+            "连续性制作检查失效：依赖清单与配方不一致，请重新核对并升级检查记录，"
+            "覆盖原文、全部人物参考与全部场景图。"
+        )
+    inputs = {}
+    for name in sorted(expected_inputs):
+        try:
+            inputs[name] = (root / name).read_bytes()
+        except OSError as exc:
+            raise ValueError(
+                f"配方依赖无法读取，制作检查失效，请重新核对：{name}"
+            ) from exc
+        if dependencies is not None:
+            digest = hashlib.sha256(inputs[name]).hexdigest()
+            if dependencies[name] != digest or (
+                name in continuity_review["images"]
+                and continuity_review["images"][name] != digest
+            ):
+                raise ValueError(
+                    f"依赖已改变或哈希无效，制作检查失效，请重新核对：{name}"
+                )
+
+    # Upload exactly the bytes checked above; never reread mutable inputs after preflight.
     with client_factory(base_url=base, trust_env=False, timeout=180) as client:
 
         def call(path, method="GET", body=None, **kwargs):
@@ -57,7 +106,7 @@ def build(recipe_path, base, destination, with_audio=False, client_factory=httpx
             files={
                 "file": (
                     recipe["title"] + ".txt",
-                    (root / recipe["source"]).read_bytes(),
+                    inputs[recipe["source"]],
                 )
             },
             data={"rights_status": recipe["rights_status"]},
@@ -103,7 +152,7 @@ def build(recipe_path, base, destination, with_audio=False, client_factory=httpx
                 asset = call(
                     prefix + "/characters/" + char["id"] + "/assets",
                     "POST",
-                    files={"file": ("figure.png", (root / c["portrait"]).read_bytes())},
+                    files={"file": ("figure.png", inputs[c["portrait"]])},
                     data={
                         "revision": state("review")["revision"],
                         "kind": "reference_and_figure",
@@ -169,7 +218,7 @@ def build(recipe_path, base, destination, with_audio=False, client_factory=httpx
             asset = call(
                 prefix + "/reader/assets",
                 "POST",
-                files={"file": (image["file"], (root / image["file"]).read_bytes())},
+                files={"file": (image["file"], inputs[image["file"]])},
                 data={
                     "revision": state("reader")["revision"],
                     "kind": image["kind"],
@@ -253,6 +302,7 @@ def build(recipe_path, base, destination, with_audio=False, client_factory=httpx
                         "POST",
                         {
                             "revision": state("production")["revision"],
+                            "decision": "passed",
                             "reviewer": continuity_review["reviewer"],
                             "notes": continuity_review["notes"][shot["id"]],
                         },

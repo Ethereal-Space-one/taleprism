@@ -162,6 +162,25 @@ def test_real_modern_pack_migrates_audio_and_exports_without_sample_keys(tmp_pat
         assert response.status_code == 200 and sha256(response.content) == a["sha256"]
     c.post(f"/api/projects/{pid}/reader/exports")
     job = c.get(f"/api/projects/{pid}/jobs").json()[0]
+    assert job["state"] == "failed", job
+    prefix = f"/api/projects/{pid}/production"
+    state = c.get(prefix).json()
+    assert all(s["continuity_check"]["status"] == "stale" for s in state["plan"]["shots"])
+    # Legacy audio remains portable, but missing visual evidence must be renewed.
+    # These are synthetic workflow confirmations in a temporary regression project.
+    for shot in state["plan"]["shots"]:
+        response = c.post(
+            prefix + "/" + shot["id"] + "/continuity-check",
+            json={
+                "revision": c.get(prefix).json()["revision"],
+                "decision": "passed",
+                "reviewer": "assistant",
+                "notes": "临时回归测试：验证旧工程复核操作，不构成作品艺术验收。",
+            },
+        )
+        assert response.status_code == 200, response.text
+    c.post(f"/api/projects/{pid}/reader/exports")
+    job = c.get(f"/api/projects/{pid}/jobs").json()[0]
     assert job["state"] == "completed", job
     # Editing the pronunciation must invalidate the imported acceptance too.
     _rev, config = c.app.state.speech.load(pid)

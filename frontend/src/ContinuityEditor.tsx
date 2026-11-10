@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { ReaderState } from './reader-types'
 export type SceneObject = {
   id: string
@@ -34,7 +33,23 @@ export type Check = {
   reviewer: 'creator' | 'assistant'
   notes: string
   checked_at: string
+  status: 'passed' | 'rejected' | 'revoked' | 'stale'
+  basis: {
+    version: 1
+    source_sha256: string
+    character_references: {
+      character_id: string
+      figure_asset_id: string | null
+      sha256: string | null
+    }[]
+    images: { asset_id: string; sha256: string }[]
+  } | null
+  invalidated_reason: string | null
 } | null
+export type CheckDecision = 'passed' | 'rejected' | 'revoked'
+export type CheckDraft = { notes: string; checks: string[] }
+const passed = (shot: SceneShot) =>
+  shot.continuity_check?.status === 'passed' && !!shot.continuity_check.basis
 export const emptyContinuity = (): Continuity => ({
   scene_id: null,
   method: 'edit',
@@ -231,6 +246,9 @@ export function ShotContinuity({
   update,
   locked,
   check,
+  draft,
+  changeDraft,
+  references,
 }: {
   shot: SceneShot
   shots: SceneShot[]
@@ -238,15 +256,17 @@ export function ShotContinuity({
   assets: Assets
   update: (c: Continuity) => void
   locked: boolean
-  check: (notes: string) => void
+  check: (notes: string, decision: CheckDecision) => void
+  draft: CheckDraft
+  changeDraft: (draft: CheckDraft) => void
+  references: { name: string; url?: string; sha256?: string }[]
 }) {
   const c = shot.continuity,
     scene = scenes.find((s) => s.id === c.scene_id)
   const previous = shots
     .filter((s) => s.continuity.scene_id === c.scene_id && s.after_byte < shot.after_byte)
     .sort((a, b) => b.after_byte - a.after_byte)[0]
-  const [notes, setNotes] = useState(''),
-    [checks, setChecks] = useState<string[]>([])
+  const { notes, checks } = draft
   const states =
     scene?.objects.map(
       (o) =>
@@ -394,15 +414,45 @@ export function ShotContinuity({
             {previous && picture(previous.image_asset_id, '前一镜头：' + previous.title)}
             {picture(shot.image_asset_id, '当前镜头：' + shot.title)}
           </div>
+          {references.length > 0 && (
+            <div className="continuity-compare" aria-label="本镜头使用的人物参考">
+              {references.map((ref, index) => (
+                <figure key={index}>
+                  <figcaption>{ref.name} · 当前启用参考</figcaption>
+                  {ref.url ? (
+                    <a
+                      href={ref.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={'放大人物参考：' + ref.name}
+                    >
+                      <img src={ref.url} alt={ref.name + '的启用参考'} />
+                    </a>
+                  ) : (
+                    <p>尚未启用参考</p>
+                  )}
+                  {ref.sha256 && (
+                    <small title={ref.sha256}>图片校验值：{ref.sha256.slice(0, 12)}…</small>
+                  )}
+                </figure>
+              ))}
+            </div>
+          )}
           <p>点击图片查看完整画面。检查记录只代表署名者看过这组图，不替代最终作品复核。</p>
-          {shot.continuity_check && !locked ? (
-            <p className="continuity-record">
-              {shot.continuity_check.reviewer === 'assistant' ? '助手制作检查' : '创作者检查'} ·{' '}
+          {shot.continuity_check ? (
+            <p className="continuity-record" data-status={shot.continuity_check.status}>
+              {{ passed: '已通过', rejected: '不通过', revoked: '已撤销', stale: '需复核' }[
+                shot.continuity_check.status
+              ] || '需复核'}{' '}
+              · {shot.continuity_check.reviewer === 'assistant' ? '助手制作检查' : '创作者检查'} ·{' '}
               {shot.continuity_check.notes}
+              {shot.continuity_check.invalidated_reason && (
+                <> · {shot.continuity_check.invalidated_reason}</>
+              )}
             </p>
           ) : (
             <p className="notice">
-              待连续性检查{previous && !previous.continuity_check ? '；请先检查前一镜头。' : '。'}
+              待连续性检查{previous && !passed(previous) ? '；请先检查前一镜头。' : '。'}
             </p>
           )}
           <div className="continuity-checklist">
@@ -412,7 +462,10 @@ export function ShotContinuity({
                   type="checkbox"
                   checked={checks.includes(key)}
                   onChange={(e) =>
-                    setChecks(e.target.checked ? [...checks, key] : checks.filter((k) => k !== key))
+                    changeDraft({
+                      notes,
+                      checks: e.target.checked ? [...checks, key] : checks.filter((k) => k !== key),
+                    })
                   }
                 />
                 已核对{key}
@@ -420,11 +473,11 @@ export function ShotContinuity({
             ))}
           </div>
           <label>
-            连续性检查说明
+            连续性检查说明／不通过或撤销原因
             <textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="记录观察到的衔接与仍有的限制，至少8个字"
+              onChange={(e) => changeDraft({ checks, notes: e.target.value })}
+              placeholder="记录检查结论或撤销原因，至少8个字；请明确选择下方结论"
             />
           </label>
           <button
@@ -433,14 +486,27 @@ export function ShotContinuity({
               shot.status !== 'approved' ||
               !shot.image_asset_id ||
               !scene.reference_asset_id ||
-              (!!previous && !previous.continuity_check) ||
+              (!!previous && !passed(previous)) ||
               checks.length !== 3 ||
               notes.trim().length < 8
             }
-            onClick={() => check(notes.trim())}
+            onClick={() => check(notes.trim(), 'passed')}
           >
-            记录连续性检查
+            检查通过
           </button>
+          <button
+            disabled={locked || notes.trim().length < 8}
+            onClick={() => check(notes.trim(), 'rejected')}
+          >
+            不通过
+          </button>
+          <button
+            disabled={locked || !shot.continuity_check || notes.trim().length < 8}
+            onClick={() => check(notes.trim(), 'revoked')}
+          >
+            撤销检查
+          </button>
+          <p>不通过或撤销会保存原因，并撤销同场景后续检查；再次通过后仍须逐幅复核。</p>
         </>
       )}
     </section>

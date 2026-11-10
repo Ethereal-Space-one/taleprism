@@ -21,9 +21,10 @@ jobs:
       - run: uv sync --project backend --frozen
       - run: npm --prefix frontend ci --no-audit --no-fund
       - run: npm --prefix frontend run build
-      - run: uv run --project backend ruff check backend/src backend/tests tools/export_prompt_kit.py tools/release_files.py tools/build_release.py tools/package_source.py tools/prepare_pages.py tools/build_chibi_demo.py tools/update_release_catalog.py
+      - run: uv run --project backend ruff check backend/src backend/tests tools/export_prompt_kit.py tools/release_files.py tools/build_release.py tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py tools/build_chibi_demo.py tools/update_release_catalog.py
       - run: uv run --project backend python tools/export_prompt_kit.py --check
       - run: uv run --project backend pytest backend/tests/test_text.py backend/tests/test_api.py backend/tests/test_speech.py backend/tests/test_production_bundles.py backend/tests/test_continuity.py backend/tests/test_release.py
+      - run: uv run --project backend pytest backend/tests/test_bundle_restore.py backend/tests/test_speech_identity.py backend/tests/test_recipe_review.py backend/tests/test_reliability_integration.py backend/tests/test_delivery_concurrency.py backend/tests/test_openai_speech.py
       - run: uv run --project backend pytest backend/tests/test_review.py -k "not export"
       - run: npm --prefix frontend run test:reader
       - run: uv run --project backend python tools/build_release.py --output .release/ci

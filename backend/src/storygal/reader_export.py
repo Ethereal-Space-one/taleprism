@@ -4,6 +4,7 @@ import zipfile
 
 from .exporter import assert_versions, copy_verified
 from .llm import api_key
+from .production import Production
 from .reader import REPO
 from .text import sha256
 
@@ -11,6 +12,10 @@ from .text import sha256
 def export_reader(reader, pid, jid):
     store = reader.store
     content = reader.content(pid, strict=True)
+    # A compiled plan illustration still depends on the production checks that approved it.
+    content["versions"]["production_revision"] = Production(reader).validate_applied(
+        pid, content["config"]
+    )
     # Deliberate publication contract: internal notes and personal browser records never travel.
     content = {
         key: content[key]

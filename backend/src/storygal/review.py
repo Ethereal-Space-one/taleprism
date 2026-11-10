@@ -254,6 +254,32 @@ class Review:
         db.execute("UPDATE review_states SET revision=revision+1 WHERE project_id=?", (project_id,))
 
     @staticmethod
+    def invalidate_speech_acceptance(db, project_id: str, dialogue_ids: list[str]):
+        """Revoke acceptance in the same transaction as an actual speaker change."""
+        if (
+            not dialogue_ids
+            or not db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='speech_states'"
+            ).fetchone()
+        ):
+            return  # Review can also be used without initializing speech.
+        row = db.execute(
+            "SELECT data FROM speech_states WHERE project_id=?", (project_id,)
+        ).fetchone()
+        if row is None:
+            return
+        data = json.loads(row[0])
+        for did in dialogue_ids:
+            if did in data["lines"]:
+                data["lines"][did].pop("accepted", None)
+        # Bump even without accepted audio: an in-flight accept may have validated
+        # the old speaker. Keep takes and all other line/profile settings intact.
+        db.execute(
+            "UPDATE speech_states SET revision=revision+1,data=? WHERE project_id=?",
+            (json.dumps(data, ensure_ascii=False), project_id),
+        )
+
+    @staticmethod
     def labels(name: str, aliases: list[str]) -> tuple[str, list[str]]:
         name = name.strip()
         labels = [name, *aliases]
@@ -326,8 +352,11 @@ class Review:
             if not target["active_figure_id"]:
                 target["active_figure_id"] = source["active_figure_id"]
             source.update(status="merged", merged_into=target_id, active_figure_id=None)
+            changed_dialogues = []
             for table in ["dialogues", "assets"]:
                 for record in self.rows(db, table, project_id):
+                    if table == "dialogues" and record["speaker_id"] == source_id:
+                        changed_dialogues.append(record["id"])
                     for field in (
                         ["speaker_id", "suggested_speaker_id"]
                         if table == "dialogues"
@@ -336,8 +365,13 @@ class Review:
                         if record.get(field) == source_id:
                             record[field] = target_id
                     self.put(db, table, project_id, record)
+            self.invalidate_speech_acceptance(db, project_id, changed_dialogues)
             self.put(db, "characters", project_id, source)
             self.put(db, "characters", project_id, target)
+            from .production import invalidate_reference_checks
+
+            for cid in (source_id, target_id):
+                invalidate_reference_checks(db, project_id, cid)
             self.audit(
                 db, project_id, "character.merge", before, {"source": source, "target": target}
             )
@@ -354,9 +388,12 @@ class Review:
                 character = self.item(db, "characters", project_id, speaker_id)
                 if character["status"] != "confirmed":
                     raise ValueError("请先确认角色身份，再为对白指定说话人。")
+            changed_dialogues = []
             for dialogue_id in dict.fromkeys(dialogue_ids):
                 item = self.item(db, "dialogues", project_id, dialogue_id)
                 before = dict(item)
+                if item["speaker_id"] != speaker_id:
+                    changed_dialogues.append(dialogue_id)
                 item.update(
                     speaker_id=speaker_id,
                     status="reviewed",
@@ -365,6 +402,7 @@ class Review:
                 )
                 self.put(db, "dialogues", project_id, item)
                 self.audit(db, project_id, "dialogue.assign", before, item)
+            self.invalidate_speech_acceptance(db, project_id, changed_dialogues)
 
     def upload_asset(
         self,
@@ -464,6 +502,7 @@ class Review:
             item = self.item(db, "assets", project_id, asset_id)
             before = dict(item)
             character = self.item(db, "characters", project_id, item["character_id"])
+            previous_active = character["active_figure_id"]
             if active and (
                 status != "accepted"
                 or character["status"] != "confirmed"
@@ -499,6 +538,10 @@ class Review:
                     character["active_figure_id"] = None
             self.put(db, "assets", project_id, item)
             self.put(db, "characters", project_id, character)
+            if previous_active != character["active_figure_id"]:
+                from .production import invalidate_reference_checks
+
+                invalidate_reference_checks(db, project_id, character["id"])
             self.audit(db, project_id, "asset.review", before, item | {"active": active})
 
     def payloads(self, project_id: str) -> list[dict]:

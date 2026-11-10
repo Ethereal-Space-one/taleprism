@@ -10,23 +10,29 @@ type Pack = {
   download_url?: string
   sha256?: string
 }
+type RestoredProject = Project & { restore_issues?: string[] }
 export function ProjectExchange({ onCreated }: { onCreated: (p: Project) => void }) {
   const [pack, setPack] = useState('')
+  const [restored, setRestored] = useState<RestoredProject | null>(null)
+  const created = (project: RestoredProject) => {
+    setRestored(project)
+    onCreated(project)
+  }
   const list = useQuery({
     queryKey: ['content-packs'],
     queryFn: () => api<Pack[]>('/api/content-packs'),
   })
   const install = useMutation({
-    mutationFn: () => api<Project>('/api/content-packs/' + pack, { method: 'POST' }),
-    onSuccess: onCreated,
+    mutationFn: () => api<RestoredProject>('/api/content-packs/' + pack, { method: 'POST' }),
+    onSuccess: created,
   })
   const restore = useMutation({
     mutationFn: (file: File) => {
       const form = new FormData()
       form.append('file', file)
-      return api<Project>('/api/project-bundles', { method: 'POST', body: form })
+      return api<RestoredProject>('/api/project-bundles', { method: 'POST', body: form })
     },
-    onSuccess: onCreated,
+    onSuccess: created,
   })
   const busy = install.isPending || restore.isPending
   const selected = list.data?.find((p) => p.id === pack)
@@ -74,6 +80,21 @@ export function ProjectExchange({ onCreated }: { onCreated: (p: Project) => void
         />
       </label>
       <small>每次导入新建项目；原工程保留。工程 ZIP 与只读阅读成品不同。</small>
+      {restored && (
+        <div role="status" aria-live="polite">
+          <p>已恢复“{restored.filename}”。</p>
+          {!!restored.restore_issues?.length && (
+            <>
+              <p>工程仍有待修复内容，原方案与审核状态已保留。请修复并复核后再正式导出。</p>
+              <ul>
+                {restored.restore_issues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
       {(install.error || restore.error || list.error) && (
         <p className="error" role="alert">
           {(install.error || restore.error || list.error)?.message}

@@ -80,7 +80,7 @@ def test_scene_boundaries_cross_project_assets_and_stale_revision(setup):
         r.save(pid, state["revision"], config)
     config = copy.deepcopy(state["config"])
     config["scenes"][0]["character_ids"] = ["unknown"]
-    with pytest.raises(ValueError, match="角色"):
+    with pytest.raises(ValueError, match="人物不存在|角色"):
         r.save(pid, state["revision"], config)
     with pytest.raises(ValueError, match="更新"):
         r.save(pid, 0, state["config"])

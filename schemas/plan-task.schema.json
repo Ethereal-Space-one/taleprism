@@ -51,10 +51,51 @@
       "title": "Acting",
       "type": "object"
     },
+    "CharacterBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "character_id": {
+          "minLength": 1,
+          "title": "Character Id",
+          "type": "string"
+        },
+        "figure_asset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Figure Asset Id"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        }
+      },
+      "required": [
+        "character_id"
+      ],
+      "title": "CharacterBasis",
+      "type": "object"
+    },
     "Check": {
       "additionalProperties": false,
       "properties": {
         "fingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
           "title": "Fingerprint",
           "type": "string"
         },
@@ -73,8 +114,44 @@
           "type": "string"
         },
         "checked_at": {
+          "minLength": 1,
           "title": "Checked At",
           "type": "string"
+        },
+        "status": {
+          "default": "passed",
+          "enum": [
+            "passed",
+            "rejected",
+            "revoked",
+            "stale"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "basis": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CheckBasis"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "invalidated_reason": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Reason"
         }
       },
       "required": [
@@ -84,6 +161,45 @@
         "checked_at"
       ],
       "title": "Check",
+      "type": "object"
+    },
+    "CheckBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1,
+          "default": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "character_references": {
+          "items": {
+            "$ref": "#/$defs/CharacterBasis"
+          },
+          "maxItems": 768,
+          "title": "Character References",
+          "type": "array"
+        },
+        "images": {
+          "items": {
+            "$ref": "#/$defs/ImageBasis"
+          },
+          "maxItems": 65,
+          "title": "Images",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_sha256",
+        "character_references",
+        "images"
+      ],
+      "title": "CheckBasis",
       "type": "object"
     },
     "Continuity": {
@@ -133,6 +249,27 @@
         }
       },
       "title": "Continuity",
+      "type": "object"
+    },
+    "ImageBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "minLength": 1,
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "asset_id",
+        "sha256"
+      ],
+      "title": "ImageBasis",
       "type": "object"
     },
     "Object": {
