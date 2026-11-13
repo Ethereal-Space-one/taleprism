@@ -66,6 +66,26 @@ def read_record(path):
     return None
 
 
+def legacy_python_matches(executable, python):
+    if executable == python:
+        return True
+    if sys.platform != "darwin":
+        return False
+    resolved = python.resolve(strict=True)
+    if executable == resolved:
+        return True
+    # The macOS framework launcher execs Python.app, so ps may show that binary.
+    version = resolved.parent.parent
+    framework_python = version / "Resources/Python.app/Contents/MacOS/Python"
+    return (
+        resolved.parent.name == "bin"
+        and version.parent.name == "Versions"
+        and version.parent.parent.name == "Python.framework"
+        and executable == framework_python
+        and framework_python.is_file()
+    )
+
+
 def legacy_process(pid, root, data, port):
     """v0.1 pid files have no identity: require exact command, cwd AND held data lock."""
     try:
@@ -76,11 +96,12 @@ def legacy_process(pid, root, data, port):
             check=False,
             timeout=2,
         )
-        expected = (
-            f"{root / 'backend/.venv/bin/python'} -m uvicorn storygal.app:app "
-            f"--host 127.0.0.1 --port {port}"
-        )
-        if result.returncode or result.stdout.strip() != expected:
+        suffix = f" -m uvicorn storygal.app:app --host 127.0.0.1 --port {port}"
+        command = result.stdout.strip()
+        if result.returncode or not command.endswith(suffix):
+            return False
+        executable = Path(command.removesuffix(suffix))
+        if not legacy_python_matches(executable, root / "backend/.venv/bin/python"):
             return False
         proc = Path(f"/proc/{pid}")
         lock = (data / ".instance.lock").resolve()
