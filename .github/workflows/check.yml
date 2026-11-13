@@ -32,6 +32,8 @@ jobs:
           tools/release_version.py tools/finalize_release.py tools/open_workbench.py
       - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
       - run: python3 tools/release_files.py --check
+      - name: Verify workbench process ownership
+        run: uv run --project backend --frozen pytest backend/tests/test_launcher_v02.py
       - name: Install public WebGAL export test dependencies
         run: |
           bash tools/fetch_engine.sh
@@ -60,6 +62,7 @@ jobs:
         run: >-
           uv run --project backend --frozen pytest backend/tests
           -m 'not content_pack'
+          --ignore=backend/tests/test_launcher_v02.py
           --ignore=backend/tests/test_reader_p6.py
           --ignore=backend/tests/test_reader_casting.py
           --ignore=backend/tests/test_reader_second_batch.py

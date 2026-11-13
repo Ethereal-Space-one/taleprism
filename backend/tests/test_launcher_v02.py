@@ -271,7 +271,26 @@ def test_running_v01_pidfile_can_be_reused_and_stopped_after_process_verificatio
     root, data, port, processes = actual
     launcher.main(["--no-open"])
     process = processes[0]
-    assert launcher.legacy_process(process.pid, root, data, port)
+    if not launcher.legacy_process(process.pid, root, data, port):
+        ps = subprocess.run(
+            ["ps", "-ww", "-p", str(process.pid), "-o", "command="],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        diagnostics = [f"expected argv: {process.args!r}", f"ps ({ps.returncode}): {ps.stdout!r}"]
+        if sys.platform == "darwin" and (lsof := shutil.which("lsof")):
+            files = subprocess.run(
+                [lsof, "-nP", "-p", str(process.pid), "-Ffn"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=8,
+            )
+            relevant = [line for line in files.stdout.splitlines() if "isolated" in line]
+            diagnostics.append(f"{lsof} ({files.returncode}): {relevant!r} {files.stderr!r}")
+        pytest.fail("Legacy process identity was not recognized:\n" + "\n".join(diagnostics))
     assert not launcher.legacy_process(process.pid, root, data.parent / "wrong", port)
     assert not launcher.legacy_process(process.pid, root.parent, data, port)
     assert not launcher.legacy_process(process.pid, root, data, port + 1)
