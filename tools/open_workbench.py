@@ -70,7 +70,7 @@ def legacy_process(pid, root, data, port):
     """v0.1 pid files have no identity: require exact command, cwd AND held data lock."""
     try:
         result = subprocess.run(
-            ["ps", "-p", str(pid), "-o", "command="],
+            ["ps", "-ww", "-p", str(pid), "-o", "command="],
             capture_output=True,
             text=True,
             check=False,
@@ -88,25 +88,24 @@ def legacy_process(pid, root, data, port):
             return (proc / "cwd").resolve() == root and any(
                 fd.resolve() == lock for fd in (proc / "fd").iterdir()
             )
-        cwd = subprocess.run(
-            ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=2,
-        )
         files = subprocess.run(
-            ["lsof", "-p", str(pid), "-Fn"],
+            ["lsof", "-nP", "-p", str(pid), "-Ffn"],
             capture_output=True,
             text=True,
             check=False,
-            timeout=2,
+            timeout=5,
         )
-        return (
-            cwd.returncode == 0
-            and files.returncode == 0
-            and "n" + str(root) in cwd.stdout.splitlines()
-            and "n" + str(lock) in files.stdout.splitlines()
+        if files.returncode:
+            return False
+        descriptor = ""
+        paths = {}
+        for line in files.stdout.splitlines():
+            if line.startswith("f"):
+                descriptor = line[1:]
+            elif line.startswith("n/"):
+                paths[descriptor] = Path(line[1:]).resolve()
+        return paths.get("cwd") == root and any(
+            fd.isdecimal() and path == lock for fd, path in paths.items()
         )
     except (OSError, subprocess.SubprocessError):
         return False
