@@ -20,6 +20,7 @@ class Strict(BaseModel):
 
 class Acting(Strict):
     character_id: str
+    reference_asset_id: str | None = Field(default=None, min_length=1)
     goal: str = Field(default="", max_length=500)
     knows: str = Field(default="", max_length=500)
     public_face: str = Field(default="", max_length=500)
@@ -97,8 +98,8 @@ class CheckRequest(Revision):
         return value.strip()
 
 
-def invalidate_reference_checks(db, project_id, character_id):
-    """Called inside the asset selection transaction; invalidation survives A→B→A and bundles."""
+def _invalidate_checks(db, project_id, uses_input, reason):
+    """Persist invalidation with the input change, including shots that depend on it."""
     if not db.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name='production_states'"
     ).fetchone():
@@ -109,22 +110,58 @@ def invalidate_reference_checks(db, project_id, character_id):
     if not row:
         return
     plan = Plan.model_validate_json(row[0]).model_dump()
-    changed = False
+    affected = {shot["id"] for shot in plan["shots"] if uses_input(plan, shot)}
+    if not affected:
+        return
     for shot in plan["shots"]:
         check = shot["continuity_check"]
         if not check or check["status"] != "passed":
             continue
         dependencies = cont.sequence(plan, shot) if shot["continuity"]["scene_id"] else [shot]
-        if any(a["character_id"] == character_id for s in dependencies for a in s["actors"]):
-            check.update(
-                status="stale", invalidated_reason="参与人物的启用参考已更换，请重新核对。"
+        if any(s["id"] in affected for s in dependencies):
+            check.update(status="stale", invalidated_reason=reason)
+    # Even the first in-flight check needs a conflict if its inputs changed A→B→A.
+    db.execute(
+        "UPDATE production_states SET revision=revision+1,data=? WHERE project_id=?",
+        (json.dumps(plan, ensure_ascii=False), project_id),
+    )
+
+
+def invalidate_reference_checks(
+    db,
+    project_id,
+    character_id,
+    *,
+    asset_id=None,
+    active_changed=False,
+    character_status_changed=False,
+):
+    def uses_reference(_plan, shot):
+        return any(
+            a["character_id"] == character_id
+            and (
+                character_status_changed
+                or (active_changed and not a["reference_asset_id"])
+                or (asset_id and a["reference_asset_id"] == asset_id)
             )
-            changed = True
-    if changed:
-        db.execute(
-            "UPDATE production_states SET revision=revision+1,data=? WHERE project_id=?",
-            (json.dumps(plan, ensure_ascii=False), project_id),
+            for a in shot["actors"]
         )
+
+    _invalidate_checks(db, project_id, uses_reference, "参与人物或选用参考已变化，请重新核对。")
+
+
+def invalidate_scene_image_checks(db, project_id, asset_id):
+    def uses_image(plan, shot):
+        return (
+            shot["image_asset_id"] == asset_id
+            or cont.reuse_target(shot) == asset_id
+            or any(
+                s["id"] == shot["continuity"]["scene_id"] and s["reference_asset_id"] == asset_id
+                for s in plan["scenes"]
+            )
+        )
+
+    _invalidate_checks(db, project_id, uses_image, "使用的场景图片状态已变化，请重新核对。")
 
 
 class Production:
@@ -145,7 +182,7 @@ class Production:
             row = db.execute(
                 "SELECT revision,data FROM production_states WHERE project_id=?", (pid,)
             ).fetchone()
-        plan = Plan.model_validate_json(row[1]).model_dump()
+        plan = cont.normalize_reuse(Plan.model_validate_json(row[1]).model_dump())
         self.refresh_checks(pid, plan)
         return row[0], plan
 
@@ -163,20 +200,25 @@ class Production:
         }
 
     @staticmethod
-    def reference(inputs, cid):
+    def reference(inputs, cid, reference_asset_id=None):
         character = inputs["characters"].get(cid)
         if not character or character["status"] in {"merged", "rejected"}:
             raise ValueError("镜头引用的人物已失效，请重新选择。")
-        aid = character["active_figure_id"]
+        aid = reference_asset_id or character["active_figure_id"]
         asset = inputs["figures"].get(aid)
         if aid and (
             not asset
             or asset["character_id"] != cid
-            or asset["kind"] not in {"figure", "reference_and_figure"}
+            or asset["kind"]
+            not in (
+                {"reference", "figure", "reference_and_figure"}
+                if reference_asset_id
+                else {"figure", "reference_and_figure"}
+            )
             or asset["status"] != "accepted"
             or character["status"] != "confirmed"
         ):
-            raise ValueError("启用的人物参考无效或尚未确认。")
+            raise ValueError("选用的人物参考无效、未接受或人物尚未确认。")
         return {
             "character_id": cid,
             "figure_asset_id": aid,
@@ -185,7 +227,13 @@ class Production:
 
     def basis(self, plan, shot, inputs):
         dependencies = cont.sequence(plan, shot) if shot["continuity"]["scene_id"] else [shot]
-        cids = {a["character_id"] for s in dependencies for a in s["actors"]}
+        # Keep CheckBasis v1's single entry per character. Each predecessor protects its
+        # own selected reference; the latest occurrence binds the reference used here.
+        references = {
+            a["character_id"]: self.reference(inputs, a["character_id"], a["reference_asset_id"])
+            for s in dependencies
+            for a in s["actors"]
+        }
         scene = next((s for s in plan["scenes"] if s["id"] == shot["continuity"]["scene_id"]), None)
         aids = {s["image_asset_id"] for s in dependencies if s["image_asset_id"]}
         if scene and scene["reference_asset_id"]:
@@ -198,7 +246,7 @@ class Production:
             images.append({"asset_id": aid, "sha256": asset["sha256"]})
         return cont.CheckBasis(
             source_sha256=inputs["source_sha256"],
-            character_references=[self.reference(inputs, cid) for cid in sorted(cids)],
+            character_references=[references[cid] for cid in sorted(references)],
             images=images,
         ).model_dump()
 
@@ -232,7 +280,7 @@ class Production:
         return plan
 
     def validate(self, pid, plan, *, for_restore=False):
-        plan = Plan.model_validate(plan).model_dump()
+        plan = cont.normalize_reuse(Plan.model_validate(plan).model_dump())
         inputs = self.inputs(pid)
         blocks = {b["byte_end"]: b for b in self.reader.blocks(pid)}
         characters = {
@@ -265,16 +313,22 @@ class Production:
                 if actor["character_id"] not in characters:
                     raise ValueError("镜头引用的人物已失效，请重新选择。")
                 cid = actor["character_id"]
-                aid = inputs["characters"][cid]["active_figure_id"]
+                aid = actor["reference_asset_id"] or inputs["characters"][cid]["active_figure_id"]
                 asset = inputs["figures"].get(aid)
+                owner = resolved_character_id(inputs["characters"], cid) if for_restore else cid
                 if aid and (
                     not asset
-                    or asset["character_id"] != cid
-                    or asset["kind"] not in {"figure", "reference_and_figure"}
+                    or asset["character_id"] != owner
+                    or asset["kind"]
+                    not in (
+                        {"reference", "figure", "reference_and_figure"}
+                        if actor["reference_asset_id"]
+                        else {"figure", "reference_and_figure"}
+                    )
                 ):
-                    raise ValueError("启用的人物图片不存在、类型或所属不正确。")
+                    raise ValueError("选用的人物图片不存在、类型或所属不正确。")
                 if not for_restore:
-                    self.reference(inputs, cid)
+                    self.reference(inputs, cid, actor["reference_asset_id"])
                 if actor["evidence"] and actor["evidence"] not in block["text"]:
                     raise ValueError("人物依据必须逐字来自所选段落；推断请放入艺术解释。")
             if shot["status"] == "approved" and not all(
@@ -293,7 +347,7 @@ class Production:
                     if aid and (
                         not asset
                         or asset["character_id"] != owner
-                        or asset["kind"] not in {"figure", "reference_and_figure"}
+                        or asset["kind"] not in {"reference", "figure", "reference_and_figure"}
                     ):
                         raise ValueError("检查依据中的人物图片不存在、类型或所属不正确。")
                 if any(
@@ -389,7 +443,7 @@ class Production:
             "revision": revision,
             "source_sha256": self.store.get(pid)["canonical_sha256"],
             "plan": plan,
-            "model_configured": bool(llm.api_key()),
+            "model_configured": llm.status()["configured"],
         }
 
     def tasks(self, pid):
@@ -407,7 +461,10 @@ class Production:
             blocked_reason = None
             refs = []
             try:
-                refs = [self.reference(inputs, a["character_id"]) for a in acting]
+                refs = [
+                    self.reference(inputs, a["character_id"], a["reference_asset_id"])
+                    for a in acting
+                ]
             except ValueError as exc:
                 blocked_reason = str(exc)
             image_refs = []
@@ -435,21 +492,48 @@ class Production:
                 for r in refs
                 if r["figure_asset_id"]
             )
-            stage = "06-continuation" if previous_image and method == "edit" else "05-first-image"
-            prompt = prompts.render(
-                stage,
-                {
-                    "style": plan["style"],
-                    "shot": {**shot, "actors": acting},
-                    "references": image_refs,
-                    "continuity": scene_context,
-                },
-            )
-            if master_image and method == "reuse":
+            target_id, target_hash = None, None
+            if method == "reuse":
+                stage = None
+                target_id = cont.reuse_target(shot)
+                target = inputs["images"].get(target_id)
+                if not target_id:
+                    blocked_reason = "尚未指定复用成图；请选择图片，不能用母版自动代替。"
+                elif not target or target["kind"] != "scene" or target["status"] == "rejected":
+                    blocked_reason = "复用成图无效或已拒绝，请重新选择。"
+                else:
+                    target_hash = target["sha256"]
+                    image_refs.insert(
+                        0, {"asset_id": target_id, "sha256": target_hash, "role": "reuse target"}
+                    )
+                    if shot["image_asset_id"] and shot["image_asset_id"] != target_id:
+                        blocked_reason = "回填图片与复用目标不一致，请回填所选成图。"
                 prompt = (
                     prompts.rules_text()
-                    + "\n复用现有母版，不重新生图。核对当前物件状态是否与母版一致：\n"
-                    + json.dumps(scene_context, ensure_ascii=False)
+                    + "\n仅复用明确选定的成图，不调用生图或编辑工具，不自动替换为场景母版。"
+                    + "核对图中人物及物件状态后，将该成图回填到当前镜头；没有目标时暂停。\n"
+                    + json.dumps(
+                        {
+                            "target_asset_id": target_id,
+                            "target_sha256": target_hash,
+                            "shot": {**shot, "actors": acting},
+                            "continuity": scene_context,
+                        },
+                        ensure_ascii=False,
+                    )
+                )
+            else:
+                stage = (
+                    "06-continuation" if previous_image and method == "edit" else "05-first-image"
+                )
+                prompt = prompts.render(
+                    stage,
+                    {
+                        "style": plan["style"],
+                        "shot": {**shot, "actors": acting},
+                        "references": image_refs,
+                        "continuity": scene_context,
+                    },
                 )
             if scene_context.get("previous_check_required"):
                 blocked_reason = "先复核上一幅图片；当前任务暂停。"
@@ -466,7 +550,11 @@ class Production:
                     "references": refs,
                     "image_references": image_refs,
                     "template": stage,
-                    "action": method if (master_image or previous_image) else "generate",
+                    "action": method
+                    if method == "reuse" or master_image or previous_image
+                    else "generate",
+                    "target_asset_id": target_id,
+                    "target_sha256": target_hash,
                     "blocked": bool(blocked_reason),
                     "blocked_reason": blocked_reason,
                     "check_status": shot["continuity_check"]["status"]
@@ -504,9 +592,9 @@ class Production:
     def generate(self, pid, revision):
         if revision != self.load(pid)[0]:
             raise ConflictError("制作方案已更新，请刷新后重试。")
-        if not llm.api_key():
+        config, key = llm.model_settings()
+        if not key:
             raise ValueError("请在本机配置 STORYGAL_LLM_API_KEY，或导出 AI 任务后手工导入方案。")
-        config = llm.configuration()
         task = self.ai_task(pid)
         body = {
             "model": config["model"],
@@ -517,13 +605,13 @@ class Production:
             "response_format": {"type": "json_object"},
             "max_tokens": 12000,
         }
-        if "api.deepseek.com" in config["base_url"]:
+        if llm.deepseek_endpoint(config["base_url"]):
             body["thinking"] = {"type": "disabled"}
         try:
             with httpx.Client(timeout=180, follow_redirects=False) as client:
                 r = client.post(
                     config["base_url"] + "/chat/completions",
-                    headers={"Authorization": "Bearer " + llm.api_key()},
+                    headers={"Authorization": "Bearer " + key},
                     json=body,
                 )
                 r.raise_for_status()

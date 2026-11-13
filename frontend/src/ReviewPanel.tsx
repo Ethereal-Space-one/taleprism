@@ -121,7 +121,7 @@ export function ReviewPanel({
   })
   const model = useQuery({
     queryKey: ['model'],
-    queryFn: () => api<ModelStatus>('/api/llm/status'),
+    queryFn: () => api<ModelStatus & { error?: string }>('/api/llm/status'),
   })
   const jobs = useQuery({
     queryKey: ['jobs', projectId],
@@ -299,14 +299,24 @@ export function ReviewPanel({
             analyze.mutate()
           }}
         >
-          {analyzing ? 'DeepSeek 正在抽取…' : 'DeepSeek 抽取候选'}
+          {analyzing ? 'AI 正在抽取…' : 'AI 抽取候选'}
         </button>
       </div>
       <p className="remote-note">
-        点击抽取会将本章文本发送至 {model.data?.provider || 'DeepSeek'}（
-        {model.data?.model || '正在读取配置'}）；结果需人工确认，已确认内容会保留。
-        {model.data && !model.data.configured && ' 尚未检测到本机密钥。'}
+        点击抽取会将本章文本发送至 {model.data?.provider || '配置的模型服务'}（
+        {model.data ? model.data.model || '未设置模型' : '正在读取配置'}
+        ）；结果需人工确认，已确认内容会保留。
+        {model.data?.base_url && <> 接口：{model.data.base_url}。</>}
+        {model.data &&
+          !model.data.configured &&
+          !model.data.error &&
+          ' 尚未检测到本机密钥，请配置 STORYGAL_LLM_API_KEY。'}
       </p>
+      {(model.error || model.data?.error) && (
+        <p className="error" role="alert">
+          {model.data?.error || '无法读取模型配置，请检查本机服务后重试。'}
+        </p>
+      )}
       {state?.last_analysis && (
         <p className="analysis-note">
           上次抽取：{state.last_analysis.model} · 新请求 {state.last_analysis.requests} 次 ·

@@ -40,6 +40,7 @@ class ObjectState(Strict):
 class Continuity(Strict):
     scene_id: str | None = None
     method: Literal["reuse", "edit", "new_view"] = "edit"
+    reuse_asset_id: str | None = Field(default=None, min_length=1)
     camera: str = Field(default="", max_length=500)
     changes: str = Field(default="", max_length=2000)
     states: list[ObjectState] = Field(default_factory=list, max_length=32)
@@ -107,17 +108,48 @@ def sequence(plan, shot):
     )
 
 
-def fingerprint(plan, shot):
+def fingerprint(plan, shot, *, include_inactive_reuse=False):
+    def content(s):
+        result = {k: v for k, v in s.items() if k not in {"status", "continuity_check"}}
+        # Omit unset selectors to keep existing fingerprints stable.
+        result["actors"] = [
+            {k: v for k, v in a.items() if k != "reference_asset_id" or v is not None}
+            for a in s["actors"]
+        ]
+        c = s["continuity"]
+        result["continuity"] = {
+            k: v
+            for k, v in c.items()
+            if k != "reuse_asset_id" or (v and (c["method"] == "reuse" or include_inactive_reuse))
+        }
+        return result
+
     sid = shot["continuity"]["scene_id"]
     data = {
         "style": plan["style"],
         "scene": next((s for s in plan["scenes"] if s["id"] == sid), None),
-        "shots": [
-            {k: v for k, v in s.items() if k not in {"status", "continuity_check"}}
-            for s in (sequence(plan, shot) if sid else [shot])
-        ],
+        "shots": [content(s) for s in (sequence(plan, shot) if sid else [shot])],
     }
     return sha256(json.dumps(data, ensure_ascii=False, sort_keys=True).encode())
+
+
+def normalize_reuse(plan):
+    inactive = [
+        s["continuity"]
+        for s in plan["shots"]
+        if s["continuity"]["method"] != "reuse" and s["continuity"]["reuse_asset_id"]
+    ]
+    if inactive:
+        # Older checks may have hashed inactive selectors. Preserve matching evidence.
+        for shot in plan["shots"]:
+            check = shot["continuity_check"]
+            if passed(shot) and check["fingerprint"] == fingerprint(
+                plan, shot, include_inactive_reuse=True
+            ):
+                check["fingerprint"] = fingerprint(plan, shot)
+        for continuity in inactive:
+            continuity["reuse_asset_id"] = None
+    return plan
 
 
 def validate(plan, assets, source, *, for_restore=False):
@@ -134,6 +166,16 @@ def validate(plan, assets, source, *, for_restore=False):
                 raise ValueError("原文物件需填写逐字依据；美术补充请选择艺术设计。")
     for shot in sorted(plan["shots"], key=lambda s: s["after_byte"]):
         c = shot["continuity"]
+        if c["method"] == "reuse":
+            target = reuse_target(shot)
+            if target and target not in assets:
+                raise ValueError("复用图片不属于本项目、类型不正确或已拒绝。")
+            if (
+                shot["status"] == "approved"
+                and not for_restore
+                and (not target or shot["image_asset_id"] != target)
+            ):
+                raise ValueError("确认复用镜头前，请选择具体成图并将同一张图片回填到镜头。")
         if not c["scene_id"]:
             if c["states"] or shot["continuity_check"]:
                 raise ValueError("物件状态与检查记录必须绑定场景。")
@@ -189,6 +231,14 @@ def validate(plan, assets, source, *, for_restore=False):
             )
         ):
             raise ValueError("连续性检查已失效或缺少母版／前序检查，请按顺序重新检查。")
+
+
+def reuse_target(shot):
+    """Reuse the selected result, or a legacy shot's own result; never infer a scene master."""
+    c = shot["continuity"]
+    if c["method"] != "reuse":
+        return None
+    return c.get("reuse_asset_id") or shot["image_asset_id"]
 
 
 def context(plan, shot):

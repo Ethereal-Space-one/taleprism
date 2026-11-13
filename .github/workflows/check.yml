@@ -11,6 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
         with:
           python-version: '3.12'
@@ -21,10 +23,55 @@ jobs:
       - run: uv sync --project backend --frozen
       - run: npm --prefix frontend ci --no-audit --no-fund
       - run: npm --prefix frontend run build
-      - run: uv run --project backend ruff check backend/src backend/tests tools/export_prompt_kit.py tools/release_files.py tools/build_release.py tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py tools/build_chibi_demo.py tools/update_release_catalog.py
-      - run: uv run --project backend python tools/export_prompt_kit.py --check
-      - run: uv run --project backend pytest backend/tests/test_text.py backend/tests/test_api.py backend/tests/test_speech.py backend/tests/test_production_bundles.py backend/tests/test_continuity.py backend/tests/test_release.py
-      - run: uv run --project backend pytest backend/tests/test_bundle_restore.py backend/tests/test_speech_identity.py backend/tests/test_recipe_review.py backend/tests/test_reliability_integration.py backend/tests/test_delivery_concurrency.py backend/tests/test_openai_speech.py
-      - run: uv run --project backend pytest backend/tests/test_review.py -k "not export"
+      - name: Lint backend and release tools
+        run: >-
+          uv run --project backend --frozen ruff check backend/src backend/tests
+          tools/export_prompt_kit.py tools/release_files.py tools/build_release.py
+          tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py
+          tools/build_chibi_demo.py tools/chibi_source.py tools/update_release_catalog.py
+          tools/release_version.py tools/finalize_release.py tools/open_workbench.py
+      - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
+      - run: python3 tools/release_files.py --check
+      - name: Install public WebGAL export test dependencies
+        run: |
+          bash tools/fetch_engine.sh
+          npm --prefix tools/webgal-verify ci --omit=dev --no-audit --no-fund
+      - name: Download the pinned public Chibi v0.1 reader
+        run: |
+          chibi_url=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          recipe_path = Path("examples/chibi/rebuild-v0.2.0.json")
+          recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
+          print(recipe["source_archive"]["url"])
+          PY
+          )
+          chibi_source="$RUNNER_TEMP/taleprism-chibi-v0.1-reader.zip"
+          curl --disable --fail --silent --show-error --location \
+            --proto '=https' --proto-redir '=https' \
+            --retry 3 --connect-timeout 15 --max-time 300 \
+            --output "$chibi_source" -- "$chibi_url"
+          printf 'TALEPRISM_CHIBI_SOURCE=%s\n' "$chibi_source" >> "$GITHUB_ENV"
+      - name: Run public backend suite
+        # content_pack tests require ignored historical ZIPs under samples/content-packs/.
+        # Legacy Chibi tests require ignored PNGs under samples/reader/ and samples/characters/.
+        # The visual sample test requires the ignored samples/scenes/chibi-fire-ink-v1.png.
+        run: >-
+          uv run --project backend --frozen pytest backend/tests
+          -m 'not content_pack'
+          --ignore=backend/tests/test_reader_p6.py
+          --ignore=backend/tests/test_reader_casting.py
+          --ignore=backend/tests/test_reader_second_batch.py
+          --ignore=backend/tests/test_reader_narrative.py
+          --deselect=tests/test_reader.py::test_candidates_preview_require_acceptance_and_repeat_reuses_files
+          --deselect=tests/test_reader.py::test_scene_boundaries_cross_project_assets_and_stale_revision
+          --deselect=tests/test_reader.py::test_corrupt_image_keeps_preview_text_but_blocks_export
+          --deselect=tests/test_reader.py::test_standalone_reader_package_and_export_scoped_review
+          --deselect=tests/test_reader.py::test_reader_change_during_packaging_never_publishes
+          --deselect=tests/test_visual.py::test_illustration_budget_style_and_asset_integrity
       - run: npm --prefix frontend run test:reader
-      - run: uv run --project backend python tools/build_release.py --output .release/ci
+      - name: Rebuild and verify both public examples
+        run: >-
+          uv run --project backend --frozen python tools/build_release.py
+          --chibi-source "$TALEPRISM_CHIBI_SOURCE" --output .release/ci

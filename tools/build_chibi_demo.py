@@ -1,136 +1,405 @@
-"""Export the reviewed Chibi showcase from an isolated copy, leaving local projects intact."""
+"""Rebuild Chibi's editable project and reader from the pinned public v0.1.0 reader.
+
+Offline: --source is a local downloaded ZIP. No private project, user data, voice
+synthesis, image generation or network fetch is involved.
+"""
 
 import argparse
-import hashlib
+import copy
+import importlib
 import io
 import json
 import os
+import re
 import tempfile
+import uuid
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
+
+from chibi_source import digest, encoded, preflight, read_zip, verify_inventory
+from release_version import PREFIX, VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
+RECIPE = ROOT / "examples/chibi/rebuild-v0.2.0.json"
+REVIEW = ROOT / "examples/chibi/visual-review-v0.2.0.json"
 
 
-def digest(raw):
-    return hashlib.sha256(raw).hexdigest()
+def pack(files):
+    """Stable ZIP entry metadata; project IDs and check timestamps are still run-specific."""
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, raw in sorted(files.items()):
+            info = zipfile.ZipInfo(name, (2026, 11, 12, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o100644 << 16
+            archive.writestr(info, raw)
+    return stream.getvalue()
 
 
-def build(source, output):
-    raw = source.read_bytes()
-    review = json.loads((ROOT / "examples/chibi/demo-review.json").read_text())
-    if digest(raw) != review["source_bundle_sha256"]:
+def project_inventory(files):
+    files.pop("manifest.json", None)
+    files["manifest.json"] = encoded(
+        {
+            "format": "storygal-project-inventory",
+            "version": 1,
+            "files": {name: digest(raw) for name, raw in sorted(files.items())},
+        }
+    )
+
+
+def seed_bundle(app, recipe, public, files):
+    """Construct the documented exchange format, then let normal import validate it.
+
+    The bootstrap blank project supplies current default state shapes only. Published
+    media IDs stay stable; dialogues are recovered by byte spans, not repeated text.
+    """
+    from storygal.bundles import FIELDS, Bundles
+    from storygal.review import top_dialogues
+
+    project = app.state.store.create(
+        files["storygal-source/original.txt"], "赤壁.txt", "public_domain", "utf-8"
+    )
+    seed = read_zip(Bundles(app).export(project["id"]))
+    document = json.loads(seed["project.json"])
+    document["records"] = {name: [] for name in document["records"]}
+    rows = document["records"]
+    for cid, character in public["characters"].items():
+        rows["characters"].append(
+            {
+                "id": cid,
+                "display_name": character["name"],
+                "aliases": recipe["characters"][cid]["aliases"],
+                "description": recipe["characters"][cid]["description"],
+                "evidence": [],
+                "status": "confirmed",
+                "active_figure_id": character["figure_id"],
+                "origin": "public_release",
+                "merged_into": None,
+            }
+        )
+    runs = [r for b in public["blocks"] for r in b["runs"] if r["speaker_id"]]
+    for dialogue in top_dialogues(files["storygal-source/source.utf8.txt"]):
+        start, end = dialogue["byte_start"], dialogue["byte_end"]
+        dialogue["id"] = str(
+            uuid.uuid5(uuid.NAMESPACE_URL, f"{recipe['source_sha256']}:{start}:{end}")
+        )
+        speakers = {
+            r["speaker_id"]
+            for r in runs
+            if r["byte_start"] <= start and r["byte_end"] >= end
+        }
+        if len(speakers) > 1:
+            raise ValueError("公开阅读包对白存在归属冲突。")
+        if speakers:
+            dialogue.update(
+                speaker_id=speakers.pop(),
+                status="reviewed",
+                reviewer="public-v0.1.0-record",
+                reviewed_at=None,
+                origin="public_release",
+            )
+        rows["dialogues"].append(dialogue)
+    for asset in public["media"].values():
+        table, directory = (
+            ("assets", "assets")
+            if asset["type"] == "figure"
+            else ("reader_assets", "reader-assets")
+        )
+        record = {k: v for k, v in asset.items() if k in FIELDS[table].split()}
+        # Do not trigger repository-specific sample import/export behavior.
+        record["origin"] = "public_release"
+        record["created_at"] = asset.get("created_at", "2026-11-12T00:00:00+08:00")
+        rows[table].append(record)
+        seed[f"{directory}/{asset['id']}.png"] = files[asset["url"][2:]]
+    config = copy.deepcopy(public["config"])
+    config["illustrations"] = []  # New plan application owns these twelve anchors.
+    document["states"]["reader_states"] = {"revision": 0, "data": config}
+    document["states"]["speech_states"] = {
+        "revision": 0,
+        "data": {"profiles": {}, "lines": {}},
+    }
+    document["review_revision"] = 0
+    seed["project.json"] = encoded(document)
+    project_inventory(seed)
+    return pack(seed)
+
+
+def call(client, method, path, **kwargs):
+    response = client.request(method, path, **kwargs)
+    if response.is_error:
+        raise ValueError(f"构建操作失败 {method} {path}: {response.text}")
+    return response
+
+
+def sync_reader_data(files, previous, content):
+    """Support an optional inline data file without silently shipping two identities."""
+    if "reader-data.js" not in files:
+        return
+    match = re.fullmatch(
+        r"((?:window|globalThis)\.[A-Za-z_$][\w$]*\s*=\s*)(\{.*\});?\s*",
+        files["reader-data.js"].decode(),
+        re.DOTALL,
+    )
+    if not match or json.loads(match[2]) != previous:
         raise ValueError(
-            "Chibi source bundle changed; inspect it before rebuilding the public demo."
+            "reader-data.js 格式未知或与 reader.json 不同，拒绝不完整身份迁移。"
         )
-    with tempfile.TemporaryDirectory(prefix="taleprism-chibi-") as temp:
-        os.environ["STORYGAL_DATA_DIR"] = str(Path(temp) / "initial")
-        from fastapi.testclient import TestClient
-        from storygal.app import create_app
-
-        app = create_app(Path(temp) / "demo")
-        client = TestClient(app)
-        response = client.post(
-            "/api/project-bundles", files={"file": ("chibi.zip", raw)}
-        )
-        response.raise_for_status()
-        pid = response.json()["id"]
-        reader, speech = app.state.reader, app.state.speech
-        assets = reader.state_assets(pid)
-        pending = {a["sample_key"]: a for a in assets if a["status"] == "pending"}
-        if set(pending) != {item["sample_key"] for item in review["images"]}:
-            raise ValueError("Pending images do not match the recorded inspection.")
-        for item in review["images"]:
-            asset = pending[item["sample_key"]]
-            if asset["sha256"] != item["sha256"]:
-                raise ValueError("Inspected image changed: " + item["sample_key"])
-            reader.accept(pid, reader.load(pid)[0], asset["id"], "accepted")
-        # Keep existing local voice assets private; no synthesis or network request occurs.
-        for did, line in speech.load(pid)[1]["lines"].items():
-            speech.line(pid, speech.load(pid)[0], did, False, line.get("overrides", {}))
-        assert not app.state.delivery.state(pid)["records"]
-        response = client.post(f"/api/projects/{pid}/reader/exports")
-        response.raise_for_status()
-        job = next(
-            j for j in app.state.store.jobs(pid) if j["id"] == response.json()["job_id"]
-        )
-        if job["state"] != "completed":
-            raise ValueError(job.get("error", "Reader export incomplete"))
-        exported = client.get(job["result"]["download_url"])
-        exported.raise_for_status()
-        with zipfile.ZipFile(io.BytesIO(exported.content)) as z:
-            files = {name: z.read(name) for name in z.namelist()}
-        content = json.loads(files["reader.json"])
-        assert content["config"]["title"] == "赤壁"
-        assert len(content["config"]["illustrations"]) == 12
-        assert len(content["presentations"]) == 55
-        assert len(content["characters"]) == 8
-        assert len(content["map"]["phases"]) == 3
-        assert sum(a["type"] == "figure" for a in content["media"].values()) == 9
-        assert not any(a["type"] == "audio" for a in content["media"].values())
-        original = (
-            ROOT / "samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt"
-        ).read_bytes()
-        assert files["storygal-source/original.txt"] == original
-        assert digest(source.read_bytes()) == review["source_bundle_sha256"]
-
-    files["storygal-source/chibi-demo-review.json"] = json.dumps(
-        review, ensure_ascii=False, indent=2
+    files["reader-data.js"] = (
+        match[1] + json.dumps(content, ensure_ascii=False) + ";\n"
     ).encode()
-    files["storygal-source/novel/PROVENANCE.md"] = (
-        ROOT / "samples/sanguo-chibi/PROVENANCE.md"
-    ).read_bytes()
-    files["storygal-source/tools/wikisource_to_txt.py"] = (
-        ROOT / "samples/tools/wikisource_to_txt.py"
-    ).read_bytes()
+
+
+def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public):
+    files = read_zip(raw)
+    verify_inventory(files)
+    previous = json.loads(files["reader.json"])
+    content = copy.deepcopy(previous)
+    # Stable publication identity is deliberately independent of local import IDs.
+    content["project"]["id"] = recipe["public_work_id"]
+    old_plates = {p["id"]: p for p in public["config"]["illustrations"]}
+    for plate in content["config"]["illustrations"]:
+        old_id = plate["id"].removeprefix("plan-")
+        if old_id not in old_plates or any(
+            plate[k] != old_plates[old_id][k]
+            for k in ("after_byte", "image_asset_id", "title")
+        ):
+            raise ValueError("新插图与旧书签位置无法一一对应。")
+        plate["id"] = old_id
+    if (
+        content["characters"] != public["characters"]
+        or content["presentations"] != public["presentations"]
+        or content["map"] != public["map"]
+        or content["map_entries"] != public["map_entries"]
+        or set(content["media"]) != set(public["media"])
+        or content["blocks"] != public["blocks"]
+    ):
+        raise ValueError("重建改变了人物、正文片段、55段编排、地图或媒体集合。")
+    for aid, asset in content["media"].items():
+        if (
+            asset["type"] == "audio"
+            or asset["sha256"] != public["media"][aid]["sha256"]
+            or files[asset["url"][2:]] != old_files[public["media"][aid]["url"][2:]]
+        ):
+            raise ValueError("重建改变了公开图片或引入音频。")
+    files["reader.json"] = encoded(content)
+    sync_reader_data(files, previous, content)
+    # Provenance travels from the verified public input, not untracked local sample files.
+    files.update(
+        {n: b for n, b in old_files.items() if n.startswith("storygal-source/")}
+    )
+    files["storygal-source/chibi-rebuild-v0.2.0.json"] = recipe_raw
+    files["storygal-source/chibi-visual-review-v0.2.0.json"] = review_raw
     files["licenses/Taleprism-MIT.txt"] = (ROOT / "LICENSE").read_bytes()
     files["SHOWCASE.txt"] = (
-        "Taleprism 赤壁在线主示例：12幅情境图、8位主要角色、9张立绘、3阶段阅读地图。\n"
-        "两张心理表演修订图已完成助手制作检查；仅在公开示例副本接受，不更改原工程。"
-        "用户最终美术复核仍未代填。公开版本不含本机系统演示音频。\n"
-        "正文来源及版本见 storygal-source/novel/PROVENANCE.md；"
-        "图片检查见 storygal-source/chibi-demo-review.json；地图为约略阅读辅助。\n"
+        f"Taleprism v{VERSION} 赤壁主示例：12幅插图、8角色、9立绘、55呈现、3阶段地图。\n"
+        "从固定哈希的v0.1.0公开阅读包重建，制作方案含9场景与12镜头。"
+        "原文与全部图片未改；不含系统语音及任何音频配置。\n"
+        "助手逐图检查及局限见storygal-source/chibi-visual-review-v0.2.0.json；"
+        "最终创作者美术复核仍为pending。\n"
+        "公开作品ID与旧插图ID保留，继续使用同一浏览器、同一站点时可沿用阅读记录。\n"
     ).encode()
     inventory = json.loads(files.pop("storygal-delivery.json"))
     inventory["files"] = {
-        name: {"bytes": len(value), "sha256": digest(value)}
-        for name, value in sorted(files.items())
+        n: {"bytes": len(b), "sha256": digest(b)} for n, b in sorted(files.items())
     }
-    files["storygal-delivery.json"] = json.dumps(
-        inventory, ensure_ascii=False, indent=2
-    ).encode()
-    output.mkdir(parents=True, exist_ok=True)
-    archive = output / "taleprism-v0.1.0-chibi-reader.zip"
-    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
-        for name, value in files.items():
-            z.writestr(name, value)
+    files["storygal-delivery.json"] = encoded(inventory)
+    verify_inventory(files)
+    return pack(files)
+
+
+def rebuild(recipe, review, files, public, recipe_raw, review_raw):
+    from fastapi.testclient import TestClient
+    from storygal.bundles import Bundles
+    from storygal.production import Plan
+
+    # Catch malformed plans before opening a workbench. Passing reviews are created only
+    # by the production API after exact recipe/source/image checks in preflight.
+    plan = Plan.model_validate(recipe["plan"]).model_dump()
+    if len(plan["scenes"]) != recipe["expected"]["scenes"] or any(
+        s["status"] != "draft" or s["continuity_check"] for s in plan["shots"]
+    ):
+        raise ValueError("配方须保留草稿方案与独立的实际检查记录。")
+    with tempfile.TemporaryDirectory(prefix="taleprism-chibi-public-") as temporary:
+        root = Path(temporary)
+        # app.py owns a module-level app. Redirect that initialization too, and restore
+        # the caller's environment afterward. Never read .env or contact a service.
+        with (
+            patch.dict(os.environ, {"STORYGAL_DATA_DIR": str(root / "initial")}),
+            patch("storygal.settings.load_env"),
+        ):
+            app_module = importlib.import_module("storygal.app")
+            with patch.object(app_module, "load_env"):
+                app = app_module.create_app(root / "build")
+                with TestClient(app) as client:
+                    response = call(
+                        client,
+                        "POST",
+                        "/api/project-bundles",
+                        files={
+                            "file": (
+                                "chibi-bootstrap.zip",
+                                seed_bundle(app, recipe, public, files),
+                            )
+                        },
+                    )
+                    pid = response.json()["id"]
+                    if response.json().get("restore_issues"):
+                        raise ValueError("公开内容恢复存在待修复项。")
+                    production, reader = app.state.production, app.state.reader
+                    production.save(pid, 0, recipe["source_sha256"], plan)
+                    prefix = f"/api/projects/{pid}"
+                    for shot in sorted(plan["shots"], key=lambda s: s["after_byte"]):
+                        call(
+                            client,
+                            "POST",
+                            prefix + "/production/" + shot["id"] + "/approve",
+                            json={"revision": production.load(pid)[0]},
+                        )
+                    for shot in sorted(plan["shots"], key=lambda s: s["after_byte"]):
+                        call(
+                            client,
+                            "POST",
+                            prefix + "/production/" + shot["id"] + "/continuity-check",
+                            json={
+                                "revision": production.load(pid)[0],
+                                "decision": "passed",
+                                "reviewer": "assistant",
+                                "notes": f"依据2026-11-12逐图记录 SHA256 {digest(review_raw)}。"
+                                + review["shots"][shot["id"]]
+                                + " 创作者最终复核仍待完成。",
+                            },
+                        )
+                    production.apply(pid, production.load(pid)[0], reader.load(pid)[0])
+                    checked = production.load(pid)[1]
+                    if not all(
+                        s["continuity_check"]["status"] == "passed"
+                        for s in checked["shots"]
+                    ):
+                        raise ValueError("制作检查未全部生效。")
+                    if app.state.delivery.state(pid)["records"]:
+                        raise ValueError("不得生成最终创作者复核。")
+                    project_raw = Bundles(app).export(pid)
+                    project_files = read_zip(project_raw)
+                    document = json.loads(project_files["project.json"])
+                    if document["records"]["speech_takes"] or document["states"][
+                        "speech_states"
+                    ]["data"] != {"profiles": {}, "lines": {}}:
+                        raise ValueError("公开工程不得保留声音资产或配置。")
+                    project_files["README.txt"] += (
+                        "\n公开来源："
+                        + recipe["source_archive"]["url"]
+                        + "\n源包SHA256："
+                        + recipe["source_archive"]["sha256"]
+                        + "\n以下记录为助手实际看图后的制作检查，创作者最终复核pending。\n"
+                    ).encode() + review_raw
+                    project_inventory(project_files)
+                    project_raw = pack(project_files)
+                    # Exercise a clean import before returning a public editable artifact.
+                    second = app_module.create_app(root / "roundtrip")
+                    with TestClient(second) as other:
+                        restored = call(
+                            other,
+                            "POST",
+                            "/api/project-bundles",
+                            files={"file": ("chibi-project.zip", project_raw)},
+                        ).json()
+                        new_id = restored["id"]
+                        if new_id == pid or restored.get("restore_issues"):
+                            raise ValueError("公开工程跨工作台恢复失败。")
+                        if second.state.production.load(new_id)[1] != checked:
+                            raise ValueError("公开工程恢复改变了镜头检查状态。")
+                        export = call(
+                            other, "POST", f"/api/projects/{new_id}/reader/exports"
+                        ).json()
+                        job = next(
+                            j
+                            for j in second.state.store.jobs(new_id)
+                            if j["id"] == export["job_id"]
+                        )
+                        if job["state"] != "completed":
+                            raise ValueError(job.get("error", "阅读包导出未完成"))
+                        reader_raw = call(
+                            other, "GET", job["result"]["download_url"]
+                        ).content
+                    reader_raw = public_reader(
+                        reader_raw, recipe, review_raw, recipe_raw, files, public
+                    )
+                    return project_raw, reader_raw
+
+
+def build(source, output):
+    source, output = Path(source), Path(output)
+    for legacy in (ROOT / ".release/chibi-demo", ROOT / ".release/v0.1.0"):
+        if output.resolve().is_relative_to(legacy.resolve()):
+            raise ValueError("请使用新的0.2输出目录，不能覆盖历史发布产物。")
+    recipe, review, files, public, recipe_raw, review_raw = preflight(
+        source, RECIPE, REVIEW
+    )
+    if VERSION != recipe["release_version"]:
+        raise ValueError("应用版本与赤壁发布配方不一致。")
+    project_raw, reader_raw = rebuild(
+        recipe, review, files, public, recipe_raw, review_raw
+    )
+    results = {
+        f"{PREFIX}-chibi-project.zip": project_raw,
+        f"{PREFIX}-chibi-reader.zip": reader_raw,
+    }
+    artifacts = [
+        {
+            "file": n,
+            "bytes": len(b),
+            "sha256": digest(b),
+            "example": "chibi",
+            "kind": "project" if n.endswith("-project.zip") else "reader",
+        }
+        for n, b in results.items()
+    ]
+    reader_item = next(a for a in artifacts if a["kind"] == "reader")
     record = {
-        "file": archive.name,
-        "bytes": archive.stat().st_size,
-        "sha256": digest(archive.read_bytes()),
-        "source_bundle_sha256": review["source_bundle_sha256"],
-        "source_sha256": digest(original),
-        "illustrations": 12,
-        "characters": 8,
-        "portraits": 9,
-        "presentations": 55,
-        "map_phases": 3,
+        "version": VERSION,
+        "artifacts": artifacts,
+        **{k: reader_item[k] for k in ("file", "bytes", "sha256")},
+        "source_archive": recipe["source_archive"],
+        "source_sha256": recipe["source_sha256"],
+        "recipe_sha256": digest(recipe_raw),
+        "visual_review_sha256": digest(review_raw),
+        **recipe["expected"],
+        "public_work_id": recipe["public_work_id"],
         "system_audio_included": False,
         "production_reviewer": "assistant",
         "creator_final_art_review": "pending",
+        "checks": {
+            "public_input_inventory": True,
+            "source_bytes_unchanged": True,
+            "all_27_image_bytes_unchanged": True,
+            "production_checks": 12,
+            "clean_project_roundtrip": True,
+            "reader_export_after_import": True,
+            "public_work_id_preserved": True,
+            "legacy_illustration_ids_preserved": True,
+            "no_audio_assets_or_profiles": True,
+            "browser": "not_run",
+        },
     }
-    (output / "chibi-demo-manifest.json").write_text(
-        json.dumps(record, ensure_ascii=False, indent=2) + "\n"
-    )
-    print(json.dumps(record, ensure_ascii=False, indent=2))
+    output.mkdir(parents=True, exist_ok=True)
+    # Freeze only complete artifacts; the manifest is the last published local file.
+    for name, raw in results.items():
+        temporary = output / (name + ".partial")
+        temporary.write_bytes(raw)
+        temporary.replace(output / name)
+    (output / "chibi-demo-manifest.json").write_bytes(encoded(record))
     return record
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--source", type=Path, default=ROOT / "samples/content-packs/chibi.storygal.zip"
+        "--source",
+        type=Path,
+        required=True,
+        help="下载后保存在本机的固定v0.1.0赤壁公开阅读包；脚本不联网。",
     )
-    parser.add_argument("--output", type=Path, default=ROOT / ".release/chibi-demo")
+    parser.add_argument("--output", type=Path, default=ROOT / ".release/v0.2.0-chibi")
     args = parser.parse_args()
-    build(args.source, args.output)
+    print(json.dumps(build(args.source, args.output), ensure_ascii=False, indent=2))

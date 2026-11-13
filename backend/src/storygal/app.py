@@ -24,7 +24,10 @@ from .visual_api import mount_visual
 
 def create_app(data_dir: Path | None = None) -> FastAPI:
     load_env(REPO / ".env")
-    store = Store(data_dir or Path(os.environ.get("STORYGAL_DATA_DIR", REPO / "data")))
+    configured_data = Path(
+        data_dir or os.environ.get("STORYGAL_DATA_DIR") or REPO / "data"
+    ).expanduser()
+    store = Store(REPO / configured_data)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -41,7 +44,8 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.2.0", lifespan=lifespan)
+    instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)
     speech = mount_speech(app, store, review)
@@ -77,7 +81,12 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def health():
         return {
             "status": "ok",
-            "version": "0.1.0",
+            "version": "0.2.0",
+            "service": "taleprism",
+            "workspace_id": sha256(str(REPO.resolve()).encode()),
+            "data_id": sha256(str(store.root).encode()),
+            "instance_id": instance_id,
+            "pid": os.getpid(),
             "engine_available": (REPO / "engine/webgal-4.6.5/index.html").exists(),
         }
 
@@ -99,11 +108,15 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     @app.post("/api/samples/chibi", status_code=201)
     def sample():
         path = REPO / "samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt"
+        if not path.is_file():
+            raise ValueError("缺少赤壁样例原文，请安装完整赤壁示例素材，或导入自己的 TXT 小说。")
         return store.create(path.read_bytes(), path.name, "public_domain", "utf-8")
 
     @app.post("/api/samples/last-light", status_code=201)
     def modern_sample():
         path = REPO / "samples/last-light/source.txt"
+        if not path.is_file():
+            raise ValueError("缺少末班灯样例原文，请安装示例素材，或导入自己的 TXT 小说。")
         return store.create(path.read_bytes(), "末班灯.txt", "owned", "utf-8")
 
     @app.get("/api/projects/{project_id}")

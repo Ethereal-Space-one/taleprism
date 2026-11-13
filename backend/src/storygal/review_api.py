@@ -56,7 +56,7 @@ def mount_review(app, store):
 
     @app.get("/api/llm/status")
     def model_status():
-        return llm.configuration() | {"configured": bool(llm.api_key())}
+        return llm.status()
 
     @app.post("/api/projects/{project_id}/characters/{character_id}/codex-sample", status_code=201)
     def codex_sample(project_id: str, character_id: str, body: SampleAssetInput):
@@ -158,8 +158,9 @@ def mount_review(app, store):
     @app.post("/api/projects/{project_id}/analysis", status_code=202)
     def analysis(project_id: str, _body: AnalysisInput, background: BackgroundTasks):
         review.ensure(project_id)
-        if not llm.api_key():
-            raise ValueError("未找到 DeepSeek 密钥，请在本机配置 DEEPSEEK_API_KEY。")
+        _, key = llm.model_settings()
+        if not key:
+            raise ValueError(llm.MISSING_KEY)
         job_id = store.start_job(project_id, kind="analysis")
         background.add_task(run_analysis, project_id, job_id)
         return {"job_id": job_id, "state": "running"}

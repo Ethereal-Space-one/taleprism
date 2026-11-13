@@ -7,7 +7,7 @@ const {chromium} = require('playwright')
 const root = path.resolve(__dirname, '../..')
 const target = process.argv[2] || path.join(root, '.release/chibi-demo/site')
 const remote = /^https?:\/\//.test(target)
-const output = path.join(root, 'data/verification/chibi-demo', remote ? 'public' : 'local')
+const output = path.resolve(process.argv[3] || path.join(root, 'data/verification/chibi-demo', remote ? 'public' : 'local'))
 fs.mkdirSync(output, {recursive:true})
 
 ;(async () => {

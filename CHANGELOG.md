@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased — Reliability fixes
+## 0.2.0
 
+- Publish Chibi as a reproducible editable project with twelve source-bound shots and an updated online reader; keep Last Light as the short-story tutorial.
+- Select identity-only references separately from display portraits and explicitly select reusable images.
+- Resolve repeated dialogue through stable source anchors before creating projects.
+- Remove optional Chibi-file dependencies from generic workflows, identify the correct running workspace and display the configured AI service.
+- Use a reviewed public-source inventory and explicit per-example project/reader release pins.
 - Restore editable projects with unresolved character/image review states while retaining source, reference and media integrity checks; show repair notices after import.
 - Validate persisted cloud voice profiles separately from API requests so saved model metadata survives project migration.
 - Add explicit failed/revoked continuity checks, invalidate dependent shots, and bind passing checks to source, image and character-reference snapshots. Legacy checks without this evidence remain readable and require reinspection.

@@ -4,4 +4,4 @@
 
 The fictional source and manually authored worksheet are MIT-licensed. This is a dry run of evidence and continuity declarations, not a model comparison or a second visual success claim.
 
-例子的重要区别：铜钥匙从柜面进入程青口袋是“画外但仍存在”，不是凭空消失；纸盒打开不代表纸张已取出；窗、柜和台灯不能为每个镜头改变位置。手停住、收回与门内等候表现职责和判断的变化，不把对白画成争吵。
+首镜头从新画面建立母版，后续镜头以编辑方式接续，等有了具体成图才能选择复用。铜钥匙从柜面进入程青口袋后仍在场景中，纸盒打开时纸张依然在盒内。窗、柜和台灯的位置贯穿三个镜头。手停住、收回与门内等候表现职责和判断的变化。

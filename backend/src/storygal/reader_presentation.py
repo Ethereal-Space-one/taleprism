@@ -89,12 +89,7 @@ def validate(reader, pid, config, *, for_restore=False):
         raise ValueError("地图入口编号不可重复。")
     if entries and config.get("map_profile") != "chibi":
         raise ValueError("地图入口需要启用适用的地图。")
-    import json
-
-    from .reader import REPO
-
-    data = json.loads((REPO / "samples/reader/chibi-map.json").read_text())
-    places = {p["id"] for p in data["places"]}
+    places = {p["id"] for p in reader.chibi_map()["places"]} if entries else set()
     for e in entries:
         anchor(e["byte_start"])
         if e["byte_end"] <= e["byte_start"] or e["byte_end"] > len(raw):
@@ -131,8 +126,9 @@ def legacy_presentations(config, characters):
 
 
 def chibi(reader, pid, config):
-    if not reader.is_chibi(pid):
+    if not reader.is_chibi(pid, required=True):
         raise ValueError("此编排仅适用于完整赤壁样例。")
+    reader.chibi_map()
     raw = reader.review.source(pid)
     characters = {
         c["display_name"]: c

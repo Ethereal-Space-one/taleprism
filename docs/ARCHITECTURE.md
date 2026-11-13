@@ -18,7 +18,7 @@ TXT → 只读源文本 → 人物／对白审校 → 章节制作方案 → 素
 
 `samples/content-packs/catalog.json` 描述本地示例，包内格式与用户工程相同，通过 `/api/project-bundles` 导入。在 `samples/last-light/recipe.json` 中表达正文、人物、对白、镜头与文件；`tools/build_content_pack.py` 是通用构建器，调用公开接口，不识别小说名称。
 
-赤壁工程包保留原编排，旧十二幅图尚未回填为新制作方案，查看与调整仍在“阅读器与场景”。现代样例完整展示新流程。赤壁历史专用编排保留兼容；其角色表、地图与旧快捷入口属于示例适配。新的样例不复制这些 Python 分支。历史地图的史料来源和约略坐标不能作为通用小说事实推断功能。
+0.2 赤壁公开工程将十二幅图关联到制作方案，保留原有阅读编排、群像与地图。其重建输入来自固定版本的公开阅读包和 Git 中的导演资料，普通使用者无需维护者的私有历史工程。赤壁角色表、地图与旧快捷入口属于示例适配，新样例不复制这些 Python 分支。历史地图的史料来源和约略坐标不能作为通用小说事实推断功能。
 
 ## 可编辑工程协议（v1兼容，v2见下方扩展）
 
@@ -42,11 +42,11 @@ ZIP 内包含 `manifest.json`（逐文件 SHA-256）、`project.json`（格式�
 
 可复建配方若含场景，需要`continuity-review.json`记录已检查配方、原文、人物立绘与场景图片的SHA-256、逐镜头检查说明及检查人类型。构建器在创建项目之前校验完整依赖集合，并使用同一批已校验字节构建；依赖缺失、多余或变化都会拒绝重放，要求重新检查。它不把新图自动标成已看过。
 
-## Taleprism 0.1.0 prompt and release layers
+## Prompt and release layers
 
 `prompts.py` reads packaged `prompt_library.json`; the workbench and `tools/export_prompt_kit.py` consume the same rules. Exported Markdown contains copyable inputs and examples, and exported schemas come from runtime models. Image tasks retain format v2 and add template version/hash, ordered image responsibilities and a blocked flag when an upstream image is unchecked.
 
-The public checkout includes canonical Last Light references, but excludes packed ZIPs and large historical image sets. `content-packs/catalog.json` gives versioned download URLs and hashes; missing files produce an explicit download/import flow. `tools/build_release.py` rebuilds the original recipe through the API with temporary storage, no system audio and no model calls, then verifies project migration and the independent reader. `tools/release_files.py` defines the public source inventory; local phase reports and runtime evidence remain local.
+The public checkout includes canonical Last Light references, but excludes packed ZIPs and large historical image sets. `content-packs/catalog.json` gives versioned download URLs and hashes; missing files produce an explicit download/import flow. `tools/build_release.py` uses temporary storage, no system audio and no model calls, then verifies project migration and the independent reader. `tools/public-source.json` explicitly lists allowed source files; maintainers refresh it from the reviewed Git index. Source archives and prompt starters use that same inventory, including when rebuilt without Git. Unlisted working files are never discovered through a directory walk.
 
 ## 可靠性修复：恢复、检查与发布的边界
 

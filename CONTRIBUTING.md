@@ -9,6 +9,7 @@ Install uv and Node.js 22.12+, then run `./start.sh`. For development, run `uv r
 ```sh
 uv run --project backend ruff check backend/src backend/tests tools/export_prompt_kit.py tools/release_files.py tools/build_release.py
 uv run --project backend python tools/export_prompt_kit.py --check
+python3 tools/release_files.py --check
 npm --prefix frontend run build
 npm --prefix frontend run test:reader
 uv run --project backend pytest backend/tests/test_text.py backend/tests/test_api.py backend/tests/test_speech.py backend/tests/test_production_bundles.py backend/tests/test_continuity.py backend/tests/test_release.py
@@ -30,6 +31,6 @@ Use Issues to report a specific failure, expected outcome and reproduction steps
 
 ## Local packages and releases
 
-`python3 tools/package_source.py` creates a curated source ZIP without uploading. `uv run --project backend python tools/build_release.py` builds the prompt starter, sound-free editable Last Light project and standalone reader through public APIs in temporary data storage; no image or paid model calls occur. See [release procedure](docs/RELEASING.md).
+`uv run --project backend python tools/package_source.py` packages only `tools/public-source.json`, without uploading. After reviewing and staging intended new files, maintainers run `python3 tools/release_files.py --refresh` and review the changed inventory. `uv run --project backend python tools/build_release.py` builds the prompt starter, sound-free editable Last Light project and standalone reader in temporary storage. Add `--chibi-source` with the pinned public 0.1 reader for a complete release. No image or paid model calls occur. See [release procedure](docs/RELEASING.md).
 
 Original Last Light rebuild: `uv run --project backend python tools/build_content_pack.py samples/last-light/recipe.json --output data/rebuilt.storygal.zip` against a running local workbench. This creates a new project. Existing hash-bound assistant checks may be replayed only for unchanged recipe and image files; changing a recipe or image requires fresh inspection.

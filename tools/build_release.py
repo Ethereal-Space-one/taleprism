@@ -9,23 +9,78 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from build_content_pack import build
+from release_files import source_files
+from release_version import PREFIX, VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0"
 
 
 def digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def starter_entries():
+    starter_root_files = {
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md",
+        "README.en.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
+    }
+    starter_docs = {
+        "docs/" + name
+        for name in [
+            "快速上手.md",
+            "COMPATIBILITY.md",
+            "使用与恢复指南.md",
+            "VALIDATION-v" + VERSION + ".md",
+            "ARCHITECTURE.md",
+            "人物视觉导演标准.md",
+            "RELEASING.md",
+        ]
+    }
+    entries = {
+        "taleprism/" + name: p.read_bytes()
+        for name, p in source_files()
+        if name in starter_root_files | starter_docs
+        or name.startswith(("prompts/", "schemas/", "examples/", "samples/last-light/"))
+    }
+    entries["taleprism/README.md"] = (
+        f"# Taleprism {VERSION} prompt starter\n\n"
+        "Start with [八模板 / Templates](prompts/README.md), "
+        "[中文教程](examples/last-light/README.md) or "
+        "[English tutorial](examples/last-light/README.en.md). Images are in samples/last-light. "
+        "No application installation is needed. To install the workbench, download the source "
+        "from https://github.com/Ethereal-Space-one/taleprism.\n\n"
+        "This archive contains no workbench executable, API credentials or system voice audio. "
+        "Template examples are not approval of your outputs. Preserve LICENSE and provenance.\n"
+    ).encode()
+    return entries
+
+
+def build_starter(out):
+    starter = out / (PREFIX + "-prompt-starter.zip")
+    with zipfile.ZipFile(starter, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, raw in sorted(starter_entries().items()):
+            z.writestr(name, raw)
+    return starter
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / ".release/v0.1.0")
+    parser.add_argument(
+        "--output", type=Path, default=ROOT / ".release" / ("v" + VERSION)
+    )
+    parser.add_argument(
+        "--chibi-source",
+        type=Path,
+        help="Pinned public Chibi v0.1 reader archive for a complete release",
+    )
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    prefix = "taleprism-v" + VERSION
+    prefix = PREFIX
+    from build_content_pack import build
     from export_prompt_kit import outputs
 
     for name, value in outputs().items():
@@ -96,40 +151,7 @@ def main():
         # The private build report contains temporary paths/project IDs; do not publish it.
         (out / (prefix + "-last-light-project.build.json")).unlink()
 
-    starter = out / (prefix + "-prompt-starter.zip")
-    files = [
-        ROOT / n
-        for n in [
-            "LICENSE",
-            "THIRD_PARTY_NOTICES.md",
-            "README.en.md",
-            "CONTRIBUTING.md",
-            "CHANGELOG.md",
-        ]
-    ]
-    for tree in ["prompts", "schemas", "examples", "samples/last-light"]:
-        files.extend(
-            p for p in (ROOT / tree).rglob("*") if p.is_file() and p.name != ".DS_Store"
-        )
-    files.extend(
-        ROOT / "docs" / name
-        for name in [
-            "快速上手.md",
-            "COMPATIBILITY.md",
-            "使用与恢复指南.md",
-            "VALIDATION-v0.1.0.md",
-            "ARCHITECTURE.md",
-            "人物视觉导演标准.md",
-            "RELEASING.md",
-        ]
-    )
-    with zipfile.ZipFile(starter, "w", zipfile.ZIP_DEFLATED) as z:
-        for p in sorted(set(files)):
-            z.writestr("taleprism/" + p.relative_to(ROOT).as_posix(), p.read_bytes())
-        z.writestr(
-            "taleprism/README.md",
-            "# Taleprism 0.1.0 prompt starter\n\nStart with [八模板 / Templates](prompts/README.md), [中文教程](examples/last-light/README.md) or [English tutorial](examples/last-light/README.en.md). Images are in samples/last-light. No application installation is needed. To install the workbench, download the source from https://github.com/Ethereal-Space-one/taleprism.\n\nThis archive contains no workbench executable, API credentials or system voice audio. Template examples are not approval of your outputs. Preserve LICENSE and provenance.\n",
-        )
+    starter = build_starter(out)
     artifacts = []
     for p in [starter, out / (prefix + "-last-light-project.zip"), reader_zip]:
         artifacts.append(
@@ -137,6 +159,12 @@ def main():
                 "file": p.name,
                 "bytes": p.stat().st_size,
                 "sha256": digest(p.read_bytes()),
+                "example": "last-light" if p != starter else None,
+                "kind": "starter"
+                if p == starter
+                else "reader"
+                if p == reader_zip
+                else "project",
             }
         )
     manifest = {
@@ -154,6 +182,12 @@ def main():
             "external_user_test": "not_yet_validated",
         },
     }
+    if args.chibi_source:
+        from build_chibi_demo import build as build_chibi
+
+        chibi = build_chibi(args.chibi_source, out)
+        manifest["artifacts"].extend(chibi["artifacts"])
+        manifest["checks"]["chibi"] = chibi.get("checks", {})
     (out / "release-manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     )

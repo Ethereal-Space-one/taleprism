@@ -7,8 +7,9 @@ const { spawnSync } = require('node:child_process')
 const { chromium } = require('playwright')
 const root = path.resolve(__dirname, '../..')
 const base = process.argv[2] || 'http://127.0.0.1:8003'
-const out = path.resolve(process.argv[3] || path.join(root, '.release/p1-reliability'))
-const archive = path.join(out, 'taleprism-v0.1.0-last-light-project.zip')
+const version = JSON.parse(fs.readFileSync(path.join(root, 'frontend/package.json'), 'utf8')).version
+const out = path.resolve(process.argv[3] || path.join(root, '.release/v' + version))
+const archive = path.join(out, 'taleprism-v' + version + '-last-light-project.zip')
 
 ;(async () => {
   fs.mkdirSync(out, { recursive: true })

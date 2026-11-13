@@ -2,25 +2,27 @@
   {
     "id": "last-light",
     "title": "末班灯 · 现代原创短篇",
-    "description": "三位人物、两张立绘、三幅情境图；含母版、11件物品状态与助手检查。公开版不含系统演示音频。",
-    "file": "taleprism-v0.1.0-last-light-project.zip",
-    "sha256": "bdf7e9a5e9156aac2b4f532a9637a4beed36f6b6ff7a845058768b67e3f2f2b5",
-    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-last-light-project.zip",
+    "description": "三镜头短篇教程，含原文、人物参考、场景物件与助手制作检查。公开版无系统演示音频。",
+    "file": "taleprism-v0.2.0-last-light-project.zip",
+    "sha256": "3ec20c8a798f6ef78893ccedfe4991d1fdb2c4a07e8f38509cb4db315c709bc8",
+    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.2.0/taleprism-v0.2.0-last-light-project.zip",
     "reader": {
-      "file": "taleprism-v0.1.0-last-light-reader.zip",
-      "sha256": "a5f49e24e8ac2665d00e9a5ae89bd79f2a931256ae1e90c4aa7a8ca499c30f59",
-      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-last-light-reader.zip"
+      "file": "taleprism-v0.2.0-last-light-reader.zip",
+      "sha256": "0e6cebebf17caec9df90c98d6b4781fae45ee6ff0b44b89185dc5d339eac3f6a",
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.2.0/taleprism-v0.2.0-last-light-reader.zip"
     }
   },
   {
     "id": "chibi",
-    "title": "赤壁 · 本机历史工程",
-    "file": "chibi.storygal.zip",
-    "description": "在线主体验见独立阅读包；本机可编辑历史工程仍保留原始审校状态。",
+    "title": "赤壁 · 可编辑主示例",
+    "description": "12幅情境图、8位角色、9张立绘、3阶段地图；含新版制作方案与检查依据。公开版无系统演示音频。",
+    "file": "taleprism-v0.2.0-chibi-project.zip",
+    "sha256": "f14e4c937da72bfe40967d974e58398d72406dd7cc3576328ff15836af86fdba",
+    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.2.0/taleprism-v0.2.0-chibi-project.zip",
     "reader": {
-      "file": "taleprism-v0.1.0-chibi-reader.zip",
-      "sha256": "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a",
-      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-chibi-reader.zip"
+      "file": "taleprism-v0.2.0-chibi-reader.zip",
+      "sha256": "8802923bebc96b9727cbb5d693b243cb4f5a030b889fe961c57265d7ebf32af0",
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.2.0/taleprism-v0.2.0-chibi-reader.zip"
     }
   }
 ]

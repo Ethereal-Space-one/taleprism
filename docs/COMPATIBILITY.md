@@ -1,6 +1,6 @@
-# Taleprism 0.1.0 compatibility
+# Taleprism 0.2.0 compatibility
 
-Taleprism is the public name of the earlier 原页 / Storygal local project. This release updates visible branding without moving existing projects or renaming persisted identifiers.
+Taleprism is the public name of the earlier 原页 / Storygal local project. Version 0.2.0 strengthens editable recovery, reference tracking and public example reconstruction while preserving existing projects and persisted identifiers.
 
 | Identifier | Kept for compatibility |
 | --- | --- |
@@ -12,13 +12,13 @@ Taleprism is the public name of the earlier 原页 / Storygal local project. Thi
 | Reader export | Existing meta marker, source directory and inventory names |
 | Old macOS launchers | “打开原页.command” and “停止原页.command” continue working |
 
-New download filenames use Taleprism; filenames do not change the internal protocol. Product version 0.1.0, template version 0.1.0 and project format version 2 are separate.
+Product version 0.2.0, template version 0.2.0 and project format version 2 are separate. The new workbench imports old projects; older workbenches may reject newly added check and reference fields.
 
 The UI remains Chinese. Native Windows startup is not implemented. Local synthesis is macOS-specific; playing already accepted audio is portable. Public examples omit system-generated demonstration audio. A downloaded project contains its author's production checks, not the recipient's final approval.
 
 Large historical Chibi assets and packed ZIPs are not in the lightweight checkout. Existing local copies remain untouched. Missing optional sample packs now give a download/import instruction instead of an unhandled file error. The canonical Last Light reference images remain in source so the tutorial and release builder do not depend on an unpublished release.
 
-## Unreleased reliability changes
+## Reliability changes in 0.2.0
 
 The current workbench continues to import v1/v2 editable projects. Unresolved production states can be restored for repair; file integrity and reference validation remain mandatory. Cloud voice model metadata is retained through migration.
 
@@ -26,4 +26,4 @@ Continuity checks now carry explicit outcomes and source/media dependency snapsh
 
 The continuity-check API now requires an explicit `decision` (`passed`, `rejected`, or `revoked`) and a reason of at least eight non-padding characters. Existing integrations must add the decision field. Restoring a valid character merge keeps historical references and marks affected checks for repair; it does not rewrite or approve the saved composition.
 
-Reader delivery versions also record the production revision. Old completed ZIPs remain usable, while an outdated export cannot be approved as the current production state. Published v0.1.0 files and the online showcase are not replaced by these local unreleased changes.
+Reader delivery versions also record the production revision. Old completed ZIPs remain usable, while an outdated export cannot be approved as the current production state. Published v0.1.0 attachments remain unchanged; the online showcase moves to the separately versioned v0.2.0 Chibi reader after deployment verification.

@@ -4,6 +4,7 @@ from fastapi import BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from . import speech as speech_backend
 from .speech import Speech
 
 
@@ -38,6 +39,10 @@ class Generate(BaseModel):
 def mount_speech(app, store, review):
     speech = Speech(store, review)
     app.state.speech = speech
+
+    @app.get("/api/speech/capabilities")
+    def capabilities():
+        return speech_backend.capabilities()
 
     @app.get("/api/projects/{pid}/speech")
     def state(pid: str):

@@ -24,6 +24,7 @@ export type ObjectState = {
 export type Continuity = {
   scene_id: string | null
   method: 'reuse' | 'edit' | 'new_view'
+  reuse_asset_id: string | null
   camera: string
   changes: string
   states: ObjectState[]
@@ -53,6 +54,7 @@ const passed = (shot: SceneShot) =>
 export const emptyContinuity = (): Continuity => ({
   scene_id: null,
   method: 'edit',
+  reuse_asset_id: null,
   camera: '',
   changes: '',
   states: [],
@@ -259,7 +261,7 @@ export function ShotContinuity({
   check: (notes: string, decision: CheckDecision) => void
   draft: CheckDraft
   changeDraft: (draft: CheckDraft) => void
-  references: { name: string; url?: string; sha256?: string }[]
+  references: { name: string; selection: string; valid: boolean; url?: string; sha256?: string }[]
 }) {
   const c = shot.continuity,
     scene = scenes.find((s) => s.id === c.scene_id)
@@ -322,22 +324,51 @@ export function ShotContinuity({
           ))}
         </select>
       </label>
+      <label>
+        制作方式
+        <select
+          value={c.method}
+          onChange={(e) =>
+            update({ ...c, method: e.target.value as Continuity['method'], reuse_asset_id: null })
+          }
+        >
+          <option value="reuse">复用已有成图</option>
+          <option value="edit">编辑上一幅画面</option>
+          <option value="new_view">新机位／新视角</option>
+        </select>
+      </label>
+      {c.method === 'reuse' && (
+        <>
+          <label>
+            实际复用的成图
+            <select
+              value={c.reuse_asset_id || ''}
+              onChange={(e) => update({ ...c, reuse_asset_id: e.target.value || null })}
+            >
+              <option value="">沿用本镜头已回填的图片</option>
+              {c.reuse_asset_id &&
+                !assets.some(
+                  (a) => a.id === c.reuse_asset_id && a.kind === 'scene' && a.status !== 'rejected',
+                ) && <option value={c.reuse_asset_id}>原选成图已失效，请重新选择</option>}
+              {assetOptions(assets)}
+            </select>
+          </label>
+          <div className="continuity-compare">
+            {picture(c.reuse_asset_id || shot.image_asset_id, '实际复用成图')}
+          </div>
+          <p className="notice">
+            {c.reuse_asset_id || shot.image_asset_id
+              ? '直接使用这张成图；明确选择后会同步回填，不调用生图或编辑工具。'
+              : '尚无复用目标，任务将暂停。请先选择成图或回填图片。'}
+            场景母版仅供核对，不会自动成为复用成图。
+          </p>
+        </>
+      )}
       {!scene ? (
         <p className="notice">此镜头尚未建立场景和道具状态，不能视为连续性已验证。</p>
       ) : (
         <>
           <div className="production-fields">
-            <label>
-              制作方式
-              <select
-                value={c.method}
-                onChange={(e) => update({ ...c, method: e.target.value as Continuity['method'] })}
-              >
-                <option value="reuse">复用已有画面</option>
-                <option value="edit">编辑上一幅画面</option>
-                <option value="new_view">新机位／新视角</option>
-              </select>
-            </label>
             <label>
               机位与画外范围
               <textarea
@@ -418,7 +449,9 @@ export function ShotContinuity({
             <div className="continuity-compare" aria-label="本镜头使用的人物参考">
               {references.map((ref, index) => (
                 <figure key={index}>
-                  <figcaption>{ref.name} · 当前启用参考</figcaption>
+                  <figcaption>
+                    {ref.name} · {ref.selection}
+                  </figcaption>
                   {ref.url ? (
                     <a
                       href={ref.url}
@@ -426,10 +459,13 @@ export function ShotContinuity({
                       rel="noreferrer"
                       aria-label={'放大人物参考：' + ref.name}
                     >
-                      <img src={ref.url} alt={ref.name + '的启用参考'} />
+                      <img src={ref.url} alt={ref.name + '的生图参考'} />
                     </a>
                   ) : (
-                    <p>尚未启用参考</p>
+                    <p>尚未选择参考</p>
+                  )}
+                  {!ref.valid && ref.url && (
+                    <p className="notice">参考或人物尚未确认，请重新选择。</p>
                   )}
                   {ref.sha256 && (
                     <small title={ref.sha256}>图片校验值：{ref.sha256.slice(0, 12)}…</small>

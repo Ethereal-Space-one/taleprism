@@ -324,6 +324,12 @@ class Review:
                 display_name=name, aliases=aliases, description=description.strip(), status=status
             )
             self.put(db, "characters", project_id, item)
+            if before and before["status"] != status:
+                from .production import invalidate_reference_checks
+
+                invalidate_reference_checks(
+                    db, project_id, item["id"], character_status_changed=True
+                )
             self.audit(db, project_id, "character.update", before, item)
         return item
 
@@ -370,8 +376,17 @@ class Review:
             self.put(db, "characters", project_id, target)
             from .production import invalidate_reference_checks
 
-            for cid in (source_id, target_id):
-                invalidate_reference_checks(db, project_id, cid)
+            invalidate_reference_checks(db, project_id, source_id, character_status_changed=True)
+            active_changed = before["target"]["active_figure_id"] != target["active_figure_id"]
+            status_changed = before["target"]["status"] != target["status"]
+            if active_changed or status_changed:
+                invalidate_reference_checks(
+                    db,
+                    project_id,
+                    target_id,
+                    active_changed=active_changed,
+                    character_status_changed=status_changed,
+                )
             self.audit(
                 db, project_id, "character.merge", before, {"source": source, "target": target}
             )
@@ -538,10 +553,18 @@ class Review:
                     character["active_figure_id"] = None
             self.put(db, "assets", project_id, item)
             self.put(db, "characters", project_id, character)
-            if previous_active != character["active_figure_id"]:
+            active_changed = previous_active != character["active_figure_id"]
+            status_changed = before["status"] != status
+            if active_changed or status_changed:
                 from .production import invalidate_reference_checks
 
-                invalidate_reference_checks(db, project_id, character["id"])
+                invalidate_reference_checks(
+                    db,
+                    project_id,
+                    character["id"],
+                    asset_id=asset_id if status_changed else None,
+                    active_changed=active_changed,
+                )
             self.audit(db, project_id, "asset.review", before, item | {"active": active})
 
     def payloads(self, project_id: str) -> list[dict]:

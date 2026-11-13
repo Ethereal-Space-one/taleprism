@@ -14,7 +14,7 @@ def test_pages_selects_featured_reader_and_keeps_tutorial_available():
     spec = importlib.util.spec_from_file_location("prepare_pages", REPO / "tools/prepare_pages.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert module.reader_spec()["file"] == "taleprism-v0.1.0-chibi-reader.zip"
+    assert module.reader_spec()["file"].endswith("-chibi-reader.zip")
     assert module.reader_spec(example="last-light")["file"].endswith("last-light-reader.zip")
     with pytest.raises(ValueError, match="No pinned reader"):
         module.reader_spec(example="missing")

@@ -8,12 +8,13 @@ import zipfile
 from pathlib import Path
 
 from release_files import ROOT, source_files
+from release_version import PREFIX
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output", type=Path, default=ROOT / ".release/taleprism-v0.1.0-source.zip"
+        "--output", type=Path, default=ROOT / ".release" / (PREFIX + "-source.zip")
     )
     args = parser.parse_args()
     selected = source_files()

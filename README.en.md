@@ -2,7 +2,7 @@
 
 **An open workflow for turning fiction into illustrated reading experiences, with character direction, scene continuity, and optional voice.**
 
-v0.1.0 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
+v0.2.0 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.2.0)
 
 ![Chibi: the Red Cliffs reading showcase](examples/chibi/cover.png)
 
@@ -17,7 +17,7 @@ The online example is a static reading experience. It has no hosted editing back
 
 ## Install the workbench
 
-Requirements: Python 3.11+ (uv can manage it), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. The UI is currently Chinese. macOS is the primary manually tested environment; see [validation](docs/VALIDATION-v0.1.0.md) for the exact platform checks. Native Windows startup is not supported.
+Requirements: Python 3.11+ (uv can manage it), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. The UI is currently Chinese. macOS is the primary manually tested environment; see [validation](docs/VALIDATION-v0.2.0.md) for the exact platform checks. Native Windows startup is not supported.
 
 ```sh
 git clone https://github.com/Ethereal-Space-one/taleprism.git
@@ -27,9 +27,9 @@ cd taleprism
 
 Open `http://127.0.0.1:8000`. Initial dependency installation needs internet. Later use `./run.sh`; on macOS the Taleprism `.command` launchers also work. The service binds to localhost. Restart it after rebooting.
 
-Download `taleprism-v0.1.0-last-light-project.zip` from Releases. In the left sidebar choose **示例与工程 → 导入可编辑工程** (Examples and projects → Import editable project). Each import creates a new project. The source checkout includes tutorial reference images, but not the full project ZIP. The empty screen can also import only Last Light's source for a from-scratch exercise.
+Download the Chibi or Last Light `project.zip` from the v0.2.0 Release. In the left sidebar choose **示例与工程 → 导入可编辑工程** (Examples and projects → Import editable project). Each import creates a new project. Chibi provides a complete chapter and ensemble example; Last Light provides a three-shot tutorial. The source checkout includes tutorial reference images; complete projects download separately.
 
-The example includes the original short story, three characters, two identity portraits, three scene pictures, the full direction plan, object states and assistant inspection records. Public packages omit macOS system-generated demonstration audio. Final creator art review is still pending.
+Both projects include unchanged source text, assets, direction plans and assistant inspection evidence. Unfinished projects can be restored for repair; old checks without dependency evidence require reinspection. Public packages omit macOS system-generated demonstration audio. Final creator art review is still pending.
 
 ## Make a chapter
 
@@ -45,11 +45,12 @@ For external text AI, export a complete workbench task and import `{source_sha25
 
 - `prompt-starter.zip`: templates, complete tutorial, source and actual reference images.
 - `last-light-project.zip`: import into the workbench to continue editing.
+- `chibi-project.zip`: the editable twelve-shot Chibi project with reference-bound checks.
 - `chibi-reader.zip`: the complete standalone Chibi reading showcase.
 - `last-light-reader.zip`: extract and serve over HTTP to read without the workbench.
-- GitHub Source code ZIP: application source and tutorial references; project packages download separately.
+- `source.zip` or GitHub Source code ZIP: application source and tutorial references; project packages download separately.
 
-Check `SHA256SUMS` for the original files, or `CHIBI-SHA256SUMS` and `chibi-demo-manifest.json` for the added Chibi reader. Inside the extracted reader directory run:
+Check the unified `SHA256SUMS` and `release-manifest.json`. Previous release attachments remain available. Inside the extracted reader directory run:
 
 ```sh
 python3 verify_package.py

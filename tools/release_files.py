@@ -1,8 +1,11 @@
 """Explicit public source inventory; local history and runtime data stay on disk."""
 
-from pathlib import Path
+import json
+import subprocess
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
+INVENTORY = "tools/public-source.json"
 TREES = (
     "backend",
     "frontend",
@@ -47,39 +50,69 @@ ROOT_FILES = (
     "docs/RELEASING.md",
     "docs/RELEASE-v0.1.0.md",
     "docs/VALIDATION-v0.1.0.md",
+    "docs/RELEASE-v0.2.0.md",
+    "docs/VALIDATION-v0.2.0.md",
+    "docs/Taleprism-v0.2.0-发布计划.md",
 )
 
 
-def source_files():
-    paths = [ROOT / p for p in ROOT_FILES]
-    for tree in TREES:
-        paths.extend(p for p in (ROOT / tree).rglob("*") if p.is_file())
+def allowed(name):
+    if not isinstance(name, str) or not name or "\\" in name:
+        return False
+    rel = PurePosixPath(name)
+    if rel.is_absolute() or ".." in rel.parts or rel.as_posix() != name:
+        return False
+    if name not in ROOT_FILES and rel.parts[0] not in TREES:
+        return False
+    if any(part in SKIP for part in rel.parts) or rel.name == ".DS_Store":
+        return False
+    if any(p.startswith(".env") and name != ".env.example" for p in rel.parts):
+        return False
+    if rel.suffix.lower() in {".pyc", ".tsbuildinfo", ".zip", ".wav", ".mp3", ".aiff"}:
+        return False
+    if rel.name.endswith(".build.json"):
+        return False
+    return not (
+        rel.parts[0] == "samples"
+        and rel.suffix.lower() == ".png"
+        and rel.parts[1] != "last-light"
+    )
+
+
+def source_files(root=None):
+    """Read an explicit inventory; untracked files are never discovered by walking folders."""
+    root = Path(root or ROOT).resolve()
+    manifest = root / INVENTORY
+    if not manifest.is_file():
+        raise ValueError(
+            "Missing public source inventory; maintainers must refresh it from Git."
+        )
+    names = json.loads(manifest.read_text())
+    if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
+        raise ValueError("Invalid public source inventory")
+    if names != sorted(set(names)):
+        raise ValueError("Public source inventory must be unique and sorted")
     selected = []
-    for p in sorted(set(paths)):
-        rel = p.relative_to(ROOT)
-        if any(part in SKIP for part in rel.parts) or p.name == ".DS_Store":
-            continue
-        if p.suffix in {
-            ".pyc",
-            ".tsbuildinfo",
-            ".zip",
-            ".wav",
-            ".mp3",
-            ".aiff",
-        } or p.name.endswith(".build.json"):
-            continue
-        if (
-            rel.parts[0] == "samples"
-            and p.suffix.lower() == ".png"
-            and rel.parts[1] != "last-light"
+    for name in names:
+        if not allowed(name):
+            raise ValueError("Disallowed public source: " + name)
+        path = root / name
+        if not path.is_file() or any(
+            p.is_symlink() for p in [path, *path.parents] if p != root
         ):
-            continue
-        if p.is_symlink() or not p.is_file():
-            raise ValueError(f"Invalid public source: {rel}")
-        if p.name.startswith(".env") and p.name != ".env.example":
-            raise ValueError(f"Environment file in public source: {rel}")
-        selected.append((rel.as_posix(), p))
+            raise ValueError("Missing or linked public source: " + name)
+        selected.append((name, path))
     return selected
+
+
+def tracked_inventory(root=None):
+    root = Path(root or ROOT).resolve()
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--cached"], cwd=root, check=True, capture_output=True
+    )
+    return sorted(
+        {n for n in result.stdout.decode().split("\0") if allowed(n)} | {INVENTORY}
+    )
 
 
 if __name__ == "__main__":
@@ -91,6 +124,29 @@ if __name__ == "__main__":
         action="store_true",
         help="NUL-separated paths for git add --pathspec-from-file",
     )
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Review and stage files first, then record the Git inventory",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check inventory against tracked public source",
+    )
     args = parser.parse_args()
+    if args.refresh:
+        (ROOT / INVENTORY).write_text(
+            json.dumps(tracked_inventory(), ensure_ascii=False, indent=2) + "\n"
+        )
+    if args.check and [name for name, _ in source_files()] != tracked_inventory():
+        raise SystemExit(
+            "Public source inventory is stale; stage intended files and run --refresh."
+        )
     names = [name for name, _ in source_files()]
-    print(("\0" if args.null else "\n").join(names), end="\0" if args.null else "\n")
+    if args.check or args.refresh:
+        print(f"Public source inventory verified: {len(names)} files.")
+    else:
+        print(
+            ("\0" if args.null else "\n").join(names), end="\0" if args.null else "\n"
+        )

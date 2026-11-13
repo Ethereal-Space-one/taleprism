@@ -8,6 +8,19 @@
           "title": "Character Id",
           "type": "string"
         },
+        "reference_asset_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Asset Id"
+        },
         "goal": {
           "default": "",
           "maxLength": 500,
@@ -226,6 +239,19 @@
           ],
           "title": "Method",
           "type": "string"
+        },
+        "reuse_asset_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reuse Asset Id"
         },
         "camera": {
           "default": "",

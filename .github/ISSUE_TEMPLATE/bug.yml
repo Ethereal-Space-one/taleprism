@@ -6,7 +6,7 @@ body:
     id: version
     attributes:
       label: Version and platform / 版本与系统
-      placeholder: v0.1.0, macOS, Chrome
+      placeholder: v0.2.0, macOS, Chrome
     validations:
       required: true
   - type: dropdown

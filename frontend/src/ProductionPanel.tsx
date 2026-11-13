@@ -15,6 +15,7 @@ import {
 
 type Acting = {
   character_id: string
+  reference_asset_id: string | null
   goal: string
   knows: string
   public_face: string
@@ -45,7 +46,7 @@ const drafts = new Map<
   string,
   { base: State; plan: Plan; dirty: boolean; checks: Record<string, CheckDraft> }
 >()
-const actorLabels: [keyof Omit<Acting, 'character_id'>, string][] = [
+const actorLabels: [keyof Omit<Acting, 'character_id' | 'reference_asset_id'>, string][] = [
   ['goal', '想得到什么'],
   ['knows', '此刻知道什么'],
   ['public_face', '向对方表现的姿态'],
@@ -464,7 +465,9 @@ function Editor({
                   onChange={(e) =>
                     update(s.id, {
                       actors: s.actors.map((v, i) =>
-                        i === ai ? { ...v, character_id: e.target.value } : v,
+                        i === ai
+                          ? { ...v, character_id: e.target.value, reference_asset_id: null }
+                          : v,
                       ),
                     })
                   }
@@ -476,6 +479,41 @@ function Editor({
                   ))}
                 </select>
               </label>
+              <label>
+                本镜头的人物生图参考
+                <select
+                  value={a.reference_asset_id || ''}
+                  onChange={(e) =>
+                    update(s.id, {
+                      actors: s.actors.map((v, i) =>
+                        i === ai ? { ...v, reference_asset_id: e.target.value || null } : v,
+                      ),
+                    })
+                  }
+                >
+                  <option value="">跟随当前展示立绘</option>
+                  {a.reference_asset_id &&
+                    !review.assets.some(
+                      (asset) =>
+                        asset.id === a.reference_asset_id &&
+                        asset.character_id === a.character_id &&
+                        asset.status === 'accepted',
+                    ) && <option value={a.reference_asset_id}>原选参考已失效，请重新选择</option>}
+                  {review.assets
+                    .filter(
+                      (asset) =>
+                        asset.character_id === a.character_id && asset.status === 'accepted',
+                    )
+                    .map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.label || asset.license.slice(0, 35) || '人物图片'} ·{' '}
+                        {asset.kind === 'reference' ? '仅供身份参考' : '立绘'} ·{' '}
+                        {asset.sha256.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p>明确选图只影响本镜头生图与检查，不会切换阅读器中的展示立绘。</p>
               <div className="production-fields">
                 {actorLabels.map(([k, label]) => (
                   <label key={k}>
@@ -509,6 +547,7 @@ function Editor({
                       character_id:
                         chars.find((c) => !s.actors.some((a) => a.character_id === c.id))?.id ||
                         chars[0].id,
+                      reference_asset_id: null,
                       goal: '',
                       knows: '',
                       public_face: '',
@@ -525,6 +564,7 @@ function Editor({
             <label>
               回填图片
               <select
+                disabled={s.continuity.method === 'reuse' && !!s.continuity.reuse_asset_id}
                 value={s.image_asset_id || ''}
                 onChange={(e) => update(s.id, { image_asset_id: e.target.value || null })}
               >
@@ -556,15 +596,27 @@ function Editor({
             shots={plan.shots}
             scenes={plan.scenes}
             assets={reader.assets}
-            update={(continuity) => update(s.id, { continuity, continuity_check: null })}
+            update={(continuity) =>
+              update(s.id, {
+                continuity,
+                continuity_check: null,
+                ...(continuity.method === 'reuse' && continuity.reuse_asset_id
+                  ? { image_asset_id: continuity.reuse_asset_id }
+                  : {}),
+              })
+            }
             locked={dirty || operation.isPending}
             draft={checkDrafts[s.id] || { notes: '', checks: [] }}
             changeDraft={(draft) => setCheckDrafts((current) => ({ ...current, [s.id]: draft }))}
             references={s.actors.map((actor) => {
               const character = review.characters.find((c) => c.id === actor.character_id)
-              const asset = review.assets.find((a) => a.id === character?.active_figure_id)
+              const asset = review.assets.find(
+                (a) => a.id === (actor.reference_asset_id || character?.active_figure_id),
+              )
               return {
                 name: character?.display_name || '未知人物',
+                selection: actor.reference_asset_id ? '本镜头明确选用' : '跟随展示立绘',
+                valid: asset?.status === 'accepted' && character?.status === 'confirmed',
                 url: asset?.url,
                 sha256: asset?.sha256,
               }

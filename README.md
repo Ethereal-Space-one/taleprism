@@ -4,7 +4,7 @@
 
 从人物立场与心理表演，到场景母版、道具状态、逐图检查和定点修复：Taleprism 把制作经验整理成可复制的提示词工作流，并提供本地制作台。
 
-**v0.1.0 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)
+**v0.2.0 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.2.0)
 
 ![赤壁：七星坛祭风，三江口纵火](examples/chibi/cover.png)
 
@@ -22,7 +22,7 @@
 
 ## 本地制作台
 
-需要 Python 3.11+（由 uv 管理亦可）、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 与 npm。当前界面为中文；macOS 是主要人工验证环境，平台范围见[验证记录](docs/VALIDATION-v0.1.0.md)。
+需要 Python 3.11+（由 uv 管理亦可）、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 与 npm。当前界面为中文；macOS 是主要人工验证环境，平台范围见[验证记录](docs/VALIDATION-v0.2.0.md)。
 
 ```sh
 git clone https://github.com/Ethereal-Space-one/taleprism.git
@@ -32,9 +32,9 @@ cd taleprism
 
 首次安装联网下载依赖。打开 <http://127.0.0.1:8000>。以后用 `./run.sh`；macOS 也可双击“打开Taleprism.command”。服务只监听本机。电脑重启后需要重新启动。
 
-在左侧“示例与工程”选择《末班灯》，从下载入口取得 `taleprism-v0.1.0-last-light-project.zip`，再点“导入可编辑工程”。也可点“从《末班灯》原文练习”只导入正文，从头制作。示例包不是源码的一部分，缺包时界面会明确说明。
+在左侧“示例与工程”选择《赤壁》或《末班灯》，从下载入口取得对应的 `project.zip`，再点“导入可编辑工程”。赤壁用于完整章节与群像制作，末班灯用于三镜头入门。也可点“从《末班灯》原文练习”只导入正文，从头制作。示例工程单独下载。
 
-完整工程含原文、3 位角色、2 张立绘、3 幅情境图，以及场景/物件状态与助手检查记录；公开样例不含 macOS 系统演示音频。每次导入新建项目，保留原工程。详细步骤见[快速上手](docs/快速上手.md)。
+两种工程均包含原文、素材、制作方案及助手检查依据；公开样例不含 macOS 系统演示音频。每次导入新建项目，保留原工程。未完成审校的工程可恢复后继续修复，旧检查缺少依据时需重新复核。详细步骤见[快速上手](docs/快速上手.md)。
 
 ## 这套流程解决什么
 
@@ -49,15 +49,16 @@ cd taleprism
 
 ## 下载哪一个包
 
-附件在 [v0.1.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.1.0)，原有附件可对照 `SHA256SUMS`；新增赤壁阅读包对照 `CHIBI-SHA256SUMS` 与 `chibi-demo-manifest.json`。
+附件在 [v0.2.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.2.0)，统一对照 `SHA256SUMS` 与 `release-manifest.json`。旧版附件仍保留在原 Release。
 
 | 文件结尾 | 用途 |
 | --- | --- |
 | `prompt-starter.zip` | 模板、原创原文、参考图、完整教程；不安装程序也能用 |
 | `last-light-project.zip` | 可继续编辑的《末班灯》工程，导入制作台 |
+| `chibi-project.zip` | 赤壁完整可编辑工程，含十二镜头制作方案与检查依据 |
 | `chibi-reader.zip` | 赤壁在线主体验的完整独立阅读包 |
 | `last-light-reader.zip` | 已完成的独立阅读成品；解压后用 HTTP 服务打开 |
-| GitHub 的 Source code ZIP | 制作台源码与教程参考图；完整工程另行下载 |
+| `source.zip` 或 GitHub 的 Source code ZIP | 制作台源码与教程参考图；完整工程另行下载 |
 
 独立阅读包解压后，在该目录运行：
 

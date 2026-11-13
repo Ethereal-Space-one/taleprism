@@ -1,0 +1,1233 @@
+{
+  "format": "taleprism-chibi-public-rebuild",
+  "version": 1,
+  "release_version": "0.2.0",
+  "source_archive": {
+    "file": "taleprism-v0.1.0-chibi-reader.zip",
+    "sha256": "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a",
+    "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-chibi-reader.zip"
+  },
+  "source_sha256": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+  "public_work_id": "fde5c24b-6a65-4fc4-9955-2bac34a9d958",
+  "expected": {
+    "illustrations": 12,
+    "characters": 8,
+    "portraits": 9,
+    "presentations": 55,
+    "map_phases": 3,
+    "scenes": 9,
+    "media": 27
+  },
+  "preservation": "原文及所有27张图片原样复用；55呈现、地图、公开作品ID与旧插图ID保持。镜头制作状态在新工程中重建。",
+  "scene_policy": "以物理空间而非图片数量划分。赤壁水域4镜头共用1场景，依据顺风出发、接近、燃烧更新状态；病榻、议事帐、夏口军帐分别建场，三段山路依据乌林、葫芦谷、华容分开。",
+  "characters": {
+    "4ea3d7f1-0fbb-4e8b-a764-e7fd6b068832": {
+      "description": "Codex 内置 image_gen 于 2026-11-03 生成；孔明 · 道衣基础；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "諸葛亮",
+        "诸葛亮"
+      ]
+    },
+    "71843b93-26d0-4c51-a38c-5492dfa6febf": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；曹操 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "操"
+      ]
+    },
+    "daba999f-534f-4168-b67c-bfc9649f8af5": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；关羽 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "關羽",
+        "雲長",
+        "关云长"
+      ]
+    },
+    "593b6136-e5e9-4206-886c-545bfac54bde": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；鲁肃 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "魯肅",
+        "子敬"
+      ]
+    },
+    "6c49cc85-517d-41e6-9e3f-252da784ede6": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；黄盖 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "黃蓋",
+        "公覆"
+      ]
+    },
+    "9683a1dc-b89d-4fa3-833a-a235bd94e93c": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；赵云 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "趙雲",
+        "子龍"
+      ]
+    },
+    "8f48afa9-9b26-490d-b588-bd24e205a607": {
+      "description": "Codex 内置 image_gen 于 2026-11-04 生成；张飞 · 基础立绘；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "張飛",
+        "翼德"
+      ]
+    },
+    "4f48a7cc-05a8-4398-bb53-f3dd55ba4466": {
+      "description": "Codex 内置 image_gen 于 2026-11-03 生成；周瑜 · 绛衣基础；文学角色艺术化设计，本地工程候选，最终艺术审查未确认。提示词与来源随成品保存。",
+      "aliases": [
+        "瑜"
+      ]
+    }
+  },
+  "plan": {
+    "style": "纸本水墨与细密设色，蓝灰山水、暖色灯火；人物服色与立绘身份一致，双方目标与知识差决定表情。所有画面为文学艺术解释，不是史实、仪轨或精确地理复原。",
+    "budget": 12,
+    "shots": [
+      {
+        "id": "river-overlook",
+        "title": "江岸望阵",
+        "after_byte": 63,
+        "image_asset_id": "da59592b-3675-45ae-aefe-867b01d0a2e3",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "同一战区：北岸连环大船与营地、中央航道、南岸观察点。机位可以从南岸转到火船甲板、曹军大船再到江面；船只移动有事件依据。不同镜头的船栏与小舟不是同一物件。江岸山形仅作艺术方位，不作历史坐标。",
+        "continuity": {
+          "scene_id": "chibi-waterfront",
+          "method": "new_view",
+          "camera": "山岸后侧中远景，周瑜在右、舰队占左侧与远景。",
+          "changes": "建立战前连环船与江岸位置；火船队仍在画外待命。",
+          "states": [
+            {
+              "object_id": "north-bank",
+              "visibility": "visible",
+              "position": "江面北侧远岸",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "linked-fleet",
+              "visibility": "visible",
+              "position": "北岸水寨停泊区",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "attacking-boats",
+              "visibility": "offscreen",
+              "position": "南岸待命水域",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "zhouyu-bank",
+              "visibility": "visible",
+              "position": "南岸山坡观察点",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "cao-deck",
+              "visibility": "offscreen",
+              "position": "北岸水寨主船",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "rowboat",
+              "visibility": "offscreen",
+              "position": "水寨外围江面",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            }
+          ]
+        },
+        "moment": "序章望阵：周瑜在山岸凝望强大水寨，以兵力压力引入下一段病倒。",
+        "evidence": "三江口周瑜縱火",
+        "framing": "山岸后侧中远景，周瑜在右、舰队占左侧与远景。",
+        "interpretation": "插图锚定回目，作为开篇预示。周瑜观阵动作来自紧接其后的首段，非回目逐字说明；两名随从不强行指定为已知角色。",
+        "avoid": "不画已经发生火攻或曹操败逃，不给周瑜胜券在握的笑容。",
+        "actors": [
+          {
+            "character_id": "4f48a7cc-05a8-4398-bb53-f3dd55ba4466",
+            "goal": "衡量曹军水寨压力",
+            "knows": "敌舰密集且连成阵势",
+            "public_face": "维持统帅镇定",
+            "private_tension": "忧虑兵力与风向",
+            "visible_action": "侧身紧唇远望，肩颈略绷紧",
+            "evidence": "周瑜"
+          }
+        ]
+      },
+      {
+        "id": "sickbed-dialogue",
+        "title": "帐中问疾",
+        "after_byte": 1503,
+        "image_asset_id": "eb1e632b-c841-4062-9013-20f3e33c6e01",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "周瑜在右侧木榻半卧；孔明坐左侧与其对视。床后灯与杯在两人之间，帐柱居后。此处不是后来的议事桌。",
+        "continuity": {
+          "scene_id": "sickroom",
+          "method": "new_view",
+          "camera": "两人平视近景，孔明左、周瑜右；床灯隔出心理距离。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "bed",
+              "visibility": "visible",
+              "position": "帐内右侧",
+              "reason": ""
+            },
+            {
+              "object_id": "bed-lamp",
+              "visibility": "visible",
+              "position": "病榻左后侧小几",
+              "reason": ""
+            },
+            {
+              "object_id": "tent-pole",
+              "visibility": "visible",
+              "position": "病榻后方",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "孔明以风云之语触中病因，周瑜惊疑又试图维持体面。",
+        "evidence": "瑜聞失色，乃作呻吟之聲。",
+        "framing": "两人平视近景，孔明左、周瑜右；床灯隔出心理距离。",
+        "interpretation": "孔明的克制微笑与周瑜握被、蹙眉是心理外化；避免画成友好闲谈。",
+        "avoid": "不得表现病已痊愈，不画尚未呈上的十六字纸条。",
+        "actors": [
+          {
+            "character_id": "4ea3d7f1-0fbb-4e8b-a764-e7fd6b068832",
+            "goal": "探明并点破忧风之病",
+            "knows": "已看出都督忧虑",
+            "public_face": "从容问诊",
+            "private_tension": "保留判断与谈判优势",
+            "visible_action": "微侧身直视，嘴角轻抬",
+            "evidence": "孔明笑曰"
+          },
+          {
+            "character_id": "4f48a7cc-05a8-4398-bb53-f3dd55ba4466",
+            "goal": "守住都督体面并求解",
+            "knows": "感到对方已经看穿",
+            "public_face": "压住惊惧仍作答",
+            "private_tension": "被点破病因而失措",
+            "visible_action": "半卧蹙眉、握被，视线紧扣孔明",
+            "evidence": "瑜聞失色",
+            "reference_asset_id": "af464c56-bf43-41af-9d99-ba558cd41d48"
+          }
+        ]
+      },
+      {
+        "id": "altar-assembly",
+        "title": "七星坛上",
+        "after_byte": 4304,
+        "image_asset_id": "c6d54ad9-b541-4806-af07-adaf5c0023b0",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "三层赤土坛居画面中央，正面台阶通顶，执事列于坛顶四周，军士分列外圈；江面远景不作为营区精确位置。",
+        "continuity": {
+          "scene_id": "nanping-altar",
+          "method": "new_view",
+          "camera": "坛下稍高机位全景，坛顶孔明为中心，执事和环列军士形成层次。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "altar",
+              "visibility": "visible",
+              "position": "山坡中央",
+              "reason": ""
+            },
+            {
+              "object_id": "flags",
+              "visibility": "visible",
+              "position": "祭坛各层及外圈",
+              "reason": ""
+            },
+            {
+              "object_id": "incense",
+              "visibility": "visible",
+              "position": "坛顶孔明右侧",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "孔明登坛祈风，军士依令守位，仪式使众人的注意集中。",
+        "evidence": "孔明緩步登壇，觀瞻方位已定，焚香於爐，注水於盂，仰天暗祝。",
+        "framing": "坛下稍高机位全景，坛顶孔明为中心，执事和环列军士形成层次。",
+        "interpretation": "夜色、抬臂与群像是文学概括；图中旗数、执事服色和鞋履不逐项吻合原文。作为艺术插图保留，不宣称仪轨复原。",
+        "avoid": "不出现周瑜已派出的追杀队，不表现风已应验或火攻开始。",
+        "actors": [
+          {
+            "character_id": "4ea3d7f1-0fbb-4e8b-a764-e7fd6b068832",
+            "goal": "主持祈风并掌握离营时机",
+            "knows": "时机须自行判断",
+            "public_face": "肃然镇定",
+            "private_tension": "在众目下维持仪式秩序",
+            "visible_action": "抬臂向天，身体稳定",
+            "evidence": "仰天暗祝"
+          }
+        ]
+      },
+      {
+        "id": "wind-in-tent",
+        "title": "风先入帐",
+        "after_byte": 6014,
+        "image_asset_id": "8ad2b717-eb50-404c-9900-516cc67a53d0",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "机位贴近桌面向帐口看，左有帐柱、灯与笔筒，桌上竹简，开口外为江面；无病榻。",
+        "continuity": {
+          "scene_id": "zhouyu-command",
+          "method": "new_view",
+          "camera": "桌面近景，向帐口与江面望去。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "table",
+              "visibility": "visible",
+              "position": "帐口内侧",
+              "reason": ""
+            },
+            {
+              "object_id": "pole",
+              "visibility": "visible",
+              "position": "帐口左侧",
+              "reason": ""
+            },
+            {
+              "object_id": "lamp",
+              "visibility": "visible",
+              "position": "木桌左侧",
+              "reason": ""
+            },
+            {
+              "object_id": "scroll",
+              "visibility": "visible",
+              "position": "木桌中后部",
+              "reason": ""
+            },
+            {
+              "object_id": "cloth",
+              "visibility": "visible",
+              "position": "帐口上沿与左柱",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "忽起东南风，以帐帘、红布和灯焰表现无形转折。",
+        "evidence": "忽聽風聲響，旗旛轉動。",
+        "framing": "桌面近景，向帐口与江面望去。",
+        "interpretation": "选择无人反应镜头，焦虑与震惊交给原文中的周瑜和鲁肃，不把他们虚构进画面。",
+        "avoid": "不出现孔明在帐中、不画追杀已经完成；病榻道具不得混入。",
+        "actors": []
+      },
+      {
+        "id": "zhaoyun-arrow",
+        "title": "子龙断索",
+        "after_byte": 7359,
+        "image_asset_id": "941e1827-aa61-4962-adeb-6369a467fb3b",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "赵云、孔明及舟子在左前近船；徐盛追船在右后水面，断索从右后桅顶垂落。两船不是黄盖火船或曹军主船。",
+        "continuity": {
+          "scene_id": "river-escape",
+          "method": "new_view",
+          "camera": "前船船尾中景，弓手居前、孔明后侧，追船右后方。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "rescue-boat",
+              "visibility": "visible",
+              "position": "前方江面",
+              "reason": ""
+            },
+            {
+              "object_id": "pursuer",
+              "visibility": "visible",
+              "position": "接应船右后方",
+              "reason": ""
+            },
+            {
+              "object_id": "bow",
+              "visibility": "visible",
+              "position": "赵云手中",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "赵云射断追船篷索以阻追击，孔明在其身后镇定旁观。",
+        "evidence": "言迄，箭到處，射斷徐盛船上篷索。",
+        "framing": "前船船尾中景，弓手居前、孔明后侧，追船右后方。",
+        "interpretation": "近船帆布取相邻“拽起滿帆”动作的艺术压缩；不把帆布误说成固定船篷。徐盛只以追船代表，不虚构近景表情。",
+        "avoid": "不射中徐盛，不把威慑画成两军全面开战。",
+        "actors": [
+          {
+            "character_id": "9683a1dc-b89d-4fa3-833a-a235bd94e93c",
+            "goal": "保全军师并断追",
+            "knows": "须避免伤人破坏联盟",
+            "public_face": "果断威慑",
+            "private_tension": "克制杀伤但展示实力",
+            "visible_action": "放箭后手指张开，目光沿断索方向",
+            "evidence": "教你知我手段"
+          },
+          {
+            "character_id": "4ea3d7f1-0fbb-4e8b-a764-e7fd6b068832",
+            "goal": "安全返回夏口",
+            "knows": "赵云已奉令接应",
+            "public_face": "镇定旁观",
+            "private_tension": "已经脱离周瑜控制",
+            "visible_action": "站在赵云身后，直视追船",
+            "evidence": "奉令特來接軍師"
+          }
+        ]
+      },
+      {
+        "id": "orders-ensemble",
+        "title": "军帐授计",
+        "after_byte": 10567,
+        "image_asset_id": "c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "孔明在案左指点，张飞在案右听令，关羽站于中后，赵云背影退出帐口；左前随员不新增为可编辑主要角色。图是相邻指令的群像合成。",
+        "continuity": {
+          "scene_id": "xiakou-orders",
+          "method": "new_view",
+          "camera": "围案群像中景，孔明左侧指案，张飞右侧，关羽立后，赵云背影出帐。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "map-table",
+              "visibility": "visible",
+              "position": "帐中",
+              "reason": ""
+            },
+            {
+              "object_id": "tokens",
+              "visibility": "visible",
+              "position": "议事案中部",
+              "reason": ""
+            },
+            {
+              "object_id": "incense",
+              "visibility": "visible",
+              "position": "议事案左前侧",
+              "reason": ""
+            },
+            {
+              "object_id": "exit",
+              "visibility": "visible",
+              "position": "帐后右侧",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "孔明向张飞布置谷口伏击，众将围案听令。",
+        "evidence": "又喚張飛曰：「翼德可領三千兵渡江，截斷彝陵這條路，去葫蘆谷口埋伏。",
+        "framing": "围案群像中景，孔明左侧指案，张飞右侧，关羽立后，赵云背影出帐。",
+        "interpretation": "以相邻授计段落合成群像；关羽在场由后文承接，赵云离去来自本段首句。左前两人只作随员，不增加主要角色。木块与案图属于美术补充。",
+        "avoid": "不表现关羽已经立军令状或华容放行；不把关羽表现成主讲者。",
+        "actors": [
+          {
+            "character_id": "4ea3d7f1-0fbb-4e8b-a764-e7fd6b068832",
+            "goal": "分派伏击任务",
+            "knows": "预判曹操撤退路线",
+            "public_face": "冷静明确",
+            "private_tension": "需要诸将各司其职",
+            "visible_action": "前倾指案，目光落向张飞",
+            "evidence": "又喚張飛曰"
+          },
+          {
+            "character_id": "8f48afa9-9b26-490d-b588-bd24e205a607",
+            "goal": "领命截断谷口",
+            "knows": "接收下一步行动位置",
+            "public_face": "专注听令",
+            "private_tension": "急于建功但须等候",
+            "visible_action": "坐于案右，托腮侧听",
+            "evidence": "翼德可領三千兵渡江"
+          },
+          {
+            "character_id": "daba999f-534f-4168-b67c-bfc9649f8af5",
+            "goal": "等待自己的任务",
+            "knows": "诸将陆续获令",
+            "public_face": "沉静肃立",
+            "private_tension": "尚未受命的焦灼由后文展开",
+            "visible_action": "立于孔明身后，手停于腰带",
+            "evidence": ""
+          },
+          {
+            "character_id": "9683a1dc-b89d-4fa3-833a-a235bd94e93c",
+            "goal": "执行已领命令",
+            "knows": "已获乌林伏击部署",
+            "public_face": "干练离席",
+            "private_tension": "无须抢占当前对话焦点",
+            "visible_action": "白甲背影走向帐外",
+            "evidence": "雲領計去了"
+          }
+        ]
+      },
+      {
+        "id": "huanggai-departure",
+        "title": "火船待发",
+        "after_byte": 13993,
+        "image_asset_id": "a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "同一战区：北岸连环大船与营地、中央航道、南岸观察点。机位可以从南岸转到火船甲板、曹军大船再到江面；船只移动有事件依据。不同镜头的船栏与小舟不是同一物件。江岸山形仅作艺术方位，不作历史坐标。",
+        "continuity": {
+          "scene_id": "chibi-waterfront",
+          "method": "new_view",
+          "camera": "黄盖所在船甲板近景，老人居左，备料士兵沿右侧递进。",
+          "changes": "从岸上远景切到黄盖船甲板，舟队已出发，草束尚未点燃；曹军大船甲板在画外。",
+          "states": [
+            {
+              "object_id": "north-bank",
+              "visibility": "visible",
+              "position": "江面北侧远岸",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "linked-fleet",
+              "visibility": "offscreen",
+              "position": "北岸水寨停泊区",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "attacking-boats",
+              "visibility": "visible",
+              "position": "从南侧江面顺风驶向曹寨",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "zhouyu-bank",
+              "visibility": "offscreen",
+              "position": "南岸山坡观察点",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "cao-deck",
+              "visibility": "offscreen",
+              "position": "北岸水寨主船",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "rowboat",
+              "visibility": "offscreen",
+              "position": "水寨外围江面",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            }
+          ]
+        },
+        "moment": "黄盖带火船顺风出发，船上军士紧固草束与油瓮。",
+        "evidence": "黃蓋在第三隻火船上，獨披掩心甲，手提利刃",
+        "framing": "黄盖所在船甲板近景，老人居左，备料士兵沿右侧递进。",
+        "interpretation": "俯身军士与草束油瓮是火攻准备的视觉化；装备样式与天光为艺术处理，曹操在画外，未知来船真意。",
+        "avoid": "不提前点燃本船，不把黄盖画成已经受箭负伤。",
+        "actors": [
+          {
+            "character_id": "6c49cc85-517d-41e6-9e3f-252da784ede6",
+            "goal": "使火船接近敌寨",
+            "knows": "诈降是掩护，风势已利于行动",
+            "public_face": "老将沉着",
+            "private_tension": "贴近敌军前不能暴露火攻",
+            "visible_action": "持刀下垂、另一手指挥，目光紧盯前方",
+            "evidence": "手提利刃"
+          }
+        ]
+      },
+      {
+        "id": "caocao-watch",
+        "title": "曹营观船",
+        "after_byte": 14375,
+        "image_asset_id": "7acccf3b-78ba-4e97-9951-0f9de0065d69",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "同一战区：北岸连环大船与营地、中央航道、南岸观察点。机位可以从南岸转到火船甲板、曹军大船再到江面；船只移动有事件依据。不同镜头的船栏与小舟不是同一物件。江岸山形仅作艺术方位，不作历史坐标。",
+        "continuity": {
+          "scene_id": "chibi-waterfront",
+          "method": "new_view",
+          "camera": "曹军主船反打机位，曹操居前、谋士略后，来船从画面右侧接近。",
+          "changes": "反打至曹操所乘大船，黄盖舟队接近；原船队未换物、未起火，南岸观察点在画外。",
+          "states": [
+            {
+              "object_id": "north-bank",
+              "visibility": "visible",
+              "position": "江面北侧远岸",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "linked-fleet",
+              "visibility": "offscreen",
+              "position": "北岸水寨停泊区",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "attacking-boats",
+              "visibility": "visible",
+              "position": "曹军大船前方接近航道",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "zhouyu-bank",
+              "visibility": "offscreen",
+              "position": "南岸山坡观察点",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "cao-deck",
+              "visibility": "visible",
+              "position": "北岸水寨主船",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "rowboat",
+              "visibility": "offscreen",
+              "position": "水寨外围江面",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            }
+          ]
+        },
+        "moment": "曹操把来船当作归降，身后谋士担忧；同一进船行动呈现双方信息差。",
+        "evidence": "操迎風大笑，自以為得志。",
+        "framing": "曹军主船反打机位，曹操居前、谋士略后，来船从画面右侧接近。",
+        "interpretation": "曹操姿态取自得而非危机已知；身后谋士以程昱进谏的前文作群像概括，无独立角色新增。",
+        "avoid": "不能提前画成曹操恐惧逃亡，不能把未燃来船画成满载烈焰。",
+        "actors": [
+          {
+            "character_id": "71843b93-26d0-4c51-a38c-5492dfa6febf",
+            "goal": "接纳来降并确认胜势",
+            "knows": "相信黄盖来降但未知火攻",
+            "public_face": "自信含笑",
+            "private_tension": "自信遮蔽风险判断",
+            "visible_action": "背手昂首远望，对身后劝告未转身",
+            "evidence": "自以為得志"
+          }
+        ]
+      },
+      {
+        "id": "fire-panorama",
+        "title": "火起三江",
+        "after_byte": 15974,
+        "image_asset_id": "1132535c-26bc-4091-9870-28e1aa358e33",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "同一战区：北岸连环大船与营地、中央航道、南岸观察点。机位可以从南岸转到火船甲板、曹军大船再到江面；船只移动有事件依据。不同镜头的船栏与小舟不是同一物件。江岸山形仅作艺术方位，不作历史坐标。",
+        "continuity": {
+          "scene_id": "chibi-waterfront",
+          "method": "new_view",
+          "camera": "水面广角全景，燃烧连环大船占中后部，小舟与舟子在右前。",
+          "changes": "火船已撞入水寨，连环大船与北岸营地起火；视点降到江面小舟，旧甲板和岸上观察点在画外。",
+          "states": [
+            {
+              "object_id": "north-bank",
+              "visibility": "visible",
+              "position": "江面北侧远岸",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "linked-fleet",
+              "visibility": "visible",
+              "position": "北岸水寨停泊区",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "attacking-boats",
+              "visibility": "visible",
+              "position": "已撞入北岸水寨并引燃",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "zhouyu-bank",
+              "visibility": "offscreen",
+              "position": "南岸山坡观察点",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "cao-deck",
+              "visibility": "offscreen",
+              "position": "北岸水寨主船，已遭火势波及",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            },
+            {
+              "object_id": "rowboat",
+              "visibility": "visible",
+              "position": "水寨外围江面",
+              "reason": "随原文进船、观船、起火推进；更换机位使物件进入或离开取景范围，画外物件仍在原位置。"
+            }
+          ]
+        },
+        "moment": "火势扩展到连环船与岸营，以小舟视角展开战场。",
+        "evidence": "曹操回觀岸上營寨，幾處煙火。",
+        "framing": "水面广角全景，燃烧连环大船占中后部，小舟与舟子在右前。",
+        "interpretation": "画面聚焦群体与空间，不把前景水手指认为曹操或黄盖；火势来自前段与本段连续叙事。",
+        "avoid": "不画华容撤退或已确定胜者庆功；不可把连环船无故拆散。",
+        "actors": []
+      },
+      {
+        "id": "retreat-column",
+        "title": "败军入山",
+        "after_byte": 19465,
+        "image_asset_id": "95601ac3-c747-47f1-a69a-542665f76a87",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "泥路自左后高处转到前景，曹操在中前马上，败兵搀扶沿路而下。不同于后来葫芦谷阻击处及华容道。",
+        "continuity": {
+          "scene_id": "wulin-road",
+          "method": "new_view",
+          "camera": "队列纵深广角，曹操居中，互相扶持的军士在前景。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "road",
+              "visibility": "visible",
+              "position": "左后山坡通向前景",
+              "reason": ""
+            },
+            {
+              "object_id": "bamboo",
+              "visibility": "visible",
+              "position": "道路左侧",
+              "reason": ""
+            },
+            {
+              "object_id": "cart",
+              "visibility": "visible",
+              "position": "道路后方",
+              "reason": ""
+            },
+            {
+              "object_id": "horse",
+              "visibility": "visible",
+              "position": "前景中部",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "曹军离开火场进入险峻山道，曹操与疲惫军士同行。",
+        "evidence": "縱馬加鞭，走至五更，回望火光漸遠，操心方定",
+        "framing": "队列纵深广角，曹操居中，互相扶持的军士在前景。",
+        "interpretation": "取本段开头败退疲态，不把图说成末尾“仰面大笑”的逐字插画。军士行囊为军旅补充。",
+        "avoid": "不出现赵云伏兵已发动，不提前画出关羽拦路。",
+        "actors": [
+          {
+            "character_id": "71843b93-26d0-4c51-a38c-5492dfa6febf",
+            "goal": "带残军脱离火场",
+            "knows": "身后火光渐远但仍在险地",
+            "public_face": "勉力维持统帅姿态",
+            "private_tension": "疲惫、警惕与暂时宽心并存",
+            "visible_action": "低头策马，手收缰绳",
+            "evidence": "操心方定"
+          }
+        ]
+      },
+      {
+        "id": "zhangfei-ambush",
+        "title": "谷口翼德",
+        "after_byte": 21528,
+        "image_asset_id": "761dbfea-aaeb-4488-8c74-38c21cd6145f",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "谷道收窄于两侧山壁，张飞横矛立马封住左前高地，曹操与护卫从右前方遇阻；阵后伏兵有序。",
+        "continuity": {
+          "scene_id": "hulu-pass",
+          "method": "new_view",
+          "camera": "从曹军肩后看张飞，阻截者在左前高处，退军在右前。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "pass",
+              "visibility": "visible",
+              "position": "两军之间",
+              "reason": ""
+            },
+            {
+              "object_id": "spear",
+              "visibility": "visible",
+              "position": "张飞双手之间",
+              "reason": ""
+            },
+            {
+              "object_id": "horses",
+              "visibility": "visible",
+              "position": "谷口两侧",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "张飞横矛立马，曹军在谷口惊惧遇阻。",
+        "evidence": "為首乃燕人張翼德，橫矛立馬，大叫：「操賊走那裏去！」",
+        "framing": "从曹军肩后看张飞，阻截者在左前高处，退军在右前。",
+        "interpretation": "取双方交锋之前的阻截瞬间，曹操回身与亲兵视线外化恐惧。",
+        "avoid": "不画张飞与曹操并肩、不画曹操已经冲破谷口。",
+        "actors": [
+          {
+            "character_id": "8f48afa9-9b26-490d-b588-bd24e205a607",
+            "goal": "截住曹军争取战果",
+            "knows": "此处以逸待劳",
+            "public_face": "强势喝阻",
+            "private_tension": "战意强但守住阵位",
+            "visible_action": "勒马横矛，肩臂展开",
+            "evidence": "橫矛立馬"
+          },
+          {
+            "character_id": "71843b93-26d0-4c51-a38c-5492dfa6febf",
+            "goal": "寻路脱逃",
+            "knows": "伏兵已经占据前路",
+            "public_face": "勉力保持坐姿",
+            "private_tension": "再遇伏击的惊惧",
+            "visible_action": "回身仰视，握紧缰绳",
+            "evidence": "操大驚，棄甲上馬"
+          }
+        ]
+      },
+      {
+        "id": "huarong-encounter",
+        "title": "华容相逢",
+        "after_byte": 24806,
+        "image_asset_id": "53b3c1af-7fa1-4d44-b78e-700290d86561",
+        "status": "draft",
+        "continuity_check": null,
+        "environment": "曹操及疲惫败军在左，关羽与有序校刀手在右；中间狭路尚未放行。二人均在马上，孔明及周瑜不在场。",
+        "continuity": {
+          "scene_id": "huarong-road",
+          "method": "new_view",
+          "camera": "两人骑马近景，曹操左前俯身、关羽右侧直立，军阵在身后形成对照。",
+          "changes": "建立此独立物理地点的当前状态；与前一地点切场，不把不同帐室、船只或山路解释为同一组物件。",
+          "states": [
+            {
+              "object_id": "road",
+              "visibility": "visible",
+              "position": "两军之间通向远方",
+              "reason": ""
+            },
+            {
+              "object_id": "blade",
+              "visibility": "visible",
+              "position": "关羽右侧",
+              "reason": ""
+            },
+            {
+              "object_id": "red-horse",
+              "visibility": "visible",
+              "position": "画面右前",
+              "reason": ""
+            },
+            {
+              "object_id": "cao-horse",
+              "visibility": "visible",
+              "position": "画面左前",
+              "reason": ""
+            }
+          ]
+        },
+        "moment": "曹操欠身求情，关羽坚持军令，双方尚未完成放行决定。",
+        "evidence": "曹操兵敗勢危，到此無路，望將軍以昔日之情為重。",
+        "framing": "两人骑马近景，曹操左前俯身、关羽右侧直立，军阵在身后形成对照。",
+        "interpretation": "曹操手按胸口、仰视请求；关羽目光严肃而不鄙夷。情义与军令的冲突留在眼神和姿态。",
+        "avoid": "不可提前画放行，不画两人畅谈或关羽已经转马退开。",
+        "actors": [
+          {
+            "character_id": "71843b93-26d0-4c51-a38c-5492dfa6febf",
+            "goal": "以旧恩求得生路",
+            "knows": "己军无力再战且关羽重义",
+            "public_face": "诚恳欠身",
+            "private_tension": "生死压力下仍在说服对方",
+            "visible_action": "躬身、手近胸口、抬眼看关羽",
+            "evidence": "欠身謂雲長曰"
+          },
+          {
+            "character_id": "daba999f-534f-4168-b67c-bfc9649f8af5",
+            "goal": "执行军师军令",
+            "knows": "曹操过去有恩，但公私有别",
+            "public_face": "肃然回应",
+            "private_tension": "旧恩与军令相冲突",
+            "visible_action": "握刀端坐，眉头收紧直视曹操",
+            "evidence": "豈敢以私廢公"
+          }
+        ]
+      }
+    ],
+    "scenes": [
+      {
+        "id": "chibi-waterfront",
+        "title": "赤壁江面与曹军水寨",
+        "layout": "同一战区：北岸连环大船与营地、中央航道、南岸观察点。机位可以从南岸转到火船甲板、曹军大船再到江面；船只移动有事件依据。不同镜头的船栏与小舟不是同一物件。江岸山形仅作艺术方位，不作历史坐标。",
+        "reference_asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+        "objects": [
+          {
+            "id": "north-bank",
+            "name": "北岸山岭与营地",
+            "appearance": "远山、岸边营帐与火点",
+            "home": "江面北侧远岸",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "linked-fleet",
+            "name": "曹军连环大船",
+            "appearance": "大型木船、桅杆与连船铁环",
+            "home": "北岸水寨停泊区",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "又被鐵環銷住，無處逃避"
+          },
+          {
+            "id": "attacking-boats",
+            "name": "黄盖火船队",
+            "appearance": "小型帆船与待燃草束；旗色与曹军有别",
+            "home": "南侧江面",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "黃蓋在第三隻火船上"
+          },
+          {
+            "id": "zhouyu-bank",
+            "name": "周瑜观察山岸",
+            "appearance": "前景岩石、芦草与树干",
+            "home": "南岸山坡观察点",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "cao-deck",
+            "name": "曹操所乘大船甲板",
+            "appearance": "木栏、桅杆、灯笼；仅观船镜头近见",
+            "home": "北岸水寨主船",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "rowboat",
+            "name": "全景前方小舟",
+            "appearance": "木质船舷与划桨水手",
+            "home": "水寨外围江面",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "sickroom",
+        "title": "周瑜病榻",
+        "layout": "周瑜在右侧木榻半卧；孔明坐左侧与其对视。床后灯与杯在两人之间，帐柱居后。此处不是后来的议事桌。",
+        "reference_asset_id": "eb1e632b-c841-4062-9013-20f3e33c6e01",
+        "objects": [
+          {
+            "id": "bed",
+            "name": "病榻",
+            "appearance": "木床头与浅色被褥",
+            "home": "帐内右侧",
+            "kind": "fixed",
+            "origin": "source",
+            "evidence": "坐於床上"
+          },
+          {
+            "id": "bed-lamp",
+            "name": "床侧油灯",
+            "appearance": "铜灯与小杯",
+            "home": "病榻左后侧小几",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "tent-pole",
+            "name": "帐柱",
+            "appearance": "木柱与灰蓝帐布",
+            "home": "病榻后方",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "nanping-altar",
+        "title": "南屏山七星坛",
+        "layout": "三层赤土坛居画面中央，正面台阶通顶，执事列于坛顶四周，军士分列外圈；江面远景不作为营区精确位置。",
+        "reference_asset_id": "c6d54ad9-b541-4806-af07-adaf5c0023b0",
+        "objects": [
+          {
+            "id": "altar",
+            "name": "三层土坛",
+            "appearance": "赤土、三层台阶",
+            "home": "山坡中央",
+            "kind": "fixed",
+            "origin": "source",
+            "evidence": "令軍士取東南方赤土築壇"
+          },
+          {
+            "id": "flags",
+            "name": "坛上与坛外旗杆",
+            "appearance": "旗杆成圈；图中数量为概括",
+            "home": "祭坛各层及外圈",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "incense",
+            "name": "香炉",
+            "appearance": "铜炉",
+            "home": "坛顶孔明右侧",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "焚香於爐"
+          }
+        ]
+      },
+      {
+        "id": "zhouyu-command",
+        "title": "周瑜议事帐口",
+        "layout": "机位贴近桌面向帐口看，左有帐柱、灯与笔筒，桌上竹简，开口外为江面；无病榻。",
+        "reference_asset_id": "8ad2b717-eb50-404c-9900-516cc67a53d0",
+        "objects": [
+          {
+            "id": "table",
+            "name": "议事木桌",
+            "appearance": "粗木长桌",
+            "home": "帐口内侧",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "pole",
+            "name": "帐口支柱",
+            "appearance": "绳缚木柱",
+            "home": "帐口左侧",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "lamp",
+            "name": "铜油灯",
+            "appearance": "焰头向右倾",
+            "home": "木桌左侧",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "scroll",
+            "name": "竹简",
+            "appearance": "束起竹简",
+            "home": "木桌中后部",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "cloth",
+            "name": "帐帘与红布",
+            "appearance": "红布由左柱悬出、浅帘卷向右",
+            "home": "帐口上沿与左柱",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "river-escape",
+        "title": "接应船与追船",
+        "layout": "赵云、孔明及舟子在左前近船；徐盛追船在右后水面，断索从右后桅顶垂落。两船不是黄盖火船或曹军主船。",
+        "reference_asset_id": "941e1827-aa61-4962-adeb-6369a467fb3b",
+        "objects": [
+          {
+            "id": "rescue-boat",
+            "name": "接应快船",
+            "appearance": "木舷、船桨与船尾",
+            "home": "前方江面",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "徐盛見前船無篷"
+          },
+          {
+            "id": "pursuer",
+            "name": "徐盛追船",
+            "appearance": "后方帆船",
+            "home": "接应船右后方",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "射斷徐盛船上篷索"
+          },
+          {
+            "id": "bow",
+            "name": "赵云弓箭",
+            "appearance": "弓身在身前、弦已松",
+            "home": "赵云手中",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "趙雲拈弓搭箭"
+          }
+        ]
+      },
+      {
+        "id": "xiakou-orders",
+        "title": "夏口授计军帐",
+        "layout": "孔明在案左指点，张飞在案右听令，关羽站于中后，赵云背影退出帐口；左前随员不新增为可编辑主要角色。图是相邻指令的群像合成。",
+        "reference_asset_id": "c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6",
+        "objects": [
+          {
+            "id": "map-table",
+            "name": "议事案",
+            "appearance": "铺布木案与小木块",
+            "home": "帐中",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "tokens",
+            "name": "部署木块",
+            "appearance": "数组方木标记",
+            "home": "议事案中部",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "incense",
+            "name": "案上香炉",
+            "appearance": "圆形铜炉",
+            "home": "议事案左前侧",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "exit",
+            "name": "军帐出口",
+            "appearance": "木柱、掀起帐帘",
+            "home": "帐后右侧",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "wulin-road",
+        "title": "乌林西侧撤退山路",
+        "layout": "泥路自左后高处转到前景，曹操在中前马上，败兵搀扶沿路而下。不同于后来葫芦谷阻击处及华容道。",
+        "reference_asset_id": "95601ac3-c747-47f1-a69a-542665f76a87",
+        "objects": [
+          {
+            "id": "road",
+            "name": "泥泞山道",
+            "appearance": "弯折车辙、积水",
+            "home": "左后山坡通向前景",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "bamboo",
+            "name": "路旁竹林与树",
+            "appearance": "竹叶与稀疏枝干",
+            "home": "道路左侧",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "cart",
+            "name": "后军辎重车",
+            "appearance": "高装包裹的木车",
+            "home": "道路后方",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "horse",
+            "name": "曹操坐骑",
+            "appearance": "深色疲马",
+            "home": "前景中部",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "hulu-pass",
+        "title": "葫芦谷口阻击",
+        "layout": "谷道收窄于两侧山壁，张飞横矛立马封住左前高地，曹操与护卫从右前方遇阻；阵后伏兵有序。",
+        "reference_asset_id": "761dbfea-aaeb-4488-8c74-38c21cd6145f",
+        "objects": [
+          {
+            "id": "pass",
+            "name": "狭窄谷道",
+            "appearance": "泥地、两侧岩壁与树",
+            "home": "两军之间",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "spear",
+            "name": "张飞长矛",
+            "appearance": "横置长矛",
+            "home": "张飞双手之间",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "橫矛立馬"
+          },
+          {
+            "id": "horses",
+            "name": "对峙战马",
+            "appearance": "张飞坐骑与曹军马匹",
+            "home": "谷口两侧",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      },
+      {
+        "id": "huarong-road",
+        "title": "华容道相逢",
+        "layout": "曹操及疲惫败军在左，关羽与有序校刀手在右；中间狭路尚未放行。二人均在马上，孔明及周瑜不在场。",
+        "reference_asset_id": "53b3c1af-7fa1-4d44-b78e-700290d86561",
+        "objects": [
+          {
+            "id": "road",
+            "name": "华容泥道",
+            "appearance": "泥泞小路、竹木",
+            "home": "两军之间通向远方",
+            "kind": "fixed",
+            "origin": "artistic",
+            "evidence": ""
+          },
+          {
+            "id": "blade",
+            "name": "关羽青龙刀",
+            "appearance": "竖持长柄大刀",
+            "home": "关羽右侧",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "提青龍刀"
+          },
+          {
+            "id": "red-horse",
+            "name": "关羽坐骑",
+            "appearance": "红棕马与缰绳",
+            "home": "画面右前",
+            "kind": "movable",
+            "origin": "source",
+            "evidence": "跨赤兔馬"
+          },
+          {
+            "id": "cao-horse",
+            "name": "曹操坐骑",
+            "appearance": "深色疲马",
+            "home": "画面左前",
+            "kind": "movable",
+            "origin": "artistic",
+            "evidence": ""
+          }
+        ]
+      }
+    ]
+  }
+}

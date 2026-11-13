@@ -1,0 +1,228 @@
+{
+  "format": "taleprism-chibi-visual-review",
+  "version": 1,
+  "date": "2026-11-12",
+  "reviewer": "assistant",
+  "method": "逐一使用 view_image 检查公开哈希包中的12幅情境图、9张立绘、6张背景/封面；比较人物身份、双方立场、道具与原文锚点。不是由构建脚本自动判图。",
+  "scope": "允许沿用现有文学美术的制作检查；非历史精确性认证、非最终创作者美术验收。",
+  "creator_final_art_review": "pending",
+  "source_archive_sha256": "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a",
+  "recipe_sha256": "6fc8db9f09654da0d6fe43decff822e77e1312f6999f690c3d40915dee657165",
+  "dependencies": {
+    "reader.json": "b36f143738ef298a5735e18d5370e550e43741b9aaceffca58d93b75dd94d5bd",
+    "storygal-source/original.txt": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+    "storygal-source/source.utf8.txt": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+    "media/c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6.png": "53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384",
+    "media/8ad2b717-eb50-404c-9900-516cc67a53d0.png": "d94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26",
+    "media/761dbfea-aaeb-4488-8c74-38c21cd6145f.png": "819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3",
+    "media/7acccf3b-78ba-4e97-9951-0f9de0065d69.png": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+    "media/3aac3f40-d786-4296-a0ed-c9cca9b1f106.png": "3a071cb81f3cbbeb40869c7177f4d7f62cc9bc400962b0744df14d7de5a4b964",
+    "media/da59592b-3675-45ae-aefe-867b01d0a2e3.png": "e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07",
+    "media/1132535c-26bc-4091-9870-28e1aa358e33.png": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3",
+    "media/95601ac3-c747-47f1-a69a-542665f76a87.png": "e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1",
+    "media/c2e4efbf-d9d9-4dfd-a8fa-303a4739ff0d.png": "07aab170c646c905e6157178e21aab8a7bad6e002fb9f11ccfd5990f665c7507",
+    "media/934b20a6-85e8-4826-8ac7-1cdbeece77dd.png": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+    "media/12f9f6f2-33ff-4e77-aa97-39516826c601.png": "3198aba1b52fc9a7b643d83bbc401d0af6c8c42956a9cf31fb3eae8ca514d45c",
+    "media/53b3c1af-7fa1-4d44-b78e-700290d86561.png": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac",
+    "media/a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7.png": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+    "media/c6d54ad9-b541-4806-af07-adaf5c0023b0.png": "7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d",
+    "media/eb1e632b-c841-4062-9013-20f3e33c6e01.png": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834",
+    "media/bc2facb5-2ed7-4153-b69f-eae44f6c321c.png": "9294f28aef50044a857172d64990a8fe3a60019e362072066fe0b308d629bf0c",
+    "media/1640d7d0-989d-4362-b736-27128a5b4d19.png": "ab1d3d9dd870d842b613ae5940384475e23c375628dc87c235482c275848239c",
+    "media/941e1827-aa61-4962-adeb-6369a467fb3b.png": "ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66",
+    "media/b75ba772-e36b-4542-86ef-7230735dede1.png": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+    "media/f4d61535-7e89-4021-8a39-d802846926f0.png": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+    "media/617b9a85-0ab6-42bb-857e-0b2cd714c059.png": "2033545d314bf1c4f8e68156dcdbdb70ad33e57bbf150583e857dcd3b8ed60cb",
+    "media/3b3aed47-711a-4438-903b-435fccbe05af.png": "2ce85e644bdac60541bbc295ec081296a5d4d8cb58a2393a82636995ec38e0da",
+    "media/dd653cc4-dce2-4203-be11-179e24435613.png": "a2e3b9b706c4e259a7331056cdf2aef210bb48c6be73bc0c014a1c57043a1694",
+    "media/e277798f-5a67-471d-bda0-36791afd7ef9.png": "2eea7021dec88f1a76cbfe6d75879fe082a890b3abff95b112e730d30a0e253b",
+    "media/9df81a97-28d3-4ce1-88a7-f10bfe4981eb.png": "d1cd207c2ad9135687ab989b78ec0ca7b60cdf6940e0e71e42c8a059ddcd962c",
+    "media/c794275f-eb78-445b-9103-1f6bc7a9ed47.png": "9a60e652995bc77981f42a1255a5866273f1b687306808cc7780a05d6673043f",
+    "media/af464c56-bf43-41af-9d99-ba558cd41d48.png": "7ab37c3a859af3d84d53c2211c95e9fc170cfba74499b9c58c08c587fc6b3e3b"
+  },
+  "images": [
+    {
+      "sample_key": "narrative:orders-ensemble",
+      "asset_id": "c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6",
+      "sha256": "53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384",
+      "inspection": "孔明指案，张飞托腮听令，关羽站在两人之间偏后，白甲赵云背身出帐；各自行为不同，未虚构敌对。案上木块、铜炉与竹简明确。群像合成相邻授计段落，关羽不是本段发言者，左侧两人只记随员。"
+    },
+    {
+      "sample_key": "narrative:wind-in-tent",
+      "asset_id": "8ad2b717-eb50-404c-9900-516cc67a53d0",
+      "sha256": "d94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26",
+      "inspection": "无人近景：左侧铜灯火焰、红布和右侧浅帐帘同向鼓动，桌面竹简仍在，风的心理压力有可见载体。与病榻、夏口军帐属于不同机位和物理地点，不假定为同一张桌。"
+    },
+    {
+      "sample_key": "narrative:zhangfei-ambush",
+      "asset_id": "761dbfea-aaeb-4488-8c74-38c21cd6145f",
+      "sha256": "819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3",
+      "inspection": "张飞深甲红褐衣、浓须与立绘相符，横矛立马占高位；曹操从右前方回身面对阻击，亲兵紧张。两军阵位明确，尚未脱围。谷口岩壁与道路固定，不能复用为后续华容同一地点。"
+    },
+    {
+      "sample_key": "narrative:caocao-watch",
+      "asset_id": "7acccf3b-78ba-4e97-9951-0f9de0065d69",
+      "sha256": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+      "inspection": "曹操深袍、冠、灰黑须与参考一致，昂首背手，自得但未惊恐；身后谋士举手忧虑。来船尚未起火、观船甲板木栏完整，反打机位不会把黄盖船舷当作曹操同一船舷。"
+    },
+    {
+      "sample_key": "altar",
+      "asset_id": "3aac3f40-d786-4296-a0ed-c9cca9b1f106",
+      "sha256": "3a071cb81f3cbbeb40869c7177f4d7f62cc9bc400962b0744df14d7de5a4b964",
+      "inspection": "空坛三层、旗杆、顶上香炉、夜色江面清楚；比群像坛图更简略。保留作通用环境背景，细部不充当群像母版，以免把旗数变化误判为严格连续。"
+    },
+    {
+      "sample_key": "narrative:river-overlook",
+      "asset_id": "da59592b-3675-45ae-aefe-867b01d0a2e3",
+      "sha256": "e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07",
+      "inspection": "周瑜绛袍、冠与立绘相符，侧脸紧唇观察密集舰队；右后随从只作群像。岩岸、北岸大船与母版舰队的左右关系可辨，尚无火攻。回目后作预示图，不能宣称画中动作已在回目内发生。"
+    },
+    {
+      "sample_key": "narrative:fire-panorama",
+      "asset_id": "1132535c-26bc-4091-9870-28e1aa358e33",
+      "sha256": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3",
+      "inspection": "连环大船仍在同侧水寨，桅杆与船体未凭空换位；火已由火船蔓延岸营，前景小舟舟子回望。与前两张船图比对，变化可由进船和起火解释。前景人无足够身份依据，不标成曹操或黄盖。"
+    },
+    {
+      "sample_key": "narrative:retreat-column",
+      "asset_id": "95601ac3-c747-47f1-a69a-542665f76a87",
+      "sha256": "e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1",
+      "inspection": "曹操衣冠与基础参考一致但满身泥污，低头骑马；前景互扶败兵、后方辎重与弯折泥路表现疲态。取五更离开火场的瞬间，不把该表情标成随后仰面大笑。山道不是华容道的同一段。"
+    },
+    {
+      "sample_key": "tent",
+      "asset_id": "c2e4efbf-d9d9-4dfd-a8fa-303a4739ff0d",
+      "sha256": "07aab170c646c905e6157178e21aab8a7bad6e002fb9f11ccfd5990f665c7507",
+      "inspection": "帐口在左，后方屏风、右侧桌面油灯与卷轴清楚，前景留空。现有55呈现把它作为通用军帐背景；不据此断言周瑜和夏口房间的家具相同，此局限已记录。"
+    },
+    {
+      "sample_key": "fleet",
+      "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+      "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+      "inspection": "未起火连环大船在右后，近景小船在左，远岸营地与山形建立稳定方向。作为四镜头水域母版；船数为艺术概括，不能等同真实兵力。"
+    },
+    {
+      "sample_key": "cover",
+      "asset_id": "12f9f6f2-33ff-4e77-aa97-39516826c601",
+      "sha256": "3198aba1b52fc9a7b643d83bbc401d0af6c8c42956a9cf31fb3eae8ca514d45c",
+      "inspection": "孔明前、周瑜后，冷暖山水与后方江面呼应；左侧留白适合章节标题。仅作章封，不将二人共同站位计入故事连续场景。"
+    },
+    {
+      "sample_key": "narrative:huarong-encounter",
+      "asset_id": "53b3c1af-7fa1-4d44-b78e-700290d86561",
+      "sha256": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac",
+      "inspection": "曹操左侧欠身、手近胸、抬眼求情；关羽绿袍长须、竖刀肃立于右侧，赤兔样式红棕马清楚。曹军疲惫、关军有序，路尚被阻；不是双方平等闲谈或已放行。"
+    },
+    {
+      "sample_key": "narrative:huanggai-departure",
+      "asset_id": "a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7",
+      "sha256": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+      "inspection": "黄盖白须、褐甲、黄褐内衣一致，持刀下垂并指挥；军士捆扎草束与油瓮，船队未燃。与曹营观船是相反阵营视角，图中他已知火攻、曹操未知。灯笼、草束与船舷可定位。"
+    },
+    {
+      "sample_key": "narrative:altar-assembly",
+      "asset_id": "c6d54ad9-b541-4806-af07-adaf5c0023b0",
+      "sha256": "7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d",
+      "inspection": "孔明蓝灰道衣和长发与立绘相符，坛顶抬臂，执事及外围军士层次清楚。三层土坛和中央台阶稳定。旗数、颜色、执事服色与孔明鞋履属于现有图的概括，不能宣称严格符合跣足及仪轨数目。"
+    },
+    {
+      "sample_key": "narrative:sickbed-dialogue",
+      "asset_id": "eb1e632b-c841-4062-9013-20f3e33c6e01",
+      "sha256": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834",
+      "inspection": "已看近景：孔明左侧微笑克制、目光直视；周瑜右侧蹙眉握被、半卧失色，两人立场不同。木床、枕被、铜灯、小杯位置清楚。图中床头与半卧立绘不是逐件相同家具，立绘用于人物状态参考，不用作房间母版。"
+    },
+    {
+      "sample_key": "forest",
+      "asset_id": "bc2facb5-2ed7-4153-b69f-eae44f6c321c",
+      "sha256": "9294f28aef50044a857172d64990a8fe3a60019e362072066fe0b308d629bf0c",
+      "inspection": "无人山道、路侧竹树、积水与远山清楚。作为撤退段通用氛围背景；乌林、葫芦谷、华容物理地点分别建场，不借同背景宣称地理一致。"
+    },
+    {
+      "sample_key": "fire",
+      "asset_id": "1640d7d0-989d-4362-b736-27128a5b4d19",
+      "sha256": "ab1d3d9dd870d842b613ae5940384475e23c375628dc87c235482c275848239c",
+      "inspection": "与舰队背景比对，右侧大船与连船铁链仍在，左小船着火，烟火向同侧延展。作为已发生火攻的背景，不放到未点火的进船时刻。"
+    },
+    {
+      "sample_key": "narrative:zhaoyun-arrow",
+      "asset_id": "941e1827-aa61-4962-adeb-6369a467fb3b",
+      "sha256": "ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66",
+      "inspection": "赵云白甲白羽冠与立绘一致，放箭手松开、视线朝追船；孔明蓝袍在身后，右后索断帆垂。前景桨手与船舷清楚；帆布取升帆相邻动作的概括，不作为无篷快船的结构复原。"
+    },
+    {
+      "sample_key": "kongming",
+      "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+      "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+      "inspection": "全身蓝灰道衣、白内衬、长发须、赤足，面部温和镇定；与四幅孔明情境图身份一致。背景光晕为现有美术处理，不宣称精准抠图或所有状态通用。"
+    },
+    {
+      "sample_key": "caocao",
+      "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+      "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+      "inspection": "深灰紫袍金边、冠、灰黑须，眉眼沉稳；与观船、撤退、谷口和华容图可以辨识同一人物。基础表情不能冒充求情表演。"
+    },
+    {
+      "sample_key": "guanyu",
+      "asset_id": "617b9a85-0ab6-42bb-857e-0b2cd714c059",
+      "sha256": "2033545d314bf1c4f8e68156dcdbdb70ad33e57bbf150583e857dcd3b8ed60cb",
+      "inspection": "绿袍头巾、长须、甲衣与腰带一致，直立肃然；与军帐和华容一致。基础立绘无兵器，华容刀为情境道具。"
+    },
+    {
+      "sample_key": "lusu",
+      "asset_id": "3b3aed47-711a-4438-903b-435fccbe05af",
+      "sha256": "2ce85e644bdac60541bbc295ec081296a5d4d8cb58a2393a82636995ec38e0da",
+      "inspection": "土黄灰褐儒衣、软冠、短须，抬掌解释、眉间有忧，区别于孔明从容与周瑜戒备；保留用于对话呈现。"
+    },
+    {
+      "sample_key": "huanggai",
+      "asset_id": "dd653cc4-dce2-4203-be11-179e24435613",
+      "sha256": "a2e3b9b706c4e259a7331056cdf2aef210bb48c6be73bc0c014a1c57043a1694",
+      "inspection": "白须老将、褐色甲、黄褐衣、红褐腰带，神态坚毅；与火船待发的服装和年龄一致。没有预先画上中箭伤口。"
+    },
+    {
+      "sample_key": "zhaoyun",
+      "asset_id": "e277798f-5a67-471d-bda0-36791afd7ef9",
+      "sha256": "2eea7021dec88f1a76cbfe6d75879fe082a890b3abff95b112e730d30a0e253b",
+      "inspection": "白甲、白羽冠、蓝灰镶边，年轻面容警醒；与断索弓手、帐外离去背影相符。持弓动作只由情境图承担。"
+    },
+    {
+      "sample_key": "zhangfei",
+      "asset_id": "9df81a97-28d3-4ce1-88a7-f10bfe4981eb",
+      "sha256": "d1cd207c2ad9135687ab989b78ec0ca7b60cdf6940e0e71e42c8a059ddcd962c",
+      "inspection": "深甲红褐衣、头巾、粗壮体格浓须，目光强烈；与军帐侧坐和谷口骑马识别一致。保留克制基础姿态。"
+    },
+    {
+      "sample_key": "zhouyu",
+      "asset_id": "c794275f-eb78-445b-9103-1f6bc7a9ed47",
+      "sha256": "9a60e652995bc77981f42a1255a5866273f1b687306808cc7780a05d6673043f",
+      "inspection": "绛衣金边、冠、细须，年轻面容严肃；与望阵和问疾的衣冠识别一致。作为康复后常态，不用于病中替代。"
+    },
+    {
+      "sample_key": "zhouyu_ill",
+      "asset_id": "af464c56-bf43-41af-9d99-ba558cd41d48",
+      "sha256": "7ab37c3a859af3d84d53c2211c95e9fc170cfba74499b9c58c08c587fc6b3e3b",
+      "inspection": "同一绛衣冠与面部，半卧、手按腹部、眉头收紧，病态外化明确；自带木榻和枕头，作为状态立绘，不用来锁定情境插画床头样式。"
+    }
+  ],
+  "shots": {
+    "river-overlook": "周瑜绛袍、冠与立绘相符，侧脸紧唇观察密集舰队；右后随从只作群像。岩岸、北岸大船与母版舰队的左右关系可辨，尚无火攻。回目后作预示图，不能宣称画中动作已在回目内发生。",
+    "sickbed-dialogue": "已看近景：孔明左侧微笑克制、目光直视；周瑜右侧蹙眉握被、半卧失色，两人立场不同。木床、枕被、铜灯、小杯位置清楚。图中床头与半卧立绘不是逐件相同家具，立绘用于人物状态参考，不用作房间母版。",
+    "altar-assembly": "孔明蓝灰道衣和长发与立绘相符，坛顶抬臂，执事及外围军士层次清楚。三层土坛和中央台阶稳定。旗数、颜色、执事服色与孔明鞋履属于现有图的概括，不能宣称严格符合跣足及仪轨数目。",
+    "wind-in-tent": "无人近景：左侧铜灯火焰、红布和右侧浅帐帘同向鼓动，桌面竹简仍在，风的心理压力有可见载体。与病榻、夏口军帐属于不同机位和物理地点，不假定为同一张桌。",
+    "zhaoyun-arrow": "赵云白甲白羽冠与立绘一致，放箭手松开、视线朝追船；孔明蓝袍在身后，右后索断帆垂。前景桨手与船舷清楚；帆布取升帆相邻动作的概括，不作为无篷快船的结构复原。",
+    "orders-ensemble": "孔明指案，张飞托腮听令，关羽站在两人之间偏后，白甲赵云背身出帐；各自行为不同，未虚构敌对。案上木块、铜炉与竹简明确。群像合成相邻授计段落，关羽不是本段发言者，左侧两人只记随员。",
+    "huanggai-departure": "黄盖白须、褐甲、黄褐内衣一致，持刀下垂并指挥；军士捆扎草束与油瓮，船队未燃。与曹营观船是相反阵营视角，图中他已知火攻、曹操未知。灯笼、草束与船舷可定位。",
+    "caocao-watch": "曹操深袍、冠、灰黑须与参考一致，昂首背手，自得但未惊恐；身后谋士举手忧虑。来船尚未起火、观船甲板木栏完整，反打机位不会把黄盖船舷当作曹操同一船舷。",
+    "fire-panorama": "连环大船仍在同侧水寨，桅杆与船体未凭空换位；火已由火船蔓延岸营，前景小舟舟子回望。与前两张船图比对，变化可由进船和起火解释。前景人无足够身份依据，不标成曹操或黄盖。",
+    "retreat-column": "曹操衣冠与基础参考一致但满身泥污，低头骑马；前景互扶败兵、后方辎重与弯折泥路表现疲态。取五更离开火场的瞬间，不把该表情标成随后仰面大笑。山道不是华容道的同一段。",
+    "zhangfei-ambush": "张飞深甲红褐衣、浓须与立绘相符，横矛立马占高位；曹操从右前方回身面对阻击，亲兵紧张。两军阵位明确，尚未脱围。谷口岩壁与道路固定，不能复用为后续华容同一地点。",
+    "huarong-encounter": "曹操左侧欠身、手近胸、抬眼求情；关羽绿袍长须、竖刀肃立于右侧，赤兔样式红棕马清楚。曹军疲惫、关军有序，路尚被阻；不是双方平等闲谈或已放行。"
+  },
+  "known_limitations": [
+    "祭坛旗数、执事服色与鞋履未作逐项文本复原。",
+    "授计群像及断索升帆压缩相邻动作；原文保持原样。",
+    "通用背景图只承载氛围，不提供房间或地理的精确连续性保证。",
+    "地图保留原有三阶段约略解释，不新增未经考证的史地结论。"
+  ],
+  "asset_edits": []
+}

@@ -124,7 +124,7 @@ class Reader:
             ],
             "config": config,
             "issues": self.publication_issues(pid, config, review),
-            "chibi_sample": self.is_chibi(pid),
+            "chibi_sample": self.is_chibi(pid, required=False),
             "assets": [a | {"url": f"/api/projects/{pid}/reader/assets/{a['id']}"} for a in assets],
             "paragraphs": [
                 {
@@ -137,9 +137,30 @@ class Reader:
             ],
         }
 
-    def is_chibi(self, pid):
+    def is_chibi(self, pid, *, required=True):
+        """Sample actions require their source; generic discovery explicitly opts out."""
+        digest = self.store.get(pid)["canonical_sha256"]
         sample = REPO / "samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt"
-        return self.store.get(pid)["canonical_sha256"] == sha256(sample.read_bytes())
+        try:
+            raw = sample.read_bytes()
+        except OSError:
+            if required:
+                raise ValueError(
+                    "缺少赤壁样例原文，请安装完整赤壁示例素材后再使用此功能。普通小说不需要该素材。"
+                ) from None
+            return False
+        return digest == sha256(raw)
+
+    def chibi_map(self):
+        try:
+            data = json.loads((REPO / "samples/reader/chibi-map.json").read_text("utf-8"))
+            if len(data["phases"]) != 3 or not all(isinstance(p, dict) for p in data["phases"]):
+                raise ValueError()
+            if not data["places"] or not all(isinstance(p["id"], str) for p in data["places"]):
+                raise ValueError()
+            return data
+        except (OSError, ValueError, KeyError, TypeError):
+            raise ValueError("赤壁地图素材缺失或损坏，请重新安装完整赤壁示例素材。") from None
 
     def validate(self, pid, config, check_characters=True, *, for_restore=False):
         starts = {p["byte_start"] for p in self.blocks(pid)}
@@ -173,8 +194,10 @@ class Reader:
                 and not set(scene["character_ids"]) <= confirmed
             ):
                 raise ValueError("场景人物需为已确认角色，请在人物页确认后再保存。")
-        if config["map_profile"] and not self.is_chibi(pid):
-            raise ValueError("赤壁地图目前仅适用于完整赤壁样例。")
+        if config["map_profile"]:
+            if config["map_profile"] != "chibi" or not self.is_chibi(pid, required=True):
+                raise ValueError("赤壁地图目前仅适用于完整赤壁样例。")
+            self.chibi_map()
 
     def publication_issues(self, pid, config, review=None):
         """Describe current approval problems without changing saved editorial choices."""
@@ -262,14 +285,20 @@ class Reader:
 
         def update(db, _data):
             asset = self.review.item(db, "reader_assets", pid, aid)
+            was_rejected = asset["status"] == "rejected"
             asset["status"] = status
             self.review.put(db, "reader_assets", pid, asset)
+            if asset["kind"] == "scene" and was_rejected != (status == "rejected"):
+                from .production import invalidate_scene_image_checks
+
+                invalidate_scene_image_checks(db, pid, aid)
 
         self.mutate(pid, revision, "reader.asset_review", update)
 
     def sample(self, pid, revision):
-        if not self.is_chibi(pid):
+        if not self.is_chibi(pid, required=True):
             raise ValueError("这组封面、场景和地图只适用于赤壁样例。")
+        self.chibi_map()
         if self.load(pid)[0] != revision:
             raise ConflictError("阅读器配置已更新，请刷新后重试。")
         files = {
@@ -286,7 +315,9 @@ class Reader:
         try:
             with self.store.db() as db:
                 existing = self.review.rows(db, "reader_assets", pid)
-            if any(not (REPO / "samples/reader" / name).is_file() for name, _kind in files.values()):
+            if any(
+                not (REPO / "samples/reader" / name).is_file() for name, _kind in files.values()
+            ):
                 raise ValueError("本机没有赤壁原始素材；请导入完整赤壁工程，或上传自己的图片。")
             for key, (name, kind) in files.items():
                 content = (REPO / "samples/reader" / name).read_bytes()
@@ -541,7 +572,7 @@ class Reader:
             block.update(runs=runs, audio=clips)
         map_data = None
         if config["map_profile"] == "chibi":
-            map_data = json.loads((REPO / "samples/reader/chibi-map.json").read_text())
+            map_data = self.chibi_map()
             fire = next(b for b in blocks if "黃蓋用刀一招" in b["text"])
             retreat = next(b for b in blocks if "縱馬加鞭" in b["text"])
             for phase, key in zip(map_data["phases"], ["opposition", "fire", "retreat"]):

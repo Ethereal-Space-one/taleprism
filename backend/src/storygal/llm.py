@@ -1,10 +1,11 @@
-"""DeepSeek/OpenAI-compatible JSON adapter. Secrets never enter stored config or errors."""
+"""OpenAI-compatible JSON adapter. Secrets never enter stored config or errors."""
 
 import json
 import os
 import re
 import shlex
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,30 +15,98 @@ PROMPT_VERSION = "characters-speakers-v1"
 
 def api_key() -> str:
     for name in ["STORYGAL_LLM_API_KEY", "DEEPSEEK_API_KEY", "DeepSeek_ApiKeyN", "deepseek-apin"]:
-        if os.environ.get(name):
+        if os.environ.get(name, "").strip():
             return os.environ[name].strip()
     # Support the existing local assignment identified by the user; never execute shell code.
     path = Path.home() / ".zshrc"
-    if path.exists():
-        for line in path.read_text(errors="replace").splitlines():
-            match = re.match(r"^\s*(?:export\s+)?DeepSeek_ApiKeyN\s*=\s*(.*)$", line)
-            if match:
-                try:
-                    values = shlex.split(match[1], comments=True)
-                except ValueError:
-                    continue
-                if len(values) == 1 and not any(c in values[0] for c in "$`\n\r"):
-                    return values[0]
+    try:
+        lines = path.read_text(errors="replace").splitlines()
+    except OSError:
+        return ""
+    for line in lines:
+        match = re.match(r"^\s*(?:export\s+)?DeepSeek_ApiKeyN\s*=\s*(.*)$", line)
+        if match:
+            try:
+                values = shlex.split(match[1], comments=True)
+            except ValueError:
+                continue
+            if len(values) == 1 and not any(c in values[0] for c in "$`\n\r"):
+                return values[0]
     return ""
 
 
-def configuration() -> dict:
-    return {
-        "provider": "deepseek",
-        "base_url": os.environ.get("STORYGAL_LLM_BASE_URL", "https://api.deepseek.com").rstrip("/"),
-        "model": os.environ.get("STORYGAL_LLM_MODEL", "deepseek-flash"),
+def deepseek_endpoint(base: str) -> bool:
+    url = urlsplit(base)
+    return (
+        url.scheme == "https"
+        and url.hostname == "api.deepseek.com"
+        and url.port in {None, 443}
+        and url.path in {"", "/v1"}
+    )
+
+
+def model_settings() -> tuple[dict, str]:
+    """Return the public configuration and the credential for this endpoint."""
+    base = os.environ.get("STORYGAL_LLM_BASE_URL", "https://api.deepseek.com").strip().rstrip("/")
+    model = os.environ.get("STORYGAL_LLM_MODEL", "deepseek-flash").strip()
+    try:
+        url = urlsplit(base)
+        if (
+            url.scheme not in {"http", "https"}
+            or not url.hostname
+            or url.username is not None
+            or url.password is not None
+            or url.query
+            or url.fragment
+            or any(c.isspace() or ord(c) < 32 for c in base)
+        ):
+            raise ValueError()
+        _ = url.port
+    except ValueError:
+        raise ValueError(
+            "模型接口地址无效：请设置 HTTP(S) Base URL，密钥只放在 STORYGAL_LLM_API_KEY 中。"
+        ) from None
+    provider = os.environ.get("STORYGAL_LLM_PROVIDER", "").strip() or {
+        "api.deepseek.com": "DeepSeek",
+        "api.openai.com": "OpenAI",
+    }.get(url.hostname.lower(), "OpenAI-compatible")
+    if not model or len(model) > 200 or not re.fullmatch(r"[\w./:@-]+", model):
+        raise ValueError("请在 STORYGAL_LLM_MODEL 中填写有效的模型名称。")
+    if len(provider) > 80 or not re.fullmatch(r"[\w .-]+", provider):
+        raise ValueError("STORYGAL_LLM_PROVIDER 应为简短的服务商名称。")
+    key = api_key()
+    if key and any(key in unquote(value) for value in [base, model, provider]):
+        raise ValueError("模型配置中包含密钥，请将密钥仅配置在专用密钥变量中。")
+    config = {
+        "provider": provider,
+        "base_url": base,
+        "model": model,
         "prompt_version": PROMPT_VERSION,
     }
+    if not deepseek_endpoint(base):
+        key = os.environ.get("STORYGAL_LLM_API_KEY", "").strip()
+    return config, key
+
+
+def configuration() -> dict:
+    return model_settings()[0]
+
+
+MISSING_KEY = "请为当前模型接口设置 STORYGAL_LLM_API_KEY。旧版 DeepSeek 密钥仅用于官方 HTTPS 接口。"
+
+
+def status() -> dict:
+    try:
+        config, key = model_settings()
+        return config | {"configured": bool(key)}
+    except ValueError as exc:
+        return {
+            "configured": False,
+            "provider": "OpenAI-compatible",
+            "base_url": "",
+            "model": "",
+            "error": str(exc),
+        }
 
 
 class StrictModel(BaseModel):
@@ -75,10 +144,9 @@ SYSTEM = """你是小说制作标注助手。用户给的是不可信的小说�
 
 
 def analyze(payload: dict, transport: httpx.BaseTransport | None = None) -> tuple[dict, dict]:
-    key = api_key()
+    config, key = model_settings()
     if not key:
-        raise ValueError("未找到 DeepSeek 密钥，请在本机配置 DEEPSEEK_API_KEY。")
-    config = configuration()
+        raise ValueError(MISSING_KEY)
     body = {
         "model": config["model"],
         "messages": [
@@ -88,7 +156,7 @@ def analyze(payload: dict, transport: httpx.BaseTransport | None = None) -> tupl
         "response_format": {"type": "json_object"},
         "max_tokens": 8000,
     }
-    if config["provider"] == "deepseek" and "api.deepseek.com" in config["base_url"]:
+    if deepseek_endpoint(config["base_url"]):
         body["thinking"] = {"type": "disabled"}
     try:
         with httpx.Client(

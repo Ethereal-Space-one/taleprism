@@ -73,7 +73,7 @@
       ],
       "continuity": {
         "scene_id": "archive",
-        "method": "reuse",
+        "method": "new_view",
         "camera": "门内平视，固定矮柜、台灯和窗的位置",
         "changes": "建立空间与初始物件",
         "states": [

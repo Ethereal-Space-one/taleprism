@@ -7,6 +7,157 @@ import time
 from pathlib import Path
 
 import httpx
+from storygal.review import top_dialogues
+from storygal.text import decode_source
+
+
+def resolve_dialogues(recipe, source_raw):
+    """Resolve tasks against the same canonical bytes/parser used by project ingestion.
+
+    Recipe anchors are half-open UTF-8 ranges of an entire top-level quote's content,
+    without its outer quotation marks. Never persist the parser's temporary UUIDs.
+    """
+    _, source = decode_source(source_raw)
+    characters = recipe.get("characters")
+    tasks = recipe.get("dialogues")
+    if not isinstance(characters, list) or not isinstance(tasks, list):
+        raise ValueError("配方 characters 和 dialogues 必须为列表。")  # noqa: TRY004 -- invalid recipe
+    names, normalized_names = set(), set()
+    for index, character in enumerate(characters, 1):
+        name = character.get("name") if isinstance(character, dict) else None
+        if (
+            not isinstance(name, str)
+            or not name.strip()
+            or len(name) > 40
+            or any(ord(c) < 32 for c in name)
+        ):
+            raise ValueError(
+                f"characters 第 {index} 项的 name 必须为 1–40 个字符的非空姓名，不能包含控制字符。"
+            )
+        description = character.get("description")
+        if not isinstance(description, str) or len(description) > 2000:
+            raise ValueError(
+                f"characters 第 {index} 项必须提供 description，且为最多 2,000 个字符的字符串。"
+            )
+        if name.strip() in normalized_names:
+            raise ValueError(f"配方人物姓名重复：{name!r}；请使用不同姓名区分说话人。")
+        names.add(name)
+        normalized_names.add(name.strip())
+
+    by_text, by_range = {}, {}
+    for dialogue in top_dialogues(source):
+        by_text.setdefault(dialogue["text"], []).append(dialogue)
+        by_range[(dialogue["byte_start"], dialogue["byte_end"])] = dialogue
+    # In valid UTF-8, each non-continuation byte starts a character; EOF is also a boundary.
+    boundaries = {i for i, b in enumerate(source) if b & 0xC0 != 0x80} | {len(source)}
+    allowed = {"text", "character", "voice_prefix", "byte_start", "byte_end"}
+    resolved, occupied = [], {}
+    for index, task in enumerate(tasks, 1):
+        label = f"dialogues 第 {index} 项"
+        if not isinstance(task, dict):
+            raise ValueError(f"{label} 必须为对象。")  # noqa: TRY004 -- invalid recipe
+        if unknown := set(task) - allowed:
+            raise ValueError(f"{label} 含未知字段：{', '.join(sorted(unknown))}。")
+        for field in ("text", "character"):
+            if not isinstance(task.get(field), str) or not task[field].strip():
+                raise ValueError(f"{label} 的 {field} 必须为非空字符串。")
+        if "voice_prefix" in task and (
+            not isinstance(task["voice_prefix"], str)
+            or not task["voice_prefix"].strip()
+            or task["voice_prefix"] != task["voice_prefix"].strip()
+            or any(ord(c) < 32 for c in task["voice_prefix"])
+        ):
+            raise ValueError(
+                f"{label} 的 voice_prefix 必须为非空字符串，不能包含首尾空白或控制字符；不配音请省略此字段。"
+            )
+        if task["character"] not in names:
+            raise ValueError(
+                f"{label} 的 character 在配方人物列表中不存在：{task['character']!r}。"
+            )
+        if ("byte_start" in task) != ("byte_end" in task):
+            raise ValueError(f"{label} 必须同时提供 byte_start 和 byte_end。")
+        if "byte_start" in task:
+            start, end = task["byte_start"], task["byte_end"]
+            if type(start) is not int or type(end) is not int:
+                raise ValueError(
+                    f"{label} 的 byte_start、byte_end 必须为整数，不能为布尔值。"
+                )
+            if not 0 <= start < end <= len(source):
+                raise ValueError(
+                    f"{label} 锚点范围无效，需满足 0 <= byte_start < byte_end <= 原文字节数。"
+                )
+            if start not in boundaries or end not in boundaries:
+                raise ValueError(f"{label} 锚点必须落在 UTF-8 字符边界。")
+            if source[start:end] != task["text"].encode("utf-8"):
+                raise ValueError(
+                    f"{label} 的 text 与原文不一致：锚点范围 [{start}, {end})。"
+                )
+            if (start, end) not in by_range:
+                raise ValueError(
+                    f"{label} 锚点必须覆盖引号内一条完整对白，不能包含外层引号、截取片段、跨对白或指向旁白。"
+                )
+        else:
+            matches = by_text.get(task["text"], [])
+            if not matches:
+                raise ValueError(
+                    f"{label} 未找到完整匹配的原文对白：{task['text']!r}。"
+                )
+            if len(matches) != 1:
+                raise ValueError(
+                    f"{label} 原文对白重复（{len(matches)} 处），请同时提供 byte_start 和 byte_end；不会猜选。"
+                )
+            start, end = matches[0]["byte_start"], matches[0]["byte_end"]
+        # Complete top-level dialogue ranges never partially overlap. A repeated range
+        # (including mixed anchored/text-only tasks) is the only remaining overlap case.
+        if (start, end) in occupied:
+            raise ValueError(
+                f"{label} 与第 {occupied[(start, end)]} 项范围重叠，是重复任务；一条对白只能分配一次。"
+            )
+        occupied[(start, end)] = index
+        resolved.append({**task, "byte_start": start, "byte_end": end})
+    return resolved
+
+
+def resolve_voices(dialogue_tasks, capabilities):
+    """Resolve all requested voices from the server snapshot before the first write."""
+    if (
+        not isinstance(capabilities, dict)
+        or capabilities.get("provider") != "macos-say"
+        or type(capabilities.get("available")) is not bool
+        or not isinstance(capabilities.get("voices"), list)
+        or any(
+            not isinstance(voice, str) or not voice.strip()
+            for voice in capabilities.get("voices", [])
+        )
+    ):
+        raise ValueError("服务器本机语音能力响应格式无效；未创建项目，未合成语音。")
+    requested = [task for task in dialogue_tasks if "voice_prefix" in task]
+    if requested and not capabilities["available"]:
+        raise ValueError(
+            "服务器本机语音合成不可用，请检查服务器音色和 ffmpeg；未创建项目，未合成语音。"
+        )
+    voices, character_voices = {}, {}
+    for task in requested:
+        prefix = task["voice_prefix"]
+        matches = {
+            voice for voice in capabilities["voices"] if voice.startswith(prefix)
+        }
+        if not matches:
+            raise ValueError(
+                f"voice_prefix {prefix!r} 在服务器上没有匹配音色；未创建项目，未合成语音。"
+            )
+        if len(matches) != 1:
+            raise ValueError(
+                f"voice_prefix {prefix!r} 匹配多个服务器音色，请提供能唯一匹配的更完整名称；未创建项目，未合成语音。"
+            )
+        voice = next(iter(matches))
+        character = task["character"]
+        if character in character_voices and character_voices[character] != voice:
+            raise ValueError(
+                f"人物 {character!r} 的对白请求了不同音色，请统一人物音色；未创建项目，未合成语音。"
+            )
+        voices[prefix] = character_voices[character] = voice
+    return voices
 
 
 def build(
@@ -92,6 +243,8 @@ def build(
                     f"依赖已改变或哈希无效，制作检查失效，请重新核对：{name}"
                 )
 
+    dialogue_tasks = resolve_dialogues(recipe, inputs[recipe["source"]])
+
     # Upload exactly the bytes checked above; never reread mutable inputs after preflight.
     with client_factory(base_url=base, trust_env=False, timeout=180) as client:
 
@@ -99,6 +252,17 @@ def build(
             r = client.request(method, path, json=body, **kwargs)
             r.raise_for_status()
             return r.json()
+
+        voices = {}
+        if with_audio:
+            try:
+                capabilities = call("/api/speech/capabilities")
+            except (httpx.HTTPError, ValueError):
+                # Do not echo response bodies, URLs with credentials, or transport details.
+                raise ValueError(
+                    "无法读取服务器本机语音能力，请检查连接及服务版本；未创建项目，未合成语音。"
+                ) from None
+            voices = resolve_voices(dialogue_tasks, capabilities)
 
         project = call(
             "/api/projects",
@@ -168,11 +332,20 @@ def build(
                         "active": True,
                     },
                 )
-        for item in recipe["dialogues"]:
+        for item in dialogue_tasks:
             current = state("review")
-            found = [d for d in current["dialogues"] if d["text"] == item["text"]]
+            found = [
+                d
+                for d in current["dialogues"]
+                if all(
+                    d[key] == item[key] for key in ("byte_start", "byte_end", "text")
+                )
+            ]
             if len(found) != 1:
-                raise ValueError("对白无法唯一匹配：" + item["text"])
+                raise ValueError(
+                    "服务器对白切分与本地预检不一致，请确认构建工具与服务版本一致："
+                    f"[{item['byte_start']}, {item['byte_end']})"
+                )
             call(
                 prefix + "/dialogues",
                 "PATCH",
@@ -184,11 +357,7 @@ def build(
             )
             if with_audio and item.get("voice_prefix"):
                 speech = state("speech")
-                voice = next(
-                    v
-                    for v in speech["capabilities"]["voices"]
-                    if v.startswith(item["voice_prefix"])
-                )
+                voice = voices[item["voice_prefix"]]
                 call(
                     prefix + "/speech/profiles/" + chars[item["character"]],
                     "PATCH",
