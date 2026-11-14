@@ -90,7 +90,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.3.0", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.3.1", lifespan=lifespan)
     instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)
@@ -128,7 +128,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def health():
         return {
             "status": "ok",
-            "version": "0.3.0",
+            "version": "0.3.1",
             "service": "taleprism",
             "workspace_id": sha256(str(REPO.resolve()).encode()),
             "data_id": sha256(str(store.root).encode()),

@@ -190,7 +190,7 @@ function App() {
             </aside>
           </div>}
         </>}
-        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.3.0 / 公开试用版</span></footer>
+        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.3.1 / 公开试用版</span></footer>
       </main>
     </div>
     {webgalOpen && project && <WebgalExportDialog key={project.id} projectId={project.id} busy={busy} onClose={() => setWebgalOpen(false)} onReader={() => { setWebgalOpen(false); navigateMode('reader') }} />}

@@ -1,6 +1,6 @@
 {
   "name": "taleprism-workbench",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,10 +8,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "check:reader": "prettier --check src/ReaderApp.tsx src/ReaderMap.tsx src/ReaderPanel.tsx src/reader-types.ts \"src/reader/**/*.{ts,tsx}\" src/reader.css src/reader-tokens.css",
-    "test:reader": "node ../tools/webgal-verify/p6-model-check.cjs && node ../tools/webgal-verify/reader-recovery-model-check.cjs && node ../tools/webgal-verify/reader-audio-check.cjs && node ../tools/webgal-verify/story-graph-check.cjs"
+    "test:reader": "node ../tools/webgal-verify/p6-model-check.cjs && node ../tools/webgal-verify/reader-recovery-model-check.cjs && node ../tools/webgal-verify/reader-audio-check.cjs && node ../tools/webgal-verify/story-graph-check.cjs && node ../tools/webgal-verify/reader-disclosure-check.cjs && node ../tools/webgal-verify/reader-search-check.cjs && node ../tools/webgal-verify/reader-plate-presentation-check.cjs && node ../tools/webgal-verify/reader-image-disclosure-check.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",
+    "opencc-js": "1.4.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

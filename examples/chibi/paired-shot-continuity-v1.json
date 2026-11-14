@@ -1,0 +1,161 @@
+{
+  "format": "taleprism-paired-shot-continuity",
+  "version": 1,
+  "date": "2026-11-14",
+  "reviewer": "assistant",
+  "method": "side-by-side inspection of the exact pinned current image bytes; historical prompts and source read separately",
+  "creator_final_art_review": "pending",
+  "decision": "needs_revision",
+  "image_bytes_changed": false,
+  "canonical_state_status": "proposed_for_future_correction_not_applied",
+  "shot_order": [
+    "huanggai-departure",
+    "caocao-watch",
+    "fire-panorama"
+  ],
+  "source_sha256": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+  "trace_sha256": "4508320fe59d18a54dbd8ea42e5f08aadc4a96eec9c36022508c4df74d3bc300",
+  "image_sha256": {
+    "huanggai-departure": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+    "caocao-watch": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+    "fire-panorama": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3"
+  },
+  "source_evidence": [
+    {
+      "quote": "船頭上插青龍牙旗，船尾各繫走舸。",
+      "byte_start": 4599,
+      "byte_end": 4647
+    },
+    {
+      "quote": "黃蓋在第三隻火船上，獨披掩心甲，手提利刃",
+      "byte_start": 13858,
+      "byte_end": 13918
+    },
+    {
+      "quote": "皆插青龍牙旗。",
+      "byte_start": 14255,
+      "byte_end": 14276
+    },
+    {
+      "quote": "是時東風大作，波浪洶湧。",
+      "byte_start": 14000,
+      "byte_end": 14036
+    },
+    {
+      "quote": "火趁風威，風助火勢",
+      "byte_start": 15115,
+      "byte_end": 15142
+    },
+    {
+      "quote": "黃蓋用刀一招，前船一齊發火。",
+      "byte_start": 15073,
+      "byte_end": 15115
+    }
+  ],
+  "shared_world_state": [
+    {
+      "object_id": "huanggai-fireboat-fleet",
+      "must_match": "same approaching fireboat fleet and flag hue across departure and Cao reverse view",
+      "source_term": "青龍牙旗",
+      "future_canonical_rendering": "blue-green / 青色 flags; a source-grounded production choice, not a measured historical RGB",
+      "status": "proposal_only_not_applied",
+      "shape": "not fixed by this gate; do not invent exact flag geometry or new lettering",
+      "allowed_changes": [
+        "dusk departure → moonlit approach",
+        "boats advance toward Cao fleet",
+        "unlit → ignited → fire spreads after explicit ignition event"
+      ],
+      "different_objects_not_to_equate": [
+        "Huang Gai fireboat deck",
+        "Cao Cao command deck",
+        "unnamed foreground boat in panorama"
+      ]
+    },
+    {
+      "object_id": "characters-and-knowledge",
+      "must_match": "Huang Gai knows the fire plan; Cao initially believes surrender; panorama sailors remain unnamed",
+      "allowed_changes": [
+        "Cao may become alarmed only after suspicion/attack in source"
+      ],
+      "different_objects_not_to_equate": [
+        "Huang Gai is not Cao Cao",
+        "foreground anonymous sailors are not automatically named leaders"
+      ]
+    }
+  ],
+  "shots": [
+    {
+      "key": "huanggai-departure",
+      "source_instant": "Huang Gai departs on third fireboat, before ignition",
+      "actual_observation": "Rust/red pennants on fireboats, dusk sky, straw and oil jars, unlit ships; Huang Gai commands with lowered blade.",
+      "flag_hue": "red",
+      "temporal_state": "departing_unlit",
+      "image_inspected": true
+    },
+    {
+      "key": "caocao-watch",
+      "source_instant": "Cao watches approaching boats before ignition",
+      "actual_observation": "Incoming boat pennants are blue-green; moonlit rough river; Cao stands confidently, adviser concerned; no ship fire.",
+      "flag_hue": "blue-green",
+      "temporal_state": "approaching_unlit",
+      "image_inspected": true
+    },
+    {
+      "key": "fire-panorama",
+      "source_instant": "After ignition, burning fireboats reach linked fleet and shore camp",
+      "actual_observation": "Foreground-left attacking boat pennant appears red; fire spreads through large ships toward shore; anonymous foreground boatmen. Warm sky glow remains.",
+      "flag_hue": "red_under_firelight",
+      "temporal_state": "ignited_spreading",
+      "image_inspected": true
+    }
+  ],
+  "pair_checks": [
+    {
+      "from": "huanggai-departure",
+      "to": "caocao-watch",
+      "dimension": "flag",
+      "decision": "needs_revision",
+      "observation": "Same attacking fleet changes from red to blue-green before ignition.",
+      "cause_or_evidence": "No source event authorizes a flag swap. Original departure prompt leaves flag hue open; watch prompt explicitly asks blue-green.",
+      "next_action": "For a future edit attach shared flag swatch/boat reference, retain old requests and inspect both outputs again."
+    },
+    {
+      "from": "caocao-watch",
+      "to": "fire-panorama",
+      "dimension": "flag",
+      "decision": "warning",
+      "observation": "Blue-green incoming flags become red-looking on attacking boat in the fire panorama.",
+      "cause_or_evidence": "Warm firelight may shift appearance; no proof it alone explains the hue. Do not claim a clean match.",
+      "next_action": "Review under a shared palette in any future correction, without promising current pixels already match."
+    },
+    {
+      "from": "huanggai-departure",
+      "to": "caocao-watch",
+      "dimension": "space_and_time",
+      "decision": "passed",
+      "observation": "Distinct opposing decks, fleet departure then approach; dusk then moonlit river.",
+      "cause_or_evidence": "Camera/temporal change follows departure and later moonlit approach; no exact bank geometry claimed.",
+      "next_action": "Preserve distinct deck object identities."
+    },
+    {
+      "from": "caocao-watch",
+      "to": "fire-panorama",
+      "dimension": "action",
+      "decision": "passed",
+      "observation": "Unlit incoming boats become burning boats and linked fleet/shore fire.",
+      "cause_or_evidence": "Source contains an explicit ignition event; fire must not appear in earlier unlit shots.",
+      "next_action": "Keep source instant and before/after ignition state on each new shot."
+    },
+    {
+      "from": "caocao-watch",
+      "to": "fire-panorama",
+      "dimension": "time_light",
+      "decision": "warning",
+      "observation": "Moonlit watch view becomes a panorama with warm horizon glow.",
+      "cause_or_evidence": "Fire can warm light but panorama may read as dusk; not an exact time reconstruction.",
+      "next_action": "Future grade should retain night cues; do not reorder source events to fit the sky."
+    }
+  ],
+  "legacy_review_scope": "The 2026-11-12 per-image assistant checks remain historical. Their passed state is not a pass of this supplemental paired-shot gate.",
+  "resolution": "Unresolved. Shared hue is proposed for future correction, NOT corrected output. No historical prompt rewrite, clean-flag claim, regenerated image, or creator promotion."
+}

@@ -128,6 +128,21 @@ def export_reader(reader, pid, jid):
             )
             if license_path:
                 shutil.copy2(license_path, licenses / (module.replace("/", "-") + ".txt"))
+        # The lazy search entry is emitted as search-<hash>.js by Vite. Old
+        # prebuilt readers have no such chunk and must not require a new install.
+        if any((dist / "assets").glob("search-*.js")):
+            # Fail closed for new builds: dictionary and code licenses are distinct.
+            opencc_dir = REPO / "frontend/node_modules/opencc-js"
+            for name, target_name in [
+                ("LICENSE", "opencc-js.txt"),
+                ("THIRD_PARTY_LICENSES.md", "opencc-js-THIRD_PARTY_LICENSES.md"),
+                ("LICENSES/Apache-2.0.txt", "opencc-js-Apache-2.0.txt"),
+            ]:
+                if not (opencc_dir / name).is_file():
+                    raise ValueError(
+                        f"缺少 opencc-js 许可文件 {name}；请重新安装前端依赖后导出。"
+                    )
+                shutil.copy2(opencc_dir / name, licenses / target_name)
         (staging / "RIGHTS.txt").write_text(
             "原文权利状态："
             + content["project"]["rights_status"]

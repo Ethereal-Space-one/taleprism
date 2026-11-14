@@ -1,6 +1,6 @@
 # 赤壁 · 可复制的在线主体验
 
-[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [0.3.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.0) · [短篇制作教程《末班灯》](../last-light/README.md)
+[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [0.3.1 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.1) · [短篇制作教程《末班灯》](../last-light/README.md)
 
 《三国演义》第四十九、五十回的视觉小说体验：12 幅情境插图、8 位主要角色、9 张立绘、55 段画面编排，以及夹江对峙、火攻推进、战后撤军三个地图阶段。另有封面和5张环境背景，共27张图片。正文逐字保留，默认连续插图阅读，也可在设置中切换分栏。
 
@@ -26,15 +26,15 @@ npm --prefix frontend ci
 npm --prefix frontend run build
 uv run --project backend python tools/build_chibi_demo.py \
   --source /path/to/taleprism-v0.1.0-chibi-reader.zip \
-  --output .release/v0.3.0-chibi
+  --output .release/v0.3.1-chibi
 ```
 
 脚本不联网、不生成图片、不调用配音服务。它在临时工作台中恢复公开内容，确认方案并重放已经完成的助手制作检查，然后在另一个空工作台中导入工程、再次导出阅读包。不会读取本机私有历史工程或修改用户 `data`。
 
 输出：
 
-- `taleprism-v0.3.0-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
-- `taleprism-v0.3.0-chibi-reader.zip`：可独立托管的阅读器；先解压并运行 `python3 verify_package.py`，再以本地网页服务器打开。
+- `taleprism-v0.3.1-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
+- `taleprism-v0.3.1-chibi-reader.zip`：可独立托管的阅读器；先解压并运行 `python3 verify_package.py`，再以本地网页服务器打开。
 - `chibi-demo-manifest.json`：两个附件的大小与校验值、输入来源、配方和检查记录校验值、重建结果。
 
 原文、图片、角色 ID、正文锚点、55 段编排和地图保持一致。新生成的本地工程 ID、制作检查写入时间及导出 ID 可因运行而异，因此复建不承诺 ZIP 逐字节相同。比较复建结果应使用 manifest 和内容检查；发布附件自身各有固定 SHA-256。
@@ -68,6 +68,12 @@ uv run --project backend python tools/build_chibi_demo.py \
 构建生成的检查署名为 `assistant`，每项引用此记录哈希。最终创作者美术复核始终为 `pending`，不会自动写入最终交付复核。历史 [demo-review.json](demo-review.json) 原样保留。
 
 公开工程的检查说明和 README 包含检查来源；阅读包 `storygal-source/` 内保存新配方、新检查及原有素材来源文件。
+
+## 制作追溯与成对检查
+
+[制作侧说明](MAKER-PROVENANCE.md)区分真实逐图请求、v0.2 事后配方与通用模板；[12 图追溯表](maker-trace-v1.json)沿初版与 `edits[]` 记录当前结果、参考角色、可核对哈希和缺失元数据。模型版本及 seed 没有记录，不能据此承诺原样重生成。
+
+[黄盖出船→曹营观船→火起三江成对检查](paired-shot-continuity-v1.json)结论为 `needs_revision`：当前图存在红旗与蓝绿旗差异。原文「青龍牙旗」支持后续统一青色的制作选择，但这是未应用的修订建议，不是已修正输出，也不改写历史 prompt 或图片。旧单图助手检查原样保留，不表示该补充门槛通过；创作者最终复核仍 `pending`。[轻量空白工作表](../../prompts/paired-shot-continuity-worksheet.json)可用于下一组相邻镜头。
 
 ## 续读兼容与来源
 

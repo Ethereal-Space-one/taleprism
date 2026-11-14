@@ -172,7 +172,7 @@ def test_chibi_map_missing_or_invalid_fails_only_when_selected(portable, map_byt
 def test_health_identifies_instance_workspace_and_data(portable, tmp_path):
     c, root = portable
     health = c.get("/api/health").json()
-    assert health["version"] == "0.3.0" and c.app.version == "0.3.0"
+    assert health["version"] == "0.3.1" and c.app.version == "0.3.1"
     assert health["service"] == "taleprism"
     assert health == c.get("/api/health").json()
     same = TestClient(create_app(c.app.state.store.root)).get("/api/health").json()

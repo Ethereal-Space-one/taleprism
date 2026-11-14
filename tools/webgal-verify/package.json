@@ -1,7 +1,7 @@
 {
   "name": "webgal-verify",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "用 WebGAL 官方解析器回读导出的场景脚本",
   "type": "module",
   "dependencies": {

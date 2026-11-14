@@ -17,6 +17,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
+from chibi_provenance import GATE, GUIDE, TRACE, provenance_assets
 from chibi_source import digest, encoded, preflight, read_zip, verify_inventory
 from release_version import PREFIX, VERSION
 
@@ -152,7 +153,7 @@ def sync_reader_data(files, previous, content):
     ).encode()
 
 
-def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public):
+def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public, maker_assets=None):
     files = read_zip(raw)
     verify_inventory(files)
     previous = json.loads(files["reader.json"])
@@ -192,6 +193,7 @@ def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public):
     )
     files["storygal-source/chibi-rebuild-v0.2.0.json"] = recipe_raw
     files["storygal-source/chibi-visual-review-v0.2.0.json"] = review_raw
+    files.update(maker_assets or {})
     files["licenses/Taleprism-MIT.txt"] = (ROOT / "LICENSE").read_bytes()
     files["SHOWCASE.txt"] = (
         f"Taleprism v{VERSION} 赤壁主示例：12幅插图、8角色、9立绘、55呈现、3阶段地图。\n"
@@ -199,6 +201,8 @@ def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public):
         "原文与全部图片未改；不含系统语音及任何音频配置。\n"
         "助手逐图检查及局限见storygal-source/chibi-visual-review-v0.2.0.json；"
         "最终创作者美术复核仍为pending。\n"
+        "制作侧追溯及成对检查见storygal-source/examples/chibi/；"
+        "当前火船旗色连续性needs_revision，统一旗色仅为后续建议，未修改图片。\n"
         "公开作品ID与旧插图ID保留，继续使用同一浏览器、同一站点时可沿用阅读记录。\n"
     ).encode()
     inventory = json.loads(files.pop("storygal-delivery.json"))
@@ -210,7 +214,7 @@ def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public):
     return pack(files)
 
 
-def rebuild(recipe, review, files, public, recipe_raw, review_raw):
+def rebuild(recipe, review, files, public, recipe_raw, review_raw, maker_assets=None):
     from fastapi.testclient import TestClient
     from storygal.bundles import Bundles
     from storygal.production import Plan
@@ -295,6 +299,19 @@ def rebuild(recipe, review, files, public, recipe_raw, review_raw):
                         + recipe["source_archive"]["sha256"]
                         + "\n以下记录为助手实际看图后的制作检查，创作者最终复核pending。\n"
                     ).encode() + review_raw
+                    if maker_assets:
+                        # The project exchange intentionally admits no arbitrary extra files.
+                        # Carry a readable maker supplement in README, preserving its schema.
+                        project_files["README.txt"] += (
+                            "\n\n制作追溯补充：历史逐图prompt、v0.2事后配方、通用模板是不同材料。"
+                            "当前三图旗色成对检查needs_revision；共享青色仅为未来修订建议，"
+                            "未修改图片，创作者最终检查pending。完整追溯随独立阅读包"
+                            "storygal-source/examples/chibi/及源码提供。\n\n"
+                        ).encode()
+                        for name in (GUIDE, TRACE, GATE):
+                            project_files["README.txt"] += (
+                                "\n=== " + name + " ===\n"
+                            ).encode() + maker_assets["storygal-source/" + name]
                     project_inventory(project_files)
                     project_raw = pack(project_files)
                     # Exercise a clean import before returning a public editable artifact.
@@ -325,7 +342,7 @@ def rebuild(recipe, review, files, public, recipe_raw, review_raw):
                             other, "GET", job["result"]["download_url"]
                         ).content
                     reader_raw = public_reader(
-                        reader_raw, recipe, review_raw, recipe_raw, files, public
+                        reader_raw, recipe, review_raw, recipe_raw, files, public, maker_assets
                     )
                     return project_raw, reader_raw
 
@@ -345,8 +362,9 @@ def build(source, output):
     )
     if recipe["release_version"] != RECIPE_RELEASE_VERSION:
         raise ValueError("赤壁配方不是当前构建器支持的已检查内容版本。")
+    maker_assets = provenance_assets(files, public)
     project_raw, reader_raw = rebuild(
-        recipe, review, files, public, recipe_raw, review_raw
+        recipe, review, files, public, recipe_raw, review_raw, maker_assets
     )
     results = {
         f"{PREFIX}-chibi-project.zip": project_raw,
@@ -376,6 +394,10 @@ def build(source, output):
         "system_audio_included": False,
         "production_reviewer": "assistant",
         "creator_final_art_review": "pending",
+        "maker_trace_sha256": digest(maker_assets["storygal-source/" + TRACE]),
+        "paired_shot_continuity": "needs_revision",
+        "paired_shot_record_sha256": digest(maker_assets["storygal-source/" + GATE]),
+        "flag_correction_applied": False,
         "checks": {
             "public_input_inventory": True,
             "source_bytes_unchanged": True,

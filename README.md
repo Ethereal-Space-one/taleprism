@@ -4,7 +4,7 @@
 
 从人物立场与心理表演，到场景母版、道具状态、逐图检查和定点修复：Taleprism 把制作经验整理成可复制的提示词工作流，并提供本地制作台。
 
-**v0.3.0 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.0)
+**v0.3.1 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.1)
 
 ![赤壁：七星坛祭风，三江口纵火](examples/chibi/cover.png)
 
@@ -22,7 +22,7 @@
 
 ## 本地制作台
 
-需要 Python 3.11+（由 uv 管理亦可）、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 与 npm。当前界面为中文；macOS 是主要人工验证环境，平台范围见[验证记录](docs/VALIDATION-v0.3.0.md)。
+需要 Python 3.11+（由 uv 管理亦可）、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 与 npm。当前界面为中文；macOS 是主要人工验证环境，平台范围见[验证记录](docs/VALIDATION-v0.3.1.md)。
 
 ```sh
 git clone https://github.com/Ethereal-Space-one/taleprism.git
@@ -49,7 +49,7 @@ cd taleprism
 
 ## 下载哪一个包
 
-附件在 [v0.3.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.0)，统一对照 `SHA256SUMS` 与 `release-manifest.json`。旧版附件仍保留在原 Release。
+附件在 [v0.3.1 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.1)，统一对照 `SHA256SUMS` 与 `release-manifest.json`。旧版附件仍保留在原 Release。
 
 | 文件结尾 | 用途 |
 | --- | --- |

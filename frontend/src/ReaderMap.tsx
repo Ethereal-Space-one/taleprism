@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import type { ReaderMapData, ReaderMapEntry } from './reader-types'
+import { mapAtPosition } from './reader/disclosure'
+import { chibiMapDisclosure } from './reader/graphs/chibiMap'
 
 export function ReaderMap({
   data,
   at,
   entry,
+  protectFuture = false,
 }: {
   data: ReaderMapData
   at: number
   entry?: ReaderMapEntry | null
+  protectFuture?: boolean
 }) {
-  const available = data.phase_anchors.reduce((best, a, i) => (at >= a ? i : best), 0)
+  const [full, setFull] = useState(false)
+  const view = mapAtPosition(data, at, protectFuture ? chibiMapDisclosure : null, full)
+  const available = Math.max(0, view.available)
   const [phase, setPhase] = useState(() =>
     entry
       ? Math.max(
@@ -26,18 +32,37 @@ export function ReaderMap({
     return window.innerWidth < 600 && inLocalView
   })
   const [placeId, setPlaceId] = useState(entry?.place_ids[0] || 'chibi')
-  const place = data.places.find((p) => p.id === placeId)!
+  const place = view.places.find((p) => p.id === placeId)!
   const shown = phase
+  const route = view.phases[shown].revealed ? shown : null
   return (
     <div className="reader-map">
       <p className="reader-muted">{data.subtitle}</p>
       <p>
-        当前正文：{data.phases[available].title} · 正在查看：{data.phases[shown].title}
+        当前正文：{view.phases[available].title} · 正在查看：{view.phases[shown].title}
       </p>
-      <div className="map-phases" role="group" aria-label="战役阶段">
-        {data.phases.map((p, i) => (
+      {protectFuture && (
+        <div className="reader-disclosure-controls">
+          <p className="reader-muted">
+            {full
+              ? '完整战役含后续阶段与行动。查看地图不会改变阅读位置。'
+              : '按当前阅读位置展开战役，后续阶段暂用编号表示。'}
+          </p>
           <button
-            key={p.title}
+            aria-pressed={full}
+            onClick={() => {
+              if (full) setPhase(available)
+              setFull((value) => !value)
+            }}
+          >
+            {full ? '按当前阅读位置显示' : '查看完整战役（含后续阶段）'}
+          </button>
+        </div>
+      )}
+      <div className="map-phases" role="group" aria-label="战役阶段">
+        {view.phases.map((p, i) => (
+          <button
+            key={p.id}
             aria-pressed={shown === i}
             title={p.description}
             onClick={() => setPhase(i)}
@@ -55,7 +80,7 @@ export function ReaderMap({
         className="history-map"
         viewBox={detail ? '350 185 300 240' : data.viewBox}
         role="img"
-        aria-label={`赤壁战区地图，${data.phases[shown].title}`}
+        aria-label={`赤壁战区地图，${view.phases[shown].title}`}
       >
         <defs>
           <marker id="map-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
@@ -83,14 +108,14 @@ export function ReaderMap({
         <text x="555" y="401" textAnchor="middle" className="map-camp-label">
           孙刘联军
         </text>
-        {shown === 0 && (
+        {route === 0 && (
           <path
             d="M130 170 Q270 210 430 250"
             className="map-route map-march"
             markerEnd="url(#map-arrow)"
           />
         )}
-        {shown === 1 && (
+        {route === 1 && (
           <>
             <path
               d="M530 365 Q535 315 490 254"
@@ -102,7 +127,7 @@ export function ReaderMap({
             </text>
           </>
         )}
-        {shown === 2 && (
+        {route === 2 && (
           <>
             <path
               d="M455 265 Q350 190 150 165"
@@ -140,7 +165,7 @@ export function ReaderMap({
           营区与箭头为区域／方向示意
         </text>
       </svg>
-      <p className="map-phase-description">{data.phases[shown].description}</p>
+      <p className="map-phase-description">{view.phases[shown].description}</p>
       <div className="map-place-tabs" role="group" aria-label="历史地点">
         {data.places.map((p) => (
           <button key={p.id} aria-pressed={p.id === placeId} onClick={() => setPlaceId(p.id)}>
@@ -160,7 +185,7 @@ export function ReaderMap({
       <details className="map-sources">
         <summary>地图依据与定位说明</summary>
         <p>{data.note}</p>
-        {data.sources.map((s) => (
+        {view.sources.map((s) => (
           <p key={s.id}>
             {s.url ? (
               <a href={s.url} target="_blank" rel="noreferrer">

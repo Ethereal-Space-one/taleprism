@@ -28,7 +28,7 @@ jobs:
           uv run --project backend --frozen ruff check backend/src backend/tests
           tools/export_prompt_kit.py tools/release_files.py tools/build_release.py
           tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py
-          tools/build_chibi_demo.py tools/chibi_source.py tools/update_release_catalog.py
+          tools/build_chibi_demo.py tools/chibi_source.py tools/chibi_provenance.py tools/update_release_catalog.py
           tools/release_version.py tools/finalize_release.py tools/open_workbench.py
       - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
       - run: python3 tools/release_files.py --check

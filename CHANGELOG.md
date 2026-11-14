@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 — Public Preview
+
+- For the reviewed Chibi edition, keep future chapter titles and battle stages out of the default directory and map views; readers can deliberately reveal the full views.
+- Accept simplified and traditional Chinese in reader search while preserving original source text and exact-match access.
+- Fit an entire illustration when opening the reader's image viewer; allow panning only after explicit enlargement.
+- Keep the Chibi wind and fire verse introductions with their poems, without changing source evidence or artwork.
+- For Chibi, distinguish in-context image viewing from deliberate whole-chapter browsing, and describe image composition separately from narrative interpretation.
+- Keep a maker-side record for the current Chibi image revisions and explicitly review cross-shot fleet continuity.
+
 ## 0.3.0 — Public Preview
 
 - Add evidence-bound Chibi faction, relationship, phase and chapter-causality views that reveal only material already read and roll back on backward navigation.

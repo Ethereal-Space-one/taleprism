@@ -12,6 +12,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { ReaderMap } from './ReaderMap'
+import { ReaderContents } from './reader/ReaderContents'
 import { ReaderStoryGraph } from './reader/ReaderStoryGraph'
 import { resolveStoryGraph } from './reader/storyGraph'
 import type { ReaderContent, ReaderMapEntry } from './reader-types'
@@ -23,6 +24,7 @@ import {
   quoteAt,
   readRecord,
   search,
+  type TextMatcher,
   type Mark,
   type Position,
   type RecordData,
@@ -43,6 +45,15 @@ import { ReaderPlate } from './reader/ReaderPlate'
 import { followScroll, isReadingStep, type ScrollJourney } from './reader/readingSession'
 import { imageRecoveryReducer, imageRetryUrl, MAX_IMAGE_RETRIES } from './reader/imageRecovery'
 import { ReaderImageRetry } from './reader/ReaderImageRetry'
+import { ReaderImageDisclosure } from './reader/ReaderImageDisclosure'
+import {
+  openImageVisit,
+  requestImage,
+  confirmImageDisclosure,
+  cancelImageDisclosure,
+  type ImageVisit,
+} from './reader/imageBrowsing'
+import { resolvePlatePresentations } from './reader/platePresentation'
 import './reader.css'
 
 const EditorialPreview = lazy(() => import('./reader/EditorialPreview'))
@@ -68,6 +79,7 @@ type Screen = {
   view: Position
   visits: Position[]
   sound: AudioPoint
+  viewer?: { asset: string | null; whole: boolean }
 }
 export function ReaderApp({ projectId, exportUrl }: { projectId?: string; exportUrl?: string }) {
   const [data, setData] = useState<ReaderContent | null>(null),
@@ -102,6 +114,7 @@ export function ReaderApp({ projectId, exportUrl }: { projectId?: string; export
 }
 function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boolean }) {
   const storyGraph = useMemo(() => resolveStoryGraph(data), [data])
+  const platePresentations = useMemo(() => resolvePlatePresentations(data), [data])
   const storageKey = `storygal-reader:${data.project.id}:${data.project.canonical_sha256}`
   const editing = !standalone && new URLSearchParams(location.search).get('editing') === '1'
   const previewApplied = useRef(false)
@@ -135,6 +148,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     conflict = useRef(false)
   const [tools, setTools] = useState(true),
     [query, setQuery] = useState(''),
+    [exactMatch, setExactMatch] = useState(false),
+    [searchMatcher, setSearchMatcher] = useState<TextMatcher | null>(null),
+    [searchState, setSearchState] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle'),
     [selection, setSelection] = useState<ReturnType<typeof selectedExcerpt>>(null)
   const [imageRequests, changeImageRequest] = useReducer(imageRecoveryReducer, {})
   const retryRequests = useRef(
@@ -148,13 +164,20 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     >(),
   )
   const [mapEntry, setMapEntry] = useState<ReaderMapEntry | null>(null)
-  const [viewerAsset, setViewerAsset] = useState<string | null>(null)
+  const [imageVisit, setImageVisit] = useState<ImageVisit | null>(null)
+  const viewerAsset = imageVisit?.asset
   const [viewerZoom, setViewerZoom] = useState(false)
   const imageViewport = useRef<HTMLDivElement>(null)
   useEffect(() => {
     setViewerZoom(false)
     imageViewport.current?.scrollTo(0, 0)
   }, [viewerAsset])
+  useEffect(() => {
+    if (imageVisit?.pending)
+      dialog.current?.querySelector<HTMLElement>('#reader-image-disclosure-title')?.focus()
+    else if (imageVisit)
+      dialog.current?.querySelector<HTMLElement>('.reader-image-viewport')?.focus()
+  }, [imageVisit?.pending])
   const scroll = useRef<HTMLDivElement>(null),
     dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null)
@@ -251,6 +274,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   const expandedId = viewerAsset || presentation?.image_asset_id
   const expandedImage = media(expandedId)
   const expandedPlate = plates.find((p) => p.image_asset_id === expandedId)
+  const expandedVisualDescription = expandedPlate
+    ? platePresentations.get(expandedPlate.id)?.visualDescription
+    : null
   useStagePreload(data, presentation?.id, started && preferences.stage && !illustrated)
   const active = blockAt(data.blocks, at),
     cover = media(data.config.cover_asset_id),
@@ -264,7 +290,31 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
         100,
     ),
   )
-  const results = useMemo(() => search(data, query), [data, query])
+  useEffect(() => {
+    if (panel !== 'search' || exactMatch || searchMatcher) return
+    let active = true
+    setSearchState('loading')
+    import('./reader/search').then(
+      (module) => {
+        if (active) {
+          setSearchMatcher(() => module.createSearchMatcher())
+          setSearchState('ready')
+        }
+      },
+      () => {
+        if (active) setSearchState('failed')
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [panel, exactMatch, searchMatcher])
+  const matcher = exactMatch ? undefined : searchMatcher || undefined
+  const searchReady = exactMatch || !!searchMatcher
+  const results = useMemo(
+    () => (searchReady ? search(data, query, matcher) : []),
+    [data, query, matcher, searchReady],
+  )
   const voices = data.blocks.flatMap((b) =>
     b.audio.map((a, i) => ({ block: b, clip: a, index: i })),
   )
@@ -380,6 +430,12 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       screen.current = s
       setStarted(s.started)
       setPanel(s.panel)
+      setImageVisit(
+        s.panel === 'image'
+          ? openImageVisit(s.viewer?.asset || null, imageBoundary(s.view), s.viewer?.whole || false)
+          : null,
+      )
+      setViewerZoom(false)
       navigate({ type: 'restore', position: s.view, visits: s.visits })
       locate(s.view, !s.panel)
     }
@@ -456,12 +512,38 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     },
     [],
   )
-  function open(next: Exclude<Panel, null>) {
+  function imageBoundary(position: Position) {
+    const plate = position.plate ? platePresentations.get(position.plate) : null
+    return plate ? Math.max(position.byte, plate.disclosureByte) : position.byte
+  }
+  function open(next: Exclude<Panel, null>, viewer?: Screen['viewer']) {
     opener.current = document.activeElement as HTMLElement
     const old = remember()
     audio.suspend()
-    commit({ ...old, depth: old.depth + 1, panel: next })
+    commit({ ...old, depth: old.depth + 1, panel: next, viewer })
+    setImageVisit(
+      next === 'image'
+        ? openImageVisit(viewer?.asset || null, imageBoundary(navRef.current.view), !!viewer?.whole)
+        : null,
+    )
+    setViewerZoom(false)
     setPanel(next)
+  }
+  function openImage(asset: string | null, whole = false) {
+    open('image', { asset, whole })
+  }
+  function browseImage(index: number) {
+    const target = plates[index]
+    if (!target) return
+    const threshold = platePresentations.get(target.id)?.disclosureByte ?? target.after_byte
+    setImageVisit((current) =>
+      requestImage(
+        current || openImageVisit(expandedId || null, imageBoundary(navRef.current.view)),
+        target.image_asset_id,
+        threshold,
+        !!storyGraph,
+      ),
+    )
   }
   function close() {
     if (screen.current.panel && screen.current.depth > 0) history.back()
@@ -835,10 +917,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   <button
                     aria-label="放大当前画面"
                     disabled={!image}
-                    onClick={() => {
-                      setViewerAsset(null)
-                      open('image')
-                    }}
+                    onClick={() => openImage(image?.id || null)}
                   >
                     放大
                   </button>
@@ -891,11 +970,12 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                     >
                       {block.heading ? (
                         <h2 className="reader-paragraph-text">
-                          {highlightedRuns(block, query).map((r) => (
+                          {highlightedRuns(block, searchReady ? query : '', matcher).map((r) => (
                             <span
                               key={r.byte_start}
                               data-source-start={r.byte_start}
                               data-source-end={r.byte_end}
+                              className={r.match ? 'reader-search-match' : undefined}
                             >
                               {r.text}
                             </span>
@@ -903,7 +983,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                         </h2>
                       ) : (
                         <p className="reader-paragraph-text">
-                          {highlightedRuns(block, query).map((r) => (
+                          {highlightedRuns(block, searchReady ? query : '', matcher).map((r) => (
                             <span
                               key={r.byte_start}
                               data-source-start={r.byte_start}
@@ -958,21 +1038,27 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                     {illustrated &&
                       preferences.stage &&
                       plates
-                        .filter((p) => p.after_byte === block.byte_end)
+                        .filter(
+                          (p) =>
+                            (platePresentations.get(p.id)?.displayAfterByte ?? p.after_byte) ===
+                            block.byte_end,
+                        )
                         .map((p) => (
                           <ReaderPlate
                             key={p.id}
                             plate={p}
+                            visualDescription={platePresentations.get(p.id)?.visualDescription}
+                            displayAfterByte={platePresentations.get(p.id)?.displayAfterByte}
                             asset={imageSource(p.image_asset_id) || undefined}
-                            sourceByte={block.byte_end - byteLength([...block.text].at(-1)!)}
+                            sourceByte={
+                              platePresentations.get(p.id)?.sourceByte ??
+                              block.byte_end - byteLength([...block.text].at(-1)!)
+                            }
                             request={imageRequests[p.image_asset_id]}
                             onLoad={() => loaded(p.image_asset_id)}
                             onRetry={() => retryImage(p.image_asset_id)}
                             onError={() => failed(p.image_asset_id)}
-                            onOpen={() => {
-                              setViewerAsset(p.image_asset_id)
-                              open('image')
-                            }}
+                            onOpen={() => openImage(p.image_asset_id)}
                           />
                         ))}
                   </Fragment>
@@ -1106,7 +1192,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       )}
       <dialog
         ref={dialog}
-        className={`reader-dialog ${panel === 'map' ? 'reader-map-dialog' : ''} ${panel === 'graph' ? 'reader-story-graph-dialog' : ''} ${panel === 'image' || panel === 'gallery' ? 'reader-art-dialog' : ''}`}
+        className={`reader-dialog ${panel === 'map' ? 'reader-map-dialog' : ''} ${panel === 'graph' ? 'reader-story-graph-dialog' : ''} ${panel === 'image' || panel === 'gallery' ? 'reader-art-dialog' : ''} ${panel === 'image' ? 'reader-image-dialog' : ''}`}
         onCancel={(e) => {
           e.preventDefault()
           close()
@@ -1136,7 +1222,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
             <ReaderStoryGraph graph={storyGraph} at={at} onVisit={visit} />
           )}
           {panel === 'map' && data.map && (
-            <ReaderMap key={mapEntry?.id || at} data={data.map} at={at} entry={mapEntry} />
+            <ReaderMap
+              key={mapEntry?.id || at}
+              data={data.map}
+              at={at}
+              entry={mapEntry}
+              protectFuture={!!storyGraph && data.config.map_profile === 'chibi'}
+            />
           )}
           {panel === 'image' && expandedImage && (
             <>
@@ -1144,7 +1236,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 ref={imageViewport}
                 className={`reader-image-viewport ${viewerZoom ? 'is-zoomed' : ''}`}
                 tabIndex={0}
-                aria-label="插图细节，可横向和纵向移动"
+                aria-label={viewerZoom ? '插图细节，可横向和纵向移动' : '完整插图'}
+                aria-describedby={
+                  expandedVisualDescription ? 'reader-expanded-description' : undefined
+                }
               >
                 <img
                   className="reader-expanded-image"
@@ -1152,9 +1247,26 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   src={expandedImage.url}
                   onLoad={() => loaded(expandedImage.id)}
                   onError={() => failed(expandedImage.id)}
-                  alt={expandedPlate?.description || presentation?.place_label || '当前画面'}
+                  alt={
+                    expandedVisualDescription ||
+                    expandedPlate?.description ||
+                    presentation?.place_label ||
+                    '当前画面'
+                  }
                 />
               </div>
+              {expandedVisualDescription && (
+                <p id="reader-expanded-description" className="reader-visually-hidden">
+                  {expandedVisualDescription}
+                </p>
+              )}
+              {imageVisit?.pending && (
+                <ReaderImageDisclosure
+                  onReturn={close}
+                  onStay={() => setImageVisit((v) => (v ? cancelImageDisclosure(v) : v))}
+                  onConfirm={() => setImageVisit((v) => (v ? confirmImageDisclosure(v) : v))}
+                />
+              )}
               <button aria-pressed={viewerZoom} onClick={() => setViewerZoom((v) => !v)}>
                 {viewerZoom ? '恢复完整画面' : '放大细节 2×'}
               </button>
@@ -1162,18 +1274,14 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 <div className="reader-gallery-controls">
                   <button
                     disabled={plates.indexOf(expandedPlate) === 0}
-                    onClick={() =>
-                      setViewerAsset(plates[plates.indexOf(expandedPlate) - 1].image_asset_id)
-                    }
+                    onClick={() => browseImage(plates.indexOf(expandedPlate) - 1)}
                   >
                     上一幅
                   </button>
                   <span>{expandedPlate.title}</span>
                   <button
                     disabled={plates.indexOf(expandedPlate) === plates.length - 1}
-                    onClick={() =>
-                      setViewerAsset(plates[plates.indexOf(expandedPlate) + 1].image_asset_id)
-                    }
+                    onClick={() => browseImage(plates.indexOf(expandedPlate) + 1)}
                   >
                     下一幅
                   </button>
@@ -1196,10 +1304,12 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 {plates.map((p) => (
                   <div className="reader-gallery-item" key={p.id}>
                     <button
-                      onClick={() => {
-                        setViewerAsset(p.image_asset_id)
-                        open('image')
-                      }}
+                      onClick={() => openImage(p.image_asset_id, true)}
+                      aria-describedby={
+                        platePresentations.get(p.id)?.visualDescription
+                          ? `reader-gallery-description-${p.id}`
+                          : undefined
+                      }
                     >
                       {media(p.image_asset_id) ? (
                         <img
@@ -1215,6 +1325,14 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                       )}
                       <span>{p.title}</span>
                     </button>
+                    {platePresentations.get(p.id)?.visualDescription && (
+                      <p
+                        id={`reader-gallery-description-${p.id}`}
+                        className="reader-visually-hidden"
+                      >
+                        {platePresentations.get(p.id)?.visualDescription}
+                      </p>
+                    )}
                     <ReaderImageRetry
                       request={imageRequests[p.image_asset_id]}
                       label={`插图：${p.title}`}
@@ -1226,27 +1344,14 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
             </div>
           )}
           {panel === 'contents' && (
-            <div className="reader-contents">
-              {data.blocks
-                .filter((b) => b.heading)
-                .map((b) => (
-                  <button key={b.id} onClick={() => visit(b.byte_start)}>
-                    {b.text}
-                  </button>
-                ))}
-              <h3>场景</h3>
-              {data.config.scenes.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => visit(s.start_byte)}
-                  aria-current={s.id === scene?.id ? 'location' : undefined}
-                >
-                  {s.title}
-                  <span>→</span>
-                </button>
-              ))}
-              <button onClick={() => open('voices')}>本章对白</button>
-            </div>
+            <ReaderContents
+              data={data}
+              at={at}
+              protectFuture={!!storyGraph}
+              sceneId={scene?.id}
+              onVisit={visit}
+              onVoices={() => open('voices')}
+            />
           )}
           {panel === 'search' && (
             <div className="reader-search">
@@ -1256,16 +1361,38 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   id="reader-search"
                   type="search"
                   maxLength={200}
+                  aria-describedby="reader-search-help"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   autoFocus
                 />
               </label>
-              <p role="status">
-                {query
-                  ? `${results.length} 个匹配${results.length === 300 ? '（最多显示 300 项）' : ''}`
-                  : '输入原文中的字词，保留简繁与标点。'}
+              <label className="reader-search-exact">
+                <input
+                  type="checkbox"
+                  checked={exactMatch}
+                  onChange={(e) => setExactMatch(e.target.checked)}
+                  aria-describedby="reader-search-help"
+                />
+                精确匹配
+              </label>
+              <p id="reader-search-help" className="reader-search-help">
+                {exactMatch
+                  ? '逐字匹配原文，区分简繁、大小写与标点。'
+                  : '简繁通搜，仅折合汉字简繁；词序、标点、空格与大小写须一致。原文不变。发／發／髮等可能合并，可用精确匹配区分。'}
               </p>
+              <p role="status" aria-atomic="true">
+                {!searchReady
+                  ? searchState === 'failed'
+                    ? '简繁通搜暂不可用。可启用精确匹配，或重新载入后再试。'
+                    : '正在准备简繁通搜…'
+                  : query
+                    ? `${results.length} 个匹配${results.length === 300 ? '（最多显示 300 项）' : ''}`
+                    : '输入要查找的字词或完整短语。'}
+              </p>
+              {!exactMatch && searchState === 'failed' && (
+                <button onClick={() => location.reload()}>重新载入阅读器</button>
+              )}
               <div className="reader-results">
                 {results.map((r, i) => (
                   <button key={r.byte + ':' + i} onClick={() => visit(r.byte)}>

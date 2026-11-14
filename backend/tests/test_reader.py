@@ -176,3 +176,40 @@ def test_reader_change_during_packaging_never_publishes(setup, monkeypatch):
     job = export(c, pid)
     assert job["state"] == "failed" and "状态" in job["error"]
     assert list((r.store.project_dir(pid) / "exports").iterdir()) == []
+
+
+def test_text_only_export_keeps_search_chunk_and_opencc_notices(setup):
+    c, pid, r, raw = setup
+    job = export(c, pid)
+    assert job["state"] == "completed", job
+    archive = r.store.project_dir(pid) / "exports" / (job["id"] + ".zip")
+    with zipfile.ZipFile(archive) as z:
+        names = z.namelist()
+        assert any(name.startswith("assets/search-") and name.endswith(".js") for name in names)
+        assert "licenses/opencc-js.txt" in names
+        assert "Apache License" in z.read("licenses/opencc-js-Apache-2.0.txt").decode()
+        assert "opencc-data" in z.read("licenses/opencc-js-THIRD_PARTY_LICENSES.md").decode()
+        assert z.read("storygal-source/original.txt") == raw
+        inventory = json.loads(z.read("storygal-delivery.json"))
+        assert set(names) == set(inventory["files"]) | {"storygal-delivery.json"}
+
+
+@pytest.mark.parametrize("with_search", [False, True])
+def test_opencc_notices_required_only_for_built_search_asset(setup, tmp_path, monkeypatch, with_search):
+    c, pid, r, _ = setup
+    fake_repo = tmp_path / "prebuilt"
+    assets = fake_repo / "frontend/dist/assets"
+    assets.mkdir(parents=True)
+    (assets.parent / "index.html").write_text("<head></head><body>legacy</body>")
+    (assets / ("search-test.js" if with_search else "main-test.js")).write_text("// fixture")
+    tools = fake_repo / "tools"
+    tools.mkdir()
+    (tools / "verify_package.py").write_text((REPO / "tools/verify_package.py").read_text())
+    monkeypatch.setattr(reader_export, "REPO", fake_repo)
+    job = export(c, pid)
+    if with_search:
+        assert job["state"] == "failed", "new search builds may not omit dependency licenses"
+        assert "opencc-js" in job["error"]
+        assert list((r.store.project_dir(pid) / "exports").iterdir()) == []
+    else:
+        assert job["state"] == "completed", job

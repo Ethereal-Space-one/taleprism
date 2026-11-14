@@ -1,0 +1,51 @@
+{
+  "format": "taleprism-paired-shot-worksheet",
+  "version": 1,
+  "purpose": "Maker-only paired review; fill from actual images, not intended prompts. No automatic creator approval.",
+  "group_id": "",
+  "source_sha256": "",
+  "shot_order": [],
+  "shots": [
+    {
+      "key": "",
+      "asset_id": "",
+      "sha256": "",
+      "source_instant": "",
+      "source_quote": "",
+      "camera": "",
+      "character_knowledge": "",
+      "visible_objects": [],
+      "offscreen_objects": [],
+      "time_light_wind": "",
+      "actual_observation": "",
+      "image_inspected": false
+    }
+  ],
+  "shared_world_state": [
+    {
+      "object_id": "",
+      "must_match": "",
+      "basis": "source_or_explicit_artistic_choice",
+      "allowed_changes_with_cause": [],
+      "different_objects_not_to_equate": []
+    }
+  ],
+  "pair_checks": [
+    {
+      "from": "",
+      "to": "",
+      "dimension": "identity_or_object_or_flag_or_space_or_time_or_action_or_knowledge",
+      "observation": "",
+      "cause_or_evidence": "",
+      "decision": "not_checked",
+      "next_action": ""
+    }
+  ],
+  "decision": "not_checked",
+  "allowed_decisions": ["not_checked", "needs_revision", "warning", "passed"],
+  "gate_rule": "Any unsupported must-match change => needs_revision; ambiguous or compressed action => warning. Missing image inspection => not_checked. A hash match is not an art pass. Keep proposed corrections separate from actual output.",
+  "reviewer": "",
+  "creator_final_art_review": "pending",
+  "new_edit_result_id": null,
+  "new_edit_result_sha256": null
+}

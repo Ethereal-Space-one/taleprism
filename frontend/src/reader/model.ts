@@ -205,50 +205,80 @@ export function quoteAt(data: ReaderContent, byte: number) {
   const index = new TextDecoder().decode(n).length
   return b.text.slice(Math.max(0, index - 12), index + 65)
 }
-export function search(data: ReaderContent, query: string) {
+// Search offsets are UTF-16 boundaries into the untouched source, never folded text.
+export type TextMatch = { start: number; end: number }
+export type TextMatcher = (text: string, query: string) => TextMatch[]
+const codePointBoundary = (text: string, at: number) =>
+  !(at > 0 && /[\uD800-\uDBFF]/.test(text[at - 1]) && /[\uDC00-\uDFFF]/.test(text[at] || ''))
+export const literalMatches: TextMatcher = (text, query) => {
   if (!query) return []
-  return data.blocks
-    .flatMap((b) => {
-      const results = []
-      let index = b.text.indexOf(query)
-      while (index >= 0 && results.length < 300) {
-        results.push({
-          byte: b.byte_start + byteLength(b.text.slice(0, index)),
-          text: b.text.slice(Math.max(0, index - 12), index + query.length + 35),
-        })
-        index = b.text.indexOf(query, index + Math.max(1, query.length))
-      }
-      return results
-    })
-    .slice(0, 300)
+  const matches: TextMatch[] = []
+  let at = 0
+  while (at < text.length) {
+    const start = text.indexOf(query, at)
+    if (start < 0) break
+    const end = start + query.length
+    if (codePointBoundary(text, start) && codePointBoundary(text, end)) {
+      matches.push({ start, end })
+      at = end
+    } else at = start + 1
+  }
+  return matches
+}
+export function search(data: ReaderContent, query: string, match: TextMatcher = literalMatches) {
+  if (!query) return []
+  const results: { byte: number; text: string }[] = []
+  for (const block of data.blocks) {
+    for (const { start, end } of match(block.text, query)) {
+      let from = Math.max(0, start - 12),
+        to = Math.min(block.text.length, end + 35)
+      if (!codePointBoundary(block.text, from)) from--
+      if (!codePointBoundary(block.text, to)) to++
+      results.push({
+        byte: block.byte_start + byteLength(block.text.slice(0, start)),
+        text: block.text.slice(from, to),
+      })
+      if (results.length === 300) return results
+    }
+  }
+  return results
 }
 
-export function highlightedRuns(block: ReaderBlock, query: string) {
+export function highlightedRuns(
+  block: ReaderBlock,
+  query: string,
+  match: TextMatcher = literalMatches,
+) {
+  const matches = query ? match(block.text, query) : []
+  let offset = 0
   return block.runs.flatMap((run) => {
-    if (!query || !run.text.includes(query)) return [{ ...run, match: false }]
-    const parts = []
-    let index = 0
-    while (index < run.text.length) {
-      const found = run.text.indexOf(query, index),
-        stop = found < 0 ? run.text.length : found
-      if (stop > index)
+    const start = offset
+    offset += run.text.length
+    const ranges = matches
+      .filter((m) => m.start < offset && m.end > start)
+      .map((m) => ({
+        start: Math.max(0, m.start - start),
+        end: Math.min(run.text.length, m.end - start),
+      }))
+    if (!ranges.length) return [{ ...run, match: false }]
+    const parts: (typeof run & { match: boolean })[] = []
+    const add = (from: number, to: number, match: boolean) => {
+      if (from < to)
         parts.push({
           ...run,
-          text: run.text.slice(index, stop),
-          byte_start: run.byte_start + byteLength(run.text.slice(0, index)),
-          byte_end: run.byte_start + byteLength(run.text.slice(0, stop)),
-          match: false,
+          text: run.text.slice(from, to),
+          byte_start: run.byte_start + byteLength(run.text.slice(0, from)),
+          byte_end: run.byte_start + byteLength(run.text.slice(0, to)),
+          match,
         })
-      if (found < 0) break
-      parts.push({
-        ...run,
-        text: query,
-        byte_start: run.byte_start + byteLength(run.text.slice(0, found)),
-        byte_end: run.byte_start + byteLength(run.text.slice(0, found + query.length)),
-        match: true,
-      })
-      index = found + query.length
     }
+    let at = 0
+    for (const range of ranges) {
+      add(at, range.start, false)
+      add(range.start, range.end, true)
+      at = range.end
+    }
+    add(at, run.text.length, false)
     return parts
   })
 }

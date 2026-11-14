@@ -42,7 +42,7 @@ def context(monkeypatch, tmp_path):
         **launcher.identity(root, data),
         "service": "taleprism",
         "status": "ok",
-        "version": "0.3.0",
+        "version": "0.3.1",
         "pid": 54321,
         "instance_id": "instance-a",
     }
@@ -244,7 +244,7 @@ def test_real_launch_reuse_stop_and_wrong_data_protection(actual, monkeypatch):
     base = f"http://127.0.0.1:{port}"
     body = launcher.health(base)
     assert launcher.matches(body, launcher.identity(root, data))
-    assert body["version"] == "0.3.0"
+    assert body["version"] == "0.3.1"
     record_path = data / f"workbench-{port}.pid"
     record = json.loads(record_path.read_text())
     assert record["instance_id"] == body["instance_id"]

@@ -1,0 +1,1160 @@
+{
+  "format": "taleprism-maker-trace",
+  "version": 1,
+  "scope": "current_12_chibi_narrative_artworks; maker-side only",
+  "assembled_on": "2026-11-14",
+  "source_archive_sha256": "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a",
+  "source_sha256": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+  "tool_recorded": "Codex built-in image_gen",
+  "historical_requests_changed": false,
+  "image_bytes_changed": false,
+  "creator_final_art_review": "pending",
+  "layers": {
+    "actual_requests": {
+      "path": "samples/reader/narrative-v1/prompts.json",
+      "role": "recorded per-image generation and edit requests"
+    },
+    "retrospective_recipe": {
+      "path": "examples/chibi/rebuild-v0.2.0.json",
+      "role": "v0.2 maker reconstruction; not the original image-generation prompt"
+    },
+    "generic_templates": {
+      "path": "prompts/manifest.json",
+      "role": "reusable workflow; not evidence any current image used these templates"
+    }
+  },
+  "dependencies": {
+    "samples/reader/narrative-v1/prompts.json": "d0ef2e43a63093e43da53e7c813d2066d62da1160b79ba166206c506050d5f74",
+    "samples/reader/narrative-v1/generation-files.json": "ceb094b428b5f5ccd5467bfae247af071fcce0b37710a4df5293d92f5ba5c650",
+    "samples/reader/narrative-v1/psychology-revisions.json": "462a619e132ab49e0d670251a71388b51bac5e6583bc69e9fbf36d7708bee7fc",
+    "examples/chibi/rebuild-v0.2.0.json": "6fc8db9f09654da0d6fe43decff822e77e1312f6999f690c3d40915dee657165",
+    "examples/chibi/visual-review-v0.2.0.json": "ddf140863cddeea2d1e8377d1ba8c4ecc8a26f0bbb579bc65066129c9ac83a5f"
+  },
+  "records": [
+    {
+      "key": "river-overlook",
+      "title": "江岸望阵",
+      "current_file": "samples/reader/narrative-v1/river-overlook-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "第四十九回",
+          "byte_start": 0,
+          "byte_end": 15
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "序章望阵：周瑜在山岸凝望强大水寨，以兵力压力引入下一段病倒。",
+        "retrospective_source_evidence": {
+          "quote": "三江口周瑜縱火",
+          "byte_start": 42,
+          "byte_end": 63
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "插图锚定回目，作为开篇预示。周瑜观阵动作来自紧接其后的首段，非回目逐字说明；两名随从不强行指定为已知角色。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "river-overlook-v1.png",
+        "generation_artifact": "exec-4a0d2d43-abd4-4b2e-ab7a-55393db47c4d.png",
+        "result_sha256": "e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/0/prompt",
+          "value_sha256": "79e34fb4da2ed86c7c03c4552e3b9fdc1e97b3133e30e8d7fe3dc07f4db58502"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/zhouyu-v1.png",
+            "resolved_source_path": "samples/characters/zhouyu-v1.png",
+            "role": "identity_only",
+            "asset_id": "c794275f-eb78-445b-9103-1f6bc7a9ed47",
+            "sha256": "9a60e652995bc77981f42a1255a5866273f1b687306808cc7780a05d6673043f",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "da59592b-3675-45ae-aefe-867b01d0a2e3",
+        "sample_key": "narrative:river-overlook",
+        "public_path": "media/da59592b-3675-45ae-aefe-867b01d0a2e3.png",
+        "sha256": "e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07",
+        "generation_artifact": "exec-4a0d2d43-abd4-4b2e-ab7a-55393db47c4d.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/0/prompt",
+          "value_sha256": "79e34fb4da2ed86c7c03c4552e3b9fdc1e97b3133e30e8d7fe3dc07f4db58502"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/river-overlook",
+          "notes": "周瑜绛袍、冠与立绘相符，侧脸紧唇观察密集舰队；右后随从只作群像。岩岸、北岸大船与母版舰队的左右关系可辨，尚无火攻。回目后作预示图，不能宣称画中动作已在回目内发生。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "sickbed-dialogue",
+      "title": "帐中问疾",
+      "current_file": "samples/reader/narrative-v1/sickbed-dialogue-v2.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "瑜命請入",
+          "byte_start": 993,
+          "byte_end": 1005
+        },
+        "recorded_edit_moment": "天有不測風雲；瑜聞失色，乃作呻吟之聲",
+        "retrospective_description": "孔明以风云之语触中病因，周瑜惊疑又试图维持体面。",
+        "retrospective_source_evidence": {
+          "quote": "瑜聞失色，乃作呻吟之聲。",
+          "byte_start": 1227,
+          "byte_end": 1263
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "孔明的克制微笑与周瑜握被、蹙眉是心理外化；避免画成友好闲谈。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "sickbed-dialogue-v1.png",
+        "generation_artifact": "exec-6fbd3d83-b684-4e59-b68e-15d58b775e98.png",
+        "result_sha256": null,
+        "hash_status": "not_in_public_input",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/1/prompt",
+          "value_sha256": "5e9d523316b983d934a9bd8d3dc017f12b976a816f4ef4cdb84043c6cd33595c"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/kongming-v1.png",
+            "resolved_source_path": "samples/characters/kongming-v1.png",
+            "role": "identity_only",
+            "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+            "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/zhouyu-v1.png",
+            "resolved_source_path": "samples/characters/zhouyu-v1.png",
+            "role": "identity_only",
+            "asset_id": "c794275f-eb78-445b-9103-1f6bc7a9ed47",
+            "sha256": "9a60e652995bc77981f42a1255a5866273f1b687306808cc7780a05d6673043f",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [
+        {
+          "sequence": 1,
+          "date": "2026-11-05",
+          "date_status": "recorded",
+          "edit_target": {
+            "recorded_path": "sickbed-dialogue-v1.png",
+            "resolved_source_path": "samples/reader/narrative-v1/sickbed-dialogue-v1.png",
+            "role": "edit_target",
+            "asset_id": null,
+            "sha256": null,
+            "hash_status": "not_in_public_input",
+            "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+          },
+          "output_file": "sickbed-dialogue-v2.png",
+          "output_file_basis": "explicit_edit_field",
+          "prompt": {
+            "path": "samples/reader/narrative-v1/prompts.json",
+            "pointer": "/images/1/edits/0/prompt",
+            "value_sha256": "d7310cd011078d1a3b43f5fd8f1704ea7bf125110945c8f783ddccaca2dfe839"
+          },
+          "references": [
+            {
+              "recorded_path": "sickbed-dialogue-v1.png",
+              "resolved_source_path": "samples/reader/narrative-v1/sickbed-dialogue-v1.png",
+              "role": "edit_target",
+              "asset_id": null,
+              "sha256": null,
+              "hash_status": "not_in_public_input",
+              "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+            },
+            {
+              "recorded_path": "../../characters/kongming-v1.png",
+              "resolved_source_path": "samples/characters/kongming-v1.png",
+              "role": "identity_only",
+              "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+              "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+              "hash_status": "verified_public_asset",
+              "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+            },
+            {
+              "recorded_path": "../../characters/zhouyu-v1.png",
+              "resolved_source_path": "samples/characters/zhouyu-v1.png",
+              "role": "identity_only",
+              "asset_id": "c794275f-eb78-445b-9103-1f6bc7a9ed47",
+              "sha256": "9a60e652995bc77981f42a1255a5866273f1b687306808cc7780a05d6673043f",
+              "hash_status": "verified_public_asset",
+              "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+            }
+          ],
+          "reference_list_status": "recorded",
+          "generation_artifact": "exec-ffb39d1f-ffa1-4dd3-a06d-49bc2e1e0aa4.png",
+          "result_sha256": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834"
+        }
+      ],
+      "current_result": {
+        "asset_id": "eb1e632b-c841-4062-9013-20f3e33c6e01",
+        "sample_key": "narrative:sickbed-dialogue",
+        "public_path": "media/eb1e632b-c841-4062-9013-20f3e33c6e01.png",
+        "sha256": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834",
+        "generation_artifact": "exec-ffb39d1f-ffa1-4dd3-a06d-49bc2e1e0aa4.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/1/edits/0/prompt",
+          "value_sha256": "d7310cd011078d1a3b43f5fd8f1704ea7bf125110945c8f783ddccaca2dfe839"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/sickbed-dialogue",
+          "notes": "已看近景：孔明左侧微笑克制、目光直视；周瑜右侧蹙眉握被、半卧失色，两人立场不同。木床、枕被、铜灯、小杯位置清楚。图中床头与半卧立绘不是逐件相同家具，立绘用于人物状态参考，不用作房间母版。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "altar-assembly",
+      "title": "七星坛上",
+      "current_file": "samples/reader/narrative-v1/altar-assembly-v2.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "孔明緩步登壇",
+          "byte_start": 4103,
+          "byte_end": 4121
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "孔明登坛祈风，军士依令守位，仪式使众人的注意集中。",
+        "retrospective_source_evidence": {
+          "quote": "孔明緩步登壇，觀瞻方位已定，焚香於爐，注水於盂，仰天暗祝。",
+          "byte_start": 4103,
+          "byte_end": 4190
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "夜色、抬臂与群像是文学概括；图中旗数、执事服色和鞋履不逐项吻合原文。作为艺术插图保留，不宣称仪轨复原。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "altar-assembly-v1.png",
+        "generation_artifact": "exec-66427bd1-3d45-4af7-9189-d51beea35b85.png",
+        "result_sha256": null,
+        "hash_status": "not_in_public_input",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/2/prompt",
+          "value_sha256": "e55e344dbba17dc4be0bfbd4e657042d1c6b02c5bebcbd59305bba76744fd17b"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/kongming-v1.png",
+            "resolved_source_path": "samples/characters/kongming-v1.png",
+            "role": "identity_only",
+            "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+            "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [
+        {
+          "sequence": 1,
+          "date": null,
+          "date_status": "not_recorded_per_edit",
+          "edit_target": {
+            "recorded_path": "altar-assembly-v1.png",
+            "resolved_source_path": "samples/reader/narrative-v1/altar-assembly-v1.png",
+            "role": "edit_target",
+            "asset_id": null,
+            "sha256": null,
+            "hash_status": "not_in_public_input",
+            "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+          },
+          "output_file": "altar-assembly-v2.png",
+          "output_file_basis": "parent_current_file_and_generation_map",
+          "prompt": {
+            "path": "samples/reader/narrative-v1/prompts.json",
+            "pointer": "/images/2/edits/0/prompt",
+            "value_sha256": "e712d8e6db654252b324c47dfd5e0916bea96726f296abbf193f60febf4e97f4"
+          },
+          "references": [
+            {
+              "recorded_path": "altar-assembly-v1.png",
+              "resolved_source_path": "samples/reader/narrative-v1/altar-assembly-v1.png",
+              "role": "edit_target",
+              "asset_id": null,
+              "sha256": null,
+              "hash_status": "not_in_public_input",
+              "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+            }
+          ],
+          "reference_list_status": "only_edit_target_recorded; no_additional_references_claimed",
+          "generation_artifact": "exec-fd834724-4d93-4661-8459-32d534ddc0a8.png",
+          "result_sha256": "7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d"
+        }
+      ],
+      "current_result": {
+        "asset_id": "c6d54ad9-b541-4806-af07-adaf5c0023b0",
+        "sample_key": "narrative:altar-assembly",
+        "public_path": "media/c6d54ad9-b541-4806-af07-adaf5c0023b0.png",
+        "sha256": "7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d",
+        "generation_artifact": "exec-fd834724-4d93-4661-8459-32d534ddc0a8.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/2/edits/0/prompt",
+          "value_sha256": "e712d8e6db654252b324c47dfd5e0916bea96726f296abbf193f60febf4e97f4"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/altar-assembly",
+          "notes": "孔明蓝灰道衣和长发与立绘相符，坛顶抬臂，执事及外围军士层次清楚。三层土坛和中央台阶稳定。旗数、颜色、执事服色与孔明鞋履属于现有图的概括，不能宣称严格符合跣足及仪轨数目。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "wind-in-tent",
+      "title": "风先入帐",
+      "current_file": "samples/reader/narrative-v1/wind-in-tent-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "是日看看近夜",
+          "byte_start": 5183,
+          "byte_end": 5201
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "忽起东南风，以帐帘、红布和灯焰表现无形转折。",
+        "retrospective_source_evidence": {
+          "quote": "忽聽風聲響，旗旛轉動。",
+          "byte_start": 5378,
+          "byte_end": 5411
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "选择无人反应镜头，焦虑与震惊交给原文中的周瑜和鲁肃，不把他们虚构进画面。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "wind-in-tent-v1.png",
+        "generation_artifact": "exec-df9eb65c-19dd-4e50-8a12-46f03fb8299a.png",
+        "result_sha256": "d94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/3/prompt",
+          "value_sha256": "0e005204928158887c1f3edf1ac578c784a2e62816f25a9600399bbc0d652a22"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "8ad2b717-eb50-404c-9900-516cc67a53d0",
+        "sample_key": "narrative:wind-in-tent",
+        "public_path": "media/8ad2b717-eb50-404c-9900-516cc67a53d0.png",
+        "sha256": "d94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26",
+        "generation_artifact": "exec-df9eb65c-19dd-4e50-8a12-46f03fb8299a.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/3/prompt",
+          "value_sha256": "0e005204928158887c1f3edf1ac578c784a2e62816f25a9600399bbc0d652a22"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/wind-in-tent",
+          "notes": "无人近景：左侧铜灯火焰、红布和右侧浅帐帘同向鼓动，桌面竹简仍在，风的心理压力有可见载体。与病榻、夏口军帐属于不同机位和物理地点，不假定为同一张桌。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "zhaoyun-arrow",
+      "title": "子龙断索",
+      "current_file": "samples/reader/narrative-v1/zhaoyun-arrow-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "趙雲拈弓搭箭",
+          "byte_start": 6990,
+          "byte_end": 7008
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "赵云射断追船篷索以阻追击，孔明在其身后镇定旁观。",
+        "retrospective_source_evidence": {
+          "quote": "言迄，箭到處，射斷徐盛船上篷索。",
+          "byte_start": 7188,
+          "byte_end": 7236
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "近船帆布取相邻“拽起滿帆”动作的艺术压缩；不把帆布误说成固定船篷。徐盛只以追船代表，不虚构近景表情。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "zhaoyun-arrow-v1.png",
+        "generation_artifact": "exec-cd08aa99-708e-4123-bec5-dfafff68344b.png",
+        "result_sha256": "ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/4/prompt",
+          "value_sha256": "61281f8d0e708c9ce3fea9aec7fe3b18ff593f2d348102a3725364b6f85ced70"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v2/zhaoyun-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v2/zhaoyun-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "e277798f-5a67-471d-bda0-36791afd7ef9",
+            "sha256": "2eea7021dec88f1a76cbfe6d75879fe082a890b3abff95b112e730d30a0e253b",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/kongming-v1.png",
+            "resolved_source_path": "samples/characters/kongming-v1.png",
+            "role": "identity_only",
+            "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+            "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "941e1827-aa61-4962-adeb-6369a467fb3b",
+        "sample_key": "narrative:zhaoyun-arrow",
+        "public_path": "media/941e1827-aa61-4962-adeb-6369a467fb3b.png",
+        "sha256": "ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66",
+        "generation_artifact": "exec-cd08aa99-708e-4123-bec5-dfafff68344b.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/4/prompt",
+          "value_sha256": "61281f8d0e708c9ce3fea9aec7fe3b18ff593f2d348102a3725364b6f85ced70"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/zhaoyun-arrow",
+          "notes": "赵云白甲白羽冠与立绘一致，放箭手松开、视线朝追船；孔明蓝袍在身后，右后索断帆垂。前景桨手与船舷清楚；帆布取升帆相邻动作的概括，不作为无篷快船的结构复原。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "orders-ensemble",
+      "title": "军帐授计",
+      "current_file": "samples/reader/narrative-v1/orders-ensemble-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "又喚張飛曰",
+          "byte_start": 10282,
+          "byte_end": 10297
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "孔明向张飞布置谷口伏击，众将围案听令。",
+        "retrospective_source_evidence": {
+          "quote": "又喚張飛曰：「翼德可領三千兵渡江，截斷彝陵這條路，去葫蘆谷口埋伏。",
+          "byte_start": 10282,
+          "byte_end": 10381
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "以相邻授计段落合成群像；关羽在场由后文承接，赵云离去来自本段首句。左前两人只作随员，不增加主要角色。木块与案图属于美术补充。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "orders-ensemble-v1.png",
+        "generation_artifact": "exec-4603f2d0-3c2d-4b5a-9ab5-3322f066dade.png",
+        "result_sha256": "53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/5/prompt",
+          "value_sha256": "0b7ca104ce554b0ec85faae1719e7dee766d314119f276c94a361294e4dffde1"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/kongming-v1.png",
+            "resolved_source_path": "samples/characters/kongming-v1.png",
+            "role": "identity_only",
+            "asset_id": "b75ba772-e36b-4542-86ef-7230735dede1",
+            "sha256": "30dafef7e1dd4d64f0b3094b3706264374212b981a1dbc5ebef172cc146205b0",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v2/zhaoyun-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v2/zhaoyun-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "e277798f-5a67-471d-bda0-36791afd7ef9",
+            "sha256": "2eea7021dec88f1a76cbfe6d75879fe082a890b3abff95b112e730d30a0e253b",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v2/zhangfei-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v2/zhangfei-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "9df81a97-28d3-4ce1-88a7-f10bfe4981eb",
+            "sha256": "d1cd207c2ad9135687ab989b78ec0ca7b60cdf6940e0e71e42c8a059ddcd962c",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/guanyu-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/guanyu-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "617b9a85-0ab6-42bb-857e-0b2cd714c059",
+            "sha256": "2033545d314bf1c4f8e68156dcdbdb70ad33e57bbf150583e857dcd3b8ed60cb",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6",
+        "sample_key": "narrative:orders-ensemble",
+        "public_path": "media/c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6.png",
+        "sha256": "53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384",
+        "generation_artifact": "exec-4603f2d0-3c2d-4b5a-9ab5-3322f066dade.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/5/prompt",
+          "value_sha256": "0b7ca104ce554b0ec85faae1719e7dee766d314119f276c94a361294e4dffde1"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/orders-ensemble",
+          "notes": "孔明指案，张飞托腮听令，关羽站在两人之间偏后，白甲赵云背身出帐；各自行为不同，未虚构敌对。案上木块、铜炉与竹简明确。群像合成相邻授计段落，关羽不是本段发言者，左侧两人只记随员。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "caocao-watch",
+      "title": "曹营观船",
+      "current_file": "samples/reader/narrative-v1/caocao-watch-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "是時東風大作，波浪洶湧",
+          "byte_start": 14000,
+          "byte_end": 14033
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "曹操把来船当作归降，身后谋士担忧；同一进船行动呈现双方信息差。",
+        "retrospective_source_evidence": {
+          "quote": "操迎風大笑，自以為得志。",
+          "byte_start": 14123,
+          "byte_end": 14159
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "曹操姿态取自得而非危机已知；身后谋士以程昱进谏的前文作群像概括，无独立角色新增。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "caocao-watch-v1.png",
+        "generation_artifact": "exec-a33eeec8-489d-46f3-96de-15a2eed56a7a.png",
+        "result_sha256": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/6/prompt",
+          "value_sha256": "dd03fcbfe44f5309d10855b9ee68fd7c3f2546712cf412ac82316f740237419c"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/caocao-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/caocao-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+            "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "7acccf3b-78ba-4e97-9951-0f9de0065d69",
+        "sample_key": "narrative:caocao-watch",
+        "public_path": "media/7acccf3b-78ba-4e97-9951-0f9de0065d69.png",
+        "sha256": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+        "generation_artifact": "exec-a33eeec8-489d-46f3-96de-15a2eed56a7a.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/6/prompt",
+          "value_sha256": "dd03fcbfe44f5309d10855b9ee68fd7c3f2546712cf412ac82316f740237419c"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/caocao-watch",
+          "notes": "曹操深袍、冠、灰黑须与参考一致，昂首背手，自得但未惊恐；身后谋士举手忧虑。来船尚未起火、观船甲板木栏完整，反打机位不会把黄盖船舷当作曹操同一船舷。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": "examples/chibi/paired-shot-continuity-v1.json"
+      }
+    },
+    {
+      "key": "huanggai-departure",
+      "title": "火船待发",
+      "current_file": "samples/reader/narrative-v1/huanggai-departure-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "黃蓋在第三隻火船上",
+          "byte_start": 13858,
+          "byte_end": 13885
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "黄盖带火船顺风出发，船上军士紧固草束与油瓮。",
+        "retrospective_source_evidence": {
+          "quote": "黃蓋在第三隻火船上，獨披掩心甲，手提利刃",
+          "byte_start": 13858,
+          "byte_end": 13918
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "俯身军士与草束油瓮是火攻准备的视觉化；装备样式与天光为艺术处理，曹操在画外，未知来船真意。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "huanggai-departure-v1.png",
+        "generation_artifact": "exec-9ee12f23-12bd-4a55-8872-7c6b3039a8df.png",
+        "result_sha256": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/7/prompt",
+          "value_sha256": "87015a733c6b11263ca532368a0dc83b6aecf67c65732dbb91350e9cea670d61"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/huanggai-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/huanggai-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "dd653cc4-dce2-4203-be11-179e24435613",
+            "sha256": "a2e3b9b706c4e259a7331056cdf2aef210bb48c6be73bc0c014a1c57043a1694",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7",
+        "sample_key": "narrative:huanggai-departure",
+        "public_path": "media/a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7.png",
+        "sha256": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+        "generation_artifact": "exec-9ee12f23-12bd-4a55-8872-7c6b3039a8df.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/7/prompt",
+          "value_sha256": "87015a733c6b11263ca532368a0dc83b6aecf67c65732dbb91350e9cea670d61"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/huanggai-departure",
+          "notes": "黄盖白须、褐甲、黄褐内衣一致，持刀下垂并指挥；军士捆扎草束与油瓮，船队未燃。与曹营观船是相反阵营视角，图中他已知火攻、曹操未知。灯笼、草束与船舷可定位。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": "examples/chibi/paired-shot-continuity-v1.json"
+      }
+    },
+    {
+      "key": "fire-panorama",
+      "title": "火起三江",
+      "current_file": "samples/reader/narrative-v1/fire-panorama-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "曹操回觀岸上營寨",
+          "byte_start": 15383,
+          "byte_end": 15407
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "火势扩展到连环船与岸营，以小舟视角展开战场。",
+        "retrospective_source_evidence": {
+          "quote": "曹操回觀岸上營寨，幾處煙火。",
+          "byte_start": 15383,
+          "byte_end": 15425
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "画面聚焦群体与空间，不把前景水手指认为曹操或黄盖；火势来自前段与本段连续叙事。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "fire-panorama-v1.png",
+        "generation_artifact": "exec-daac66a8-8829-49e8-9e59-5ebabdb7c3e5.png",
+        "result_sha256": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/8/prompt",
+          "value_sha256": "44bae1bb840a86fc9bc55cf1727efdb4deb799f5dbd23e5172deca9cf116eab4"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "1132535c-26bc-4091-9870-28e1aa358e33",
+        "sample_key": "narrative:fire-panorama",
+        "public_path": "media/1132535c-26bc-4091-9870-28e1aa358e33.png",
+        "sha256": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3",
+        "generation_artifact": "exec-daac66a8-8829-49e8-9e59-5ebabdb7c3e5.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/8/prompt",
+          "value_sha256": "44bae1bb840a86fc9bc55cf1727efdb4deb799f5dbd23e5172deca9cf116eab4"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/fire-panorama",
+          "notes": "连环大船仍在同侧水寨，桅杆与船体未凭空换位；火已由火船蔓延岸营，前景小舟舟子回望。与前两张船图比对，变化可由进船和起火解释。前景人无足够身份依据，不标成曹操或黄盖。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": "examples/chibi/paired-shot-continuity-v1.json"
+      }
+    },
+    {
+      "key": "retreat-column",
+      "title": "败军入山",
+      "current_file": "samples/reader/narrative-v1/retreat-column-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "縱馬加鞭",
+          "byte_start": 19063,
+          "byte_end": 19075
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "曹军离开火场进入险峻山道，曹操与疲惫军士同行。",
+        "retrospective_source_evidence": {
+          "quote": "縱馬加鞭，走至五更，回望火光漸遠，操心方定",
+          "byte_start": 19063,
+          "byte_end": 19126
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "取本段开头败退疲态，不把图说成末尾“仰面大笑”的逐字插画。军士行囊为军旅补充。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "retreat-column-v1.png",
+        "generation_artifact": "exec-cc2c2a01-07e7-4044-a17e-be24bcbcb950.png",
+        "result_sha256": "e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/9/prompt",
+          "value_sha256": "2b95e69b01b31526328787dad2a82f1644b8d1780c741fd6b5e905c110c585a1"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/caocao-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/caocao-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+            "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "95601ac3-c747-47f1-a69a-542665f76a87",
+        "sample_key": "narrative:retreat-column",
+        "public_path": "media/95601ac3-c747-47f1-a69a-542665f76a87.png",
+        "sha256": "e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1",
+        "generation_artifact": "exec-cc2c2a01-07e7-4044-a17e-be24bcbcb950.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/9/prompt",
+          "value_sha256": "2b95e69b01b31526328787dad2a82f1644b8d1780c741fd6b5e905c110c585a1"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/retreat-column",
+          "notes": "曹操衣冠与基础参考一致但满身泥污，低头骑马；前景互扶败兵、后方辎重与弯折泥路表现疲态。取五更离开火场的瞬间，不把该表情标成随后仰面大笑。山道不是华容道的同一段。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "zhangfei-ambush",
+      "title": "谷口翼德",
+      "current_file": "samples/reader/narrative-v1/zhangfei-ambush-v1.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "為首乃燕人張翼德",
+          "byte_start": 21177,
+          "byte_end": 21201
+        },
+        "recorded_edit_moment": null,
+        "retrospective_description": "张飞横矛立马，曹军在谷口惊惧遇阻。",
+        "retrospective_source_evidence": {
+          "quote": "為首乃燕人張翼德，橫矛立馬，大叫：「操賊走那裏去！」",
+          "byte_start": 21177,
+          "byte_end": 21255
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "取双方交锋之前的阻截瞬间，曹操回身与亲兵视线外化恐惧。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "zhangfei-ambush-v1.png",
+        "generation_artifact": "exec-15198fcc-a2c6-4619-be50-40cb3a084457.png",
+        "result_sha256": "819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3",
+        "hash_status": "verified_public_asset",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/10/prompt",
+          "value_sha256": "fe5ed366013442cfc9e14d9b95c37773f7e55b64c045d0e2d6c74b80934928dc"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v2/zhangfei-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v2/zhangfei-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "9df81a97-28d3-4ce1-88a7-f10bfe4981eb",
+            "sha256": "d1cd207c2ad9135687ab989b78ec0ca7b60cdf6940e0e71e42c8a059ddcd962c",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/caocao-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/caocao-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+            "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [],
+      "current_result": {
+        "asset_id": "761dbfea-aaeb-4488-8c74-38c21cd6145f",
+        "sample_key": "narrative:zhangfei-ambush",
+        "public_path": "media/761dbfea-aaeb-4488-8c74-38c21cd6145f.png",
+        "sha256": "819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3",
+        "generation_artifact": "exec-15198fcc-a2c6-4619-be50-40cb3a084457.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/10/prompt",
+          "value_sha256": "fe5ed366013442cfc9e14d9b95c37773f7e55b64c045d0e2d6c74b80934928dc"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/zhangfei-ambush",
+          "notes": "张飞深甲红褐衣、浓须与立绘相符，横矛立马占高位；曹操从右前方回身面对阻击，亲兵紧张。两军阵位明确，尚未脱围。谷口岩壁与道路固定，不能复用为后续华容同一地点。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    },
+    {
+      "key": "huarong-encounter",
+      "title": "华容相逢",
+      "current_file": "samples/reader/narrative-v1/huarong-encounter-v2.png",
+      "source_moment": {
+        "recorded_marker": {
+          "quote": "操從其說，即縱馬向前",
+          "byte_start": 24263,
+          "byte_end": 24293
+        },
+        "recorded_edit_moment": "曹操诉旧情；关羽申明岂敢以私废公；尚未回马让路",
+        "retrospective_description": "曹操欠身求情，关羽坚持军令，双方尚未完成放行决定。",
+        "retrospective_source_evidence": {
+          "quote": "曹操兵敗勢危，到此無路，望將軍以昔日之情為重。",
+          "byte_start": 24431,
+          "byte_end": 24500
+        },
+        "description_basis": "examples/chibi/rebuild-v0.2.0.json#/plan/shots; recorded after generation",
+        "interpretation": "曹操手按胸口、仰视请求；关羽目光严肃而不鄙夷。情义与军令的冲突留在眼神和姿态。"
+      },
+      "original_generation": {
+        "date": "2026-11-04",
+        "file": "huarong-encounter-v1.png",
+        "generation_artifact": "exec-85bd1ca3-df0d-489f-8188-8d4d13fa295a.png",
+        "result_sha256": null,
+        "hash_status": "not_in_public_input",
+        "prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/11/prompt",
+          "value_sha256": "738616455e3f1aaf00f378ab6c74aa5b28793095106c2125b2af571e24c59f61"
+        },
+        "references": [
+          {
+            "recorded_path": "../../../samples/reader/fleet-v1.png",
+            "resolved_source_path": "samples/reader/fleet-v1.png",
+            "role": "style_only",
+            "asset_id": "934b20a6-85e8-4826-8ac7-1cdbeece77dd",
+            "sha256": "89434c528f7a7439a521fd40f80c03fff2a7ac83a5a3b62583c9d7194f4c7ff7",
+            "hash_status": "verified_public_asset",
+            "scope": "水墨、水彩、纸色与光色；不是舰队几何母版或跨镜头空间约束。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/caocao-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/caocao-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+            "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          },
+          {
+            "recorded_path": "../../../samples/characters/expansion-v1/guanyu-base-v1.png",
+            "resolved_source_path": "samples/characters/expansion-v1/guanyu-base-v1.png",
+            "role": "identity_only",
+            "asset_id": "617b9a85-0ab6-42bb-857e-0b2cd714c059",
+            "sha256": "2033545d314bf1c4f8e68156dcdbdb70ad33e57bbf150583e857dcd3b8ed60cb",
+            "hash_status": "verified_public_asset",
+            "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+          }
+        ]
+      },
+      "edits": [
+        {
+          "sequence": 1,
+          "date": "2026-11-05",
+          "date_status": "recorded",
+          "edit_target": {
+            "recorded_path": "huarong-encounter-v1.png",
+            "resolved_source_path": "samples/reader/narrative-v1/huarong-encounter-v1.png",
+            "role": "edit_target",
+            "asset_id": null,
+            "sha256": null,
+            "hash_status": "not_in_public_input",
+            "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+          },
+          "output_file": "huarong-encounter-v2.png",
+          "output_file_basis": "explicit_edit_field",
+          "prompt": {
+            "path": "samples/reader/narrative-v1/prompts.json",
+            "pointer": "/images/11/edits/0/prompt",
+            "value_sha256": "4563e883618c8fc6740006e8830f890ea1ec86f3a68784776c0fa52e8a549452"
+          },
+          "references": [
+            {
+              "recorded_path": "huarong-encounter-v1.png",
+              "resolved_source_path": "samples/reader/narrative-v1/huarong-encounter-v1.png",
+              "role": "edit_target",
+              "asset_id": null,
+              "sha256": null,
+              "hash_status": "not_in_public_input",
+              "scope": "已有画面编辑对象；旧版 PNG 不在固定公开输入内，不能补造字节哈希。"
+            },
+            {
+              "recorded_path": "../../characters/expansion-v1/caocao-base-v1.png",
+              "resolved_source_path": "samples/characters/expansion-v1/caocao-base-v1.png",
+              "role": "identity_only",
+              "asset_id": "f4d61535-7e89-4021-8a39-d802846926f0",
+              "sha256": "ba509b21243346e55d65dd16584d882bea8408722139c1342ef5b11cfe6886f9",
+              "hash_status": "verified_public_asset",
+              "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+            },
+            {
+              "recorded_path": "../../characters/expansion-v1/guanyu-base-v1.png",
+              "resolved_source_path": "samples/characters/expansion-v1/guanyu-base-v1.png",
+              "role": "identity_only",
+              "asset_id": "617b9a85-0ab6-42bb-857e-0b2cd714c059",
+              "sha256": "2033545d314bf1c4f8e68156dcdbdb70ad33e57bbf150583e857dcd3b8ed60cb",
+              "hash_status": "verified_public_asset",
+              "scope": "人物身份、面貌与服装；不是原场景布置或固定姿势。"
+            }
+          ],
+          "reference_list_status": "recorded",
+          "generation_artifact": "exec-a8fc5d5e-129a-474c-bfcf-164bbc25655a.png",
+          "result_sha256": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac"
+        }
+      ],
+      "current_result": {
+        "asset_id": "53b3c1af-7fa1-4d44-b78e-700290d86561",
+        "sample_key": "narrative:huarong-encounter",
+        "public_path": "media/53b3c1af-7fa1-4d44-b78e-700290d86561.png",
+        "sha256": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac",
+        "generation_artifact": "exec-a8fc5d5e-129a-474c-bfcf-164bbc25655a.png",
+        "effective_actual_prompt": {
+          "path": "samples/reader/narrative-v1/prompts.json",
+          "pointer": "/images/11/edits/0/prompt",
+          "value_sha256": "4563e883618c8fc6740006e8830f890ea1ec86f3a68784776c0fa52e8a549452"
+        },
+        "model_version": null,
+        "seed": null,
+        "missing_metadata": "model version and seed were not recorded; no exact rerun claim"
+      },
+      "review": {
+        "assistant": {
+          "status": "recorded_inspection_with_limitations",
+          "record": "examples/chibi/visual-review-v0.2.0.json#/shots/huarong-encounter",
+          "notes": "曹操左侧欠身、手近胸、抬眼求情；关羽绿袍长须、竖刀肃立于右侧，赤兔样式红棕马清楚。曹军疲惫、关军有序，路尚被阻；不是双方平等闲谈或已放行。"
+        },
+        "creator_final_art_review": "pending",
+        "supplemental_pair_gate": null
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-# Taleprism 0.3.0 compatibility
+# Taleprism 0.3.1 compatibility
 
 Taleprism is the public name of the earlier 原页 / Storygal local project. Version 0.2.0 strengthens editable recovery, reference tracking and public example reconstruction while preserving existing projects and persisted identifiers.
 
@@ -12,7 +12,7 @@ Taleprism is the public name of the earlier 原页 / Storygal local project. Ver
 | Reader export | Existing meta marker, source directory and inventory names |
 | Old macOS launchers | “打开原页.command” and “停止原页.command” continue working |
 
-Product version 0.3.0, template version 0.2.0 and project format version 2 are separate. The new workbench imports old projects; older workbenches may reject newly added check and reference fields.
+Product version 0.3.1, template version 0.2.0 and project format version 2 are separate. The new workbench imports old projects; older workbenches may reject newly added check and reference fields.
 
 The UI remains Chinese. Native Windows startup is not implemented. Local synthesis is macOS-specific; playing already accepted audio is portable. Public examples omit system-generated demonstration audio. A downloaded project contains its author's production checks, not the recipient's final approval.
 
@@ -37,3 +37,7 @@ Reader recovery, image retry, dialogue-audio lifecycle and reading-position pers
 Creator workflows add project backup/restore notices, individually revision-bound shot exchange, external character/dialogue tasks and explicit WebGAL simplification reports. External AI task downloads do not send content to a service; the user chooses whether and where to share them. Guided Last Light imports remain bound to one fixed public archive and checksum, never a user-provided URL.
 
 The application and release artifacts advance to 0.3.0. The eight-template library stays at 0.2.0; editable project format v2, the Chibi 0.2 reconstruction recipe/review records, source hashes and persisted identifiers keep their existing versions. Existing 0.2 tags, release attachments and complete exports remain available.
+
+## Changes in 0.3.1
+
+Chibi directory/map disclosure and whole-chapter image browsing now follow the current reading position unless the reader deliberately reveals the full view. Simplified/Traditional search normalization leaves source bytes untouched. Illustration fit and display placement change presentation only, not source anchors, image bytes or stored reading IDs. Maker-only image lineage and paired-shot review ship with the examples; the fire-ship flag-color continuity gate is still `needs_revision`, not a repaired or approved output. Template-library 0.2.0, project-format v2 and the reviewed Chibi recipe/review versions remain unchanged.

@@ -2,7 +2,7 @@
 
 **An open workflow for turning fiction into illustrated reading experiences, with character direction, scene continuity, and optional voice.**
 
-v0.3.0 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.0)
+v0.3.1 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.1)
 
 ![Chibi: the Red Cliffs reading showcase](examples/chibi/cover.png)
 
@@ -17,7 +17,7 @@ The online example is a static reading experience. It has no hosted editing back
 
 ## Install the workbench
 
-Requirements: Python 3.11+ (uv can manage it), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. The UI is currently Chinese. macOS is the primary manually tested environment; see [validation](docs/VALIDATION-v0.3.0.md) for the exact platform checks. Native Windows startup is not supported.
+Requirements: Python 3.11+ (uv can manage it), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. The UI is currently Chinese. macOS is the primary manually tested environment; see [validation](docs/VALIDATION-v0.3.1.md) for the exact platform checks. Native Windows startup is not supported.
 
 ```sh
 git clone https://github.com/Ethereal-Space-one/taleprism.git
@@ -27,7 +27,7 @@ cd taleprism
 
 Open `http://127.0.0.1:8000`. Initial dependency installation needs internet. Later use `./run.sh`; on macOS the Taleprism `.command` launchers also work. The service binds to localhost. Restart it after rebooting.
 
-Download the Chibi or Last Light `project.zip` from the v0.3.0 Release. In the left sidebar choose **示例与工程 → 导入可编辑工程** (Examples and projects → Import editable project). Each import creates a new project. Chibi provides a complete chapter and ensemble example; Last Light provides a three-shot tutorial. The source checkout includes tutorial reference images; complete projects download separately.
+Download the Chibi or Last Light `project.zip` from the v0.3.1 Release. In the left sidebar choose **示例与工程 → 导入可编辑工程** (Examples and projects → Import editable project). Each import creates a new project. Chibi provides a complete chapter and ensemble example; Last Light provides a three-shot tutorial. The source checkout includes tutorial reference images; complete projects download separately.
 
 Both projects include unchanged source text, assets, direction plans and assistant inspection evidence. Unfinished projects can be restored for repair; old checks without dependency evidence require reinspection. Public packages omit macOS system-generated demonstration audio. Final creator art review is still pending.
 

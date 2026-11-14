@@ -520,6 +520,17 @@
   font-size: 16px;
   margin-top: 24px;
 }
+.reader-disclosure-controls {
+  margin-bottom: 16px;
+}
+.reader-disclosure-controls p {
+  line-height: 1.8;
+  margin-top: 0;
+}
+.reader-disclosure-controls button {
+  white-space: normal;
+  text-align: left;
+}
 .reader-contents > button {
   display: block;
   text-align: left;
@@ -1084,6 +1095,23 @@
   flex-direction: column;
   gap: 8px;
 }
+.reader-search .reader-search-exact {
+  flex-direction: row;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 44px;
+  cursor: pointer;
+}
+.reader-search-exact input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--reader-ink);
+}
+.reader-search-help {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0;
+}
 .reader-root input[type='search'] {
   width: 100%;
   background: var(--reader-panel);
@@ -1530,26 +1558,102 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.reader-art-dialog {
+  width: min(1320px, calc(100% - 32px));
+}
+/* Only the expanded viewer has a bounded canvas. Galleries keep their scrolling body. */
+.reader-image-dialog {
+  height: calc(100dvh - 40px);
+}
+.reader-image-dialog .reader-dialog-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--reader-space-md);
+  overflow: hidden;
+}
+.reader-image-dialog .reader-dialog-body > :not(.reader-image-viewport) {
+  flex-shrink: 0;
+}
+.reader-image-dialog .reader-dialog-body > button {
+  align-self: flex-start;
+}
+.reader-image-dialog .reader-gallery-controls {
+  padding-top: 0;
+}
+.reader-image-dialog .reader-gallery-controls > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reader-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.reader-image-disclosure {
+  border: 1px solid var(--reader-rule);
+  border-radius: var(--reader-radius);
+  padding: 12px;
+  background: var(--reader-panel);
+}
+.reader-image-disclosure h3,
+.reader-image-disclosure p {
+  margin: 0 0 8px;
+}
+.reader-image-disclosure h3 {
+  font-size: 18px;
+}
+.reader-image-disclosure > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reader-image-disclosure button,
+.reader-image-disclosure .reader-primary {
+  padding: 8px;
+  font-size: 14px;
+}
 .reader-image-viewport {
-  max-height: 70dvh;
-  overflow: auto;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
   overscroll-behavior: contain;
   background: var(--reader-paper);
-  margin-bottom: var(--reader-space-md);
 }
 .reader-image-viewport .reader-expanded-image {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   max-height: none;
   max-width: none;
   object-fit: contain;
 }
+.reader-image-viewport.is-zoomed {
+  overflow: auto;
+}
 .reader-image-viewport.is-zoomed .reader-expanded-image {
   width: 200%;
+  height: 200%;
 }
-.reader-art-dialog {
-  width: min(1320px, calc(100% - 32px));
+@media (max-width: 600px), (max-height: 600px) {
+  .reader-image-dialog {
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .reader-image-dialog .reader-dialog-head {
+    padding: 8px 12px;
+  }
+  .reader-image-dialog .reader-dialog-body {
+    padding: 12px;
+    gap: var(--reader-space-sm);
+  }
 }
 
 /* Recovery controls stay quiet, keyboard reachable, and outside disabled art buttons. */
