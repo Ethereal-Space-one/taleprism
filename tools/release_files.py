@@ -47,11 +47,14 @@ ROOT_FILES = (
     "docs/人物视觉导演标准.md",
     "docs/使用与恢复指南.md",
     "docs/COMPATIBILITY.md",
+    "docs/EXTERNAL_CHARACTER_REVIEW.md",
     "docs/RELEASING.md",
     "docs/RELEASE-v0.1.0.md",
     "docs/VALIDATION-v0.1.0.md",
     "docs/RELEASE-v0.2.0.md",
     "docs/VALIDATION-v0.2.0.md",
+    "docs/RELEASE-v0.3.0.md",
+    "docs/VALIDATION-v0.3.0.md",
     "docs/Taleprism-v0.2.0-发布计划.md",
 )
 

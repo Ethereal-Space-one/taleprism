@@ -479,7 +479,11 @@ def test_continuity_bundle_roundtrip_and_external_plan_cannot_import_check(scene
     state = get(c, pid)
     external = c.post(
         f"/api/projects/{pid}/production/validate",
-        json={k: state[k] for k in ["revision", "source_sha256", "plan"]},
+        json={
+            "project_id": pid,
+            "base_plan_revision": state["revision"],
+            **{k: state[k] for k in ["source_sha256", "plan"]},
+        },
     )
     assert external.status_code == 200
     assert all(

@@ -19,6 +19,127 @@ const statusNames = {
   merged: '已合并',
 }
 
+function ExternalReviewExchange({
+  projectId,
+  revision,
+  configured,
+  onImported,
+}: {
+  projectId: string
+  revision: number
+  configured: boolean
+  onImported: () => Promise<void>
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [message, setMessage] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  const download = useMutation({
+    mutationFn: () =>
+      api<Record<string, unknown>>(`/api/projects/${projectId}/review/external-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision }),
+      }),
+    onSuccess: (task) => {
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(task, null, 2)], { type: 'application/json;charset=utf-8' }),
+      )
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `taleprism-角色对白任务-r${revision}.json`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setMessage('任务已下载，尚未发送给任何外部 AI。请保存 AI 返回的纯 JSON，再选择该回复文件。')
+    },
+  })
+  const upload = useMutation({
+    mutationFn: (selected: File) => {
+      if (selected.size > 4_000_000)
+        throw new Error('回复文件超过 4 MB，请按任务要求返回标注 JSON，不要包含原文或任务文件。')
+      const body = new FormData()
+      body.append('file', selected)
+      return api(`/api/projects/${projectId}/review/external-response`, { method: 'POST', body })
+    },
+    onSuccess: async () => {
+      setFile(null)
+      if (input.current) input.current.value = ''
+      setMessage('候选已导入。请先确认角色身份，再逐句确认对白归属；人工确认的内容没有被覆盖。')
+      await onImported()
+    },
+  })
+  const busy = download.isPending || upload.isPending
+  const error = download.error || upload.error
+  return (
+    <details className="review-audit external-review" open={!configured}>
+      <summary>不用密钥：交给外部 AI，再导回候选</summary>
+      <p className="remote-note">
+        任务文件含本章原文、对白和已确认角色。下载仅保存在本机，不会发送数据。
+        若自行上传或粘贴到外部 AI，内容会离开本机，请先核实分享权利与服务商隐私规则。
+        此流程不会授权后续文件或调用任何模型。
+      </p>
+      <ol>
+        <li>
+          <button
+            disabled={busy}
+            onClick={() => {
+              upload.reset()
+              setMessage('')
+              download.mutate()
+            }}
+          >
+            {download.isPending ? '正在生成任务…' : '下载本章角色与对白任务'}
+          </button>
+        </li>
+        <li>把任务文件交给你选择的 AI，请它按 instructions 返回纯 JSON，另存为回复文件。</li>
+        <li>
+          <label>
+            选择本次 AI 回复（JSON，最多 4 MB）
+            <input
+              ref={input}
+              type="file"
+              accept=".json,application/json"
+              disabled={busy}
+              onChange={(e) => {
+                setFile(e.currentTarget.files?.[0] || null)
+                setMessage('')
+                download.reset()
+                upload.reset()
+              }}
+            />
+          </label>
+          <button
+            disabled={busy || !file}
+            onClick={() => {
+              if (file) {
+                download.reset()
+                setMessage('')
+                upload.mutate(file)
+              }
+            }}
+          >
+            {upload.isPending ? '正在验证回复…' : '仅验证并导入所选文件的候选'}
+          </button>
+        </li>
+      </ol>
+      <p className="remote-note">
+        下载后若继续人工修改，旧回复会被拒绝，请重新下载任务。导入只生成待审建议，不会确认身份或说话人。
+      </p>
+      {error && (
+        <p className="error" role="alert">
+          {error.message}
+        </p>
+      )}
+      {message && !error && (
+        <p className="saved-note" role="status">
+          {message}
+        </p>
+      )}
+    </details>
+  )
+}
+
 function EvidenceList({ items }: { items: Evidence[] }) {
   return (
     <details className="evidence">
@@ -229,6 +350,7 @@ export function ReviewPanel({
       const element = e.target as HTMLElement
       if (
         /INPUT|TEXTAREA|SELECT|BUTTON/.test(element.tagName) ||
+        element.closest('.external-review') ||
         section !== 'dialogues' ||
         busy ||
         !selected
@@ -310,8 +432,16 @@ export function ReviewPanel({
         {model.data &&
           !model.data.configured &&
           !model.data.error &&
-          ' 尚未检测到本机密钥，请配置 STORYGAL_LLM_API_KEY。'}
+          ' 未检测到本机密钥，可使用下方外部 AI 往返；也可配置 STORYGAL_LLM_API_KEY。'}
       </p>
+      {state && (
+        <ExternalReviewExchange
+          projectId={projectId}
+          revision={state.revision}
+          configured={!!model.data?.configured}
+          onImported={refresh}
+        />
+      )}
       {(model.error || model.data?.error) && (
         <p className="error" role="alert">
           {model.data?.error || '无法读取模型配置，请检查本机服务后重试。'}
@@ -713,6 +843,7 @@ export function ReviewPanel({
                 'asset.upload': '导入候选图',
                 'asset.review': '审核图像',
                 'analysis.apply': '应用 AI 候选',
+                'analysis.external-import': '导入外部 AI 待审候选',
               } as Record<string, string>
             )[a.action] || a.action}
           </p>

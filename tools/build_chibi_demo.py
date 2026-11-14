@@ -23,6 +23,8 @@ from release_version import PREFIX, VERSION
 ROOT = Path(__file__).resolve().parents[1]
 RECIPE = ROOT / "examples/chibi/rebuild-v0.2.0.json"
 REVIEW = ROOT / "examples/chibi/visual-review-v0.2.0.json"
+# This reviewed content revision is independent of the application release.
+RECIPE_RELEASE_VERSION = "0.2.0"
 
 
 def pack(files):
@@ -330,14 +332,19 @@ def rebuild(recipe, review, files, public, recipe_raw, review_raw):
 
 def build(source, output):
     source, output = Path(source), Path(output)
-    for legacy in (ROOT / ".release/chibi-demo", ROOT / ".release/v0.1.0"):
+    for legacy in (
+        ROOT / ".release/chibi-demo",
+        ROOT / ".release/v0.1.0",
+        ROOT / ".release/v0.2.0",
+        ROOT / ".release/v0.2.0-chibi",
+    ):
         if output.resolve().is_relative_to(legacy.resolve()):
-            raise ValueError("请使用新的0.2输出目录，不能覆盖历史发布产物。")
+            raise ValueError("请使用新的发布输出目录，不能覆盖历史发布产物。")
     recipe, review, files, public, recipe_raw, review_raw = preflight(
         source, RECIPE, REVIEW
     )
-    if VERSION != recipe["release_version"]:
-        raise ValueError("应用版本与赤壁发布配方不一致。")
+    if recipe["release_version"] != RECIPE_RELEASE_VERSION:
+        raise ValueError("赤壁配方不是当前构建器支持的已检查内容版本。")
     project_raw, reader_raw = rebuild(
         recipe, review, files, public, recipe_raw, review_raw
     )
@@ -400,6 +407,6 @@ if __name__ == "__main__":
         required=True,
         help="下载后保存在本机的固定v0.1.0赤壁公开阅读包；脚本不联网。",
     )
-    parser.add_argument("--output", type=Path, default=ROOT / ".release/v0.2.0-chibi")
+    parser.add_argument("--output", type=Path, default=ROOT / (".release/v" + VERSION + "-chibi"))
     args = parser.parse_args()
     print(json.dumps(build(args.source, args.output), ensure_ascii=False, indent=2))

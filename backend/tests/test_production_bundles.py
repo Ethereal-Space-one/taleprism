@@ -13,7 +13,9 @@ from storygal.text import sha256
 
 
 @pytest.fixture
-def setup(tmp_path):
+def setup(tmp_path, monkeypatch):
+    monkeypatch.setattr("storygal.app.load_env", lambda _path: None)
+    monkeypatch.setattr("storygal.llm.api_key", lambda: "")
     c = TestClient(create_app(tmp_path / "first"))
     raw = "第一章　回家\n林遥说：「先听听您的想法。」陈伯握着雨伞。\n雨慢慢停了。".encode()
     p = c.post(
@@ -94,6 +96,136 @@ def test_plan_apply_and_task_export(setup):
     assert r.content(pid)["preview"]
     assert "不能提前" in c.get(prefix + "/tasks").json()["tasks"][0]["prompt"]
     assert c.get(prefix + "/tasks?kind=plan").json()["source_sha256"] == sha256(raw)
+
+
+def external_return(c, pid, plan):
+    task = c.get(f"/api/projects/{pid}/production/tasks?kind=plan").json()
+    return {k: task[k] for k in ["project_id", "base_plan_revision", "source_sha256"]} | {
+        "plan": plan
+    }
+
+
+def test_external_plan_task_binds_project_source_and_exact_saved_plan(setup):
+    c, pid, raw, plan = setup
+    assert save(c, pid, plan).status_code == 200
+    task = c.get(f"/api/projects/{pid}/production/tasks?kind=plan").json()
+    state = c.get(f"/api/projects/{pid}/production").json()
+    assert task["project_id"] == pid
+    assert task["base_plan_revision"] == state["revision"] == 1
+    assert task["source_sha256"] == sha256(raw)
+    assert task["plan"] == state["plan"]
+    schema = task["schema"]
+    assert schema["required"] == ["project_id", "base_plan_revision", "source_sha256", "plan"]
+    assert schema["properties"]["project_id"] == {"const": pid}
+    assert schema["properties"]["base_plan_revision"] == {"const": 1}
+    assert schema["properties"]["source_sha256"] == {"const": sha256(raw)}
+    assert "原样保留project_id、base_plan_revision、source_sha256" in task["instruction"]
+
+
+def test_external_candidate_is_read_only_until_explicit_revision_bound_save(setup):
+    c, pid, _, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    answer = external_return(c, pid, plan)
+    answer["plan"]["shots"][0]["status"] = "approved"
+    before = c.get(prefix).json()
+    validated = c.post(prefix + "/validate", json=answer)
+    assert validated.status_code == 200, validated.text
+    assert validated.json()["shots"][0]["status"] == "draft"
+    assert c.get(prefix).json() == before
+    response = save(c, pid, validated.json(), answer["base_plan_revision"])
+    assert response.status_code == 200, response.text
+    assert response.json()["revision"] == 1
+    assert response.json()["plan"] == validated.json()
+
+
+def test_external_old_same_source_result_cannot_replace_new_manual_work(setup):
+    c, pid, _, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    answer = external_return(c, pid, plan)
+    manual = copy.deepcopy(plan)
+    manual["style"] = "后来保存的人工方案"
+    assert save(c, pid, manual).status_code == 200
+    before = c.get(prefix).json()
+    response = c.post(prefix + "/validate", json=answer)
+    assert response.status_code == 409, response.text
+    assert "旧结果不能覆盖" in response.json()["detail"]
+    assert c.get(prefix).json() == before
+
+
+def test_external_plan_rejects_other_project_even_with_identical_source(setup):
+    c, pid, raw, plan = setup
+    answer = external_return(c, pid, plan)
+    other = c.post(
+        "/api/projects", files={"file": ("same.txt", raw)}, data={"rights_status": "owned"}
+    ).json()["id"]
+    prefix = f"/api/projects/{other}/production"
+    before = c.get(prefix).json()
+    assert before["revision"] == answer["base_plan_revision"]
+    assert before["source_sha256"] == answer["source_sha256"]
+    response = c.post(prefix + "/validate", json=answer)
+    assert response.status_code == 400, response.text
+    assert "不属于当前项目" in response.json()["detail"]
+    assert c.get(prefix).json() == before
+
+
+@pytest.mark.parametrize("binding", ["missing", "legacy_revision", "source", "negative", "bool"])
+def test_external_plan_rejects_unbound_or_invalid_context_without_migrating_it(setup, binding):
+    c, pid, _, plan = setup
+    answer = external_return(c, pid, plan)
+    if binding in {"missing", "legacy_revision"}:
+        del answer["project_id"]
+        del answer["base_plan_revision"]
+        if binding == "legacy_revision":
+            answer["revision"] = 0
+    elif binding == "source":
+        answer["source_sha256"] = "0" * 64
+    else:
+        answer["base_plan_revision"] = -1 if binding == "negative" else False
+    prefix = f"/api/projects/{pid}/production"
+    before = c.get(prefix).json()
+    response = c.post(prefix + "/validate", json=answer)
+    assert response.status_code == (400 if binding == "source" else 422), response.text
+    if binding in {"missing", "legacy_revision"}:
+        assert "请重新导出 AI 任务" in response.text
+    assert c.get(prefix).json() == before
+
+
+def test_external_validated_candidate_cannot_save_over_later_manual_change(setup):
+    c, pid, _, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    answer = external_return(c, pid, plan)
+    validated = c.post(prefix + "/validate", json=answer)
+    assert validated.status_code == 200, validated.text
+    manual = copy.deepcopy(plan)
+    manual["style"] = "核对候选之后的人工修改"
+    assert save(c, pid, manual).status_code == 200
+    before = c.get(prefix).json()
+    assert save(c, pid, validated.json(), answer["base_plan_revision"]).status_code == 409
+    assert c.get(prefix).json() == before
+
+
+def test_external_validation_checks_revision_again_after_content_validation(setup, monkeypatch):
+    c, pid, _, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    answer = external_return(c, pid, plan)
+    instance = c.app.state.production
+    original_validate = instance.validate
+    pending_change = True
+
+    def validate(*args, **kwargs):
+        nonlocal pending_change
+        candidate = original_validate(*args, **kwargs)
+        if pending_change:
+            pending_change = False
+            manual = copy.deepcopy(plan)
+            manual["style"] = "内容校验期间保存的人工修改"
+            instance.save(pid, 0, answer["source_sha256"], manual)
+        return candidate
+
+    monkeypatch.setattr(instance, "validate", validate)
+    response = c.post(prefix + "/validate", json=answer)
+    assert response.status_code == 409, response.text
+    assert c.get(prefix).json()["plan"]["style"] == "内容校验期间保存的人工修改"
 
 
 def test_editable_bundle_roundtrip_in_clean_store(setup, tmp_path):
@@ -228,6 +360,60 @@ def test_ai_plan_stale_response_and_invalid_response_preserve_manual_work(setup,
     assert instance.load(pid) == before
     with pytest.raises(ValueError, match="已更新"):
         instance.generate(pid, 0)
+
+
+def test_synchronous_generation_keeps_existing_unbound_model_response_contract(setup, monkeypatch):
+    from storygal import production
+
+    c, pid, _, plan = setup
+    instance = c.app.state.production
+    source_hash = instance.state(pid)["source_sha256"]
+    monkeypatch.setattr(
+        production.llm,
+        "model_settings",
+        lambda: ({"model": "fixture", "base_url": "https://api.deepseek.com"}, "fake-test-only"),
+    )
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "content": json.dumps({"source_sha256": source_hash, "plan": plan})
+                        },
+                    }
+                ]
+            }
+
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def post(self, *args, **kwargs):
+            task = json.loads(kwargs["json"]["messages"][1]["content"])
+            assert "project_id" not in task and "base_plan_revision" not in task
+            assert task["schema"]["required"] == ["source_sha256", "plan"]
+            assert "仅输出包含source_sha256与plan、符合schema的JSON。" in (
+                kwargs["json"]["messages"][0]["content"]
+            )
+            return Response()
+
+    monkeypatch.setattr(production.httpx, "Client", Client)
+    state = instance.generate(pid, 0)
+    assert state["revision"] == 1
+    assert state["plan"]["style"] == plan["style"]
+    assert all(s["status"] == "draft" for s in state["plan"]["shots"])
 
 
 @pytest.mark.content_pack

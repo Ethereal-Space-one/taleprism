@@ -12,6 +12,8 @@ import {
   type CSSProperties,
 } from 'react'
 import { ReaderMap } from './ReaderMap'
+import { ReaderStoryGraph } from './reader/ReaderStoryGraph'
+import { resolveStoryGraph } from './reader/storyGraph'
 import type { ReaderContent, ReaderMapEntry } from './reader-types'
 import {
   blockAt,
@@ -25,12 +27,22 @@ import {
   type Position,
   type RecordData,
   validPosition,
+  sameBookmarkPosition,
+  type NavigationAction,
   byteLength,
 } from './reader/model'
-import { capturePosition, restorePosition, selectedExcerpt } from './reader/position'
+import {
+  capturePosition,
+  restorePosition,
+  selectedExcerpt,
+  visibleAudioIds,
+} from './reader/position'
 import { useDialogueAudio, type AudioPoint } from './reader/useDialogueAudio'
 import { useStagePreload } from './reader/useStagePreload'
 import { ReaderPlate } from './reader/ReaderPlate'
+import { followScroll, isReadingStep, type ScrollJourney } from './reader/readingSession'
+import { imageRecoveryReducer, imageRetryUrl, MAX_IMAGE_RETRIES } from './reader/imageRecovery'
+import { ReaderImageRetry } from './reader/ReaderImageRetry'
 import './reader.css'
 
 const EditorialPreview = lazy(() => import('./reader/EditorialPreview'))
@@ -38,6 +50,7 @@ const EditorialPreview = lazy(() => import('./reader/EditorialPreview'))
 type Panel =
   | 'contents'
   | 'map'
+  | 'graph'
   | 'settings'
   | 'about'
   | 'search'
@@ -88,6 +101,7 @@ export function ReaderApp({ projectId, exportUrl }: { projectId?: string; export
   return <ReaderView key={data.project.id} data={data} standalone={!!exportUrl} />
 }
 function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boolean }) {
+  const storyGraph = useMemo(() => resolveStoryGraph(data), [data])
   const storageKey = `storygal-reader:${data.project.id}:${data.project.canonical_sha256}`
   const editing = !standalone && new URLSearchParams(location.search).get('editing') === '1'
   const previewApplied = useRef(false)
@@ -106,6 +120,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   })
   const navRef = useRef(nav)
   navRef.current = nav
+  function navigate(action: NavigationAction) {
+    navRef.current = navigationReducer(navRef.current, action)
+    dispatch(action)
+  }
   const [preferences, setPreferences] = useState(saved.preferences),
     [marks, setMarks] = useState<Mark[]>(saved.marks),
     [completed, setCompleted] = useState(saved.completed)
@@ -118,8 +136,18 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   const [tools, setTools] = useState(true),
     [query, setQuery] = useState(''),
     [selection, setSelection] = useState<ReturnType<typeof selectedExcerpt>>(null)
-  const [failedImages, setFailedImages] = useState<string[]>([]),
-    [mapEntry, setMapEntry] = useState<ReaderMapEntry | null>(null)
+  const [imageRequests, changeImageRequest] = useReducer(imageRecoveryReducer, {})
+  const retryRequests = useRef(
+    new Map<
+      string,
+      {
+        image: HTMLImageElement
+        attempt: number
+        timer: ReturnType<typeof setTimeout>
+      }
+    >(),
+  )
+  const [mapEntry, setMapEntry] = useState<ReaderMapEntry | null>(null)
   const [viewerAsset, setViewerAsset] = useState<string | null>(null)
   const [viewerZoom, setViewerZoom] = useState(false)
   const imageViewport = useRef<HTMLDivElement>(null)
@@ -146,7 +174,17 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   const freeze = useRef(0),
     raf = useRef(0),
     settle = useRef<ReturnType<typeof setTimeout> | null>(null),
-    previousY = useRef(0)
+    previousY = useRef(0),
+    journey = useRef<ScrollJourney | null>(null),
+    motion = useRef(0),
+    locationRaf = useRef(0),
+    unlockRaf = useRef(0)
+  const cancelFollow = useCallback(() => {
+    motion.current++
+    journey.current = null
+    if (settle.current) clearTimeout(settle.current)
+    settle.current = null
+  }, [])
   const record = useRef<RecordData>({ ...saved })
   record.current = {
     version: 2,
@@ -157,15 +195,62 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     completed,
     updated: record.current.updated,
   }
-  const media = (id?: string | null) => (id && !failedImages.includes(id) ? data.media[id] : null)
-  const failed = (id: string) => setFailedImages((v) => [...new Set([...v, id])])
+  const imageSource = (id?: string | null) => {
+    const asset = id ? data.media[id] : null
+    return asset
+      ? { ...asset, url: imageRetryUrl(asset.url, imageRequests[asset.id]?.attempt || 0) }
+      : null
+  }
+  const media = (id?: string | null) =>
+    id && imageRequests[id]?.status !== 'failed' ? imageSource(id) : null
+  function settleImage(id: string, attempt: number, type: 'loaded' | 'failed') {
+    const pending = retryRequests.current.get(id)
+    if (pending?.attempt === attempt) {
+      clearTimeout(pending.timer)
+      pending.image.onload = null
+      pending.image.onerror = null
+      retryRequests.current.delete(id)
+    }
+    changeImageRequest({ type, id, attempt })
+  }
+  const failed = (id: string, attempt = imageRequests[id]?.attempt || 0) =>
+    settleImage(id, attempt, 'failed')
+  const loaded = (id: string, attempt = imageRequests[id]?.attempt || 0) =>
+    settleImage(id, attempt, 'loaded')
+  function retryImage(id: string) {
+    // Both states use the same reserved image geometry. Restoring the semantic
+    // anchor also protects the reader if a browser adjusts scroll anchoring.
+    const before = imageRequests[id]
+    if (
+      !before ||
+      !data.media[id] ||
+      before.status !== 'failed' ||
+      before.attempt >= MAX_IMAGE_RETRIES ||
+      retryRequests.current.has(id)
+    )
+      return
+    const position = navRef.current.view,
+      attempt = before.attempt + 1,
+      request = new Image()
+    retryRequests.current.set(id, {
+      image: request,
+      attempt,
+      timer: setTimeout(() => settleImage(id, attempt, 'failed'), 15000),
+    })
+    changeImageRequest({ type: 'retry', id })
+    request.onload = () => settleImage(id, attempt, 'loaded')
+    request.onerror = () => settleImage(id, attempt, 'failed')
+    request.src = imageRetryUrl(data.media[id].url, attempt)
+    if (started) locate(position, false)
+  }
   const at = nav.view.byte,
     scene = data.config.scenes.filter((s) => s.start_byte <= at).at(-1)
   const presentation = data.presentations.filter((p) => p.start_byte <= at).at(-1)
   const illustrated = preferences.layout === 'illustrated'
   const plates = data.config.illustrations || []
-  const expandedImage = media(viewerAsset) || media(presentation?.image_asset_id)
-  const expandedPlate = plates.find((p) => p.image_asset_id === expandedImage?.id)
+  const expandedId = viewerAsset || presentation?.image_asset_id
+  const expandedImage = media(expandedId)
+  const expandedPlate = plates.find((p) => p.image_asset_id === expandedId)
   useStagePreload(data, presentation?.id, started && preferences.stage && !illustrated)
   const active = blockAt(data.blocks, at),
     cover = media(data.config.cover_asset_id),
@@ -233,15 +318,36 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       window.removeEventListener('storage', storage)
     }
   }, [storageKey, persist])
-  const locate = useCallback((position: Position, focus = true) => {
-    freeze.current = performance.now() + 300
-    requestAnimationFrame(() => {
-      if (scroll.current) {
-        restorePosition(scroll.current, position, focus)
-        previousY.current = scroll.current.scrollTop
-      }
-    })
-  }, [])
+  const locate = useCallback(
+    (position: Position, focus = true) => {
+      cancelFollow()
+      layoutLocked.current = true
+      freeze.current = performance.now() + 300
+      cancelAnimationFrame(locationRaf.current)
+      cancelAnimationFrame(unlockRaf.current)
+      locationRaf.current = requestAnimationFrame(() => {
+        if (scroll.current) {
+          restorePosition(scroll.current, position, focus)
+          previousY.current = scroll.current.scrollTop
+        }
+        unlockRaf.current = requestAnimationFrame(() => {
+          layoutLocked.current = false
+        })
+      })
+    },
+    [cancelFollow],
+  )
+  function captureCurrent() {
+    if (
+      started &&
+      !panel &&
+      scroll.current &&
+      !layoutLocked.current &&
+      performance.now() >= freeze.current
+    )
+      navigate({ type: 'scroll', position: validPosition(data, capturePosition(scroll.current)) })
+  }
+
   function snapshot(): Screen {
     return {
       ...screen.current,
@@ -258,6 +364,8 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     else history.pushState({ storygal: next }, '', location.href)
   }
   function remember() {
+    captureCurrent()
+    cancelFollow()
     const s = snapshot()
     screen.current = s
     history.replaceState({ storygal: s }, '', location.href)
@@ -272,7 +380,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       screen.current = s
       setStarted(s.started)
       setPanel(s.panel)
-      dispatch({ type: 'restore', position: s.view, visits: s.visits })
+      navigate({ type: 'restore', position: s.view, visits: s.visits })
       locate(s.view, !s.panel)
     }
     window.addEventListener('popstate', pop)
@@ -283,7 +391,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     if (!previewApplied.current && param && Number.isFinite(Number(param))) {
       previewApplied.current = true
       const position = validPosition(data, { byte: Number(param), offset: 0 })
-      dispatch({ type: 'visit', position })
+      navigate({ type: 'visit', position })
       setStarted(true)
       locate(position, false)
     }
@@ -335,7 +443,15 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   }, [panel])
   useEffect(
     () => () => {
+      for (const request of retryRequests.current.values()) {
+        clearTimeout(request.timer)
+        request.image.onload = null
+        request.image.onerror = null
+      }
+      retryRequests.current.clear()
       cancelAnimationFrame(raf.current)
+      cancelAnimationFrame(locationRaf.current)
+      cancelAnimationFrame(unlockRaf.current)
       if (settle.current) clearTimeout(settle.current)
     },
     [],
@@ -351,12 +467,15 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     if (screen.current.panel && screen.current.depth > 0) history.back()
     else setPanel(null)
   }
-  function visit(byte: number) {
+  function visit(target: number | Position) {
     const old = remember(),
-      position = { byte, offset: 0 },
-      visits = [...nav.visits, nav.view]
-    audio.suspend()
-    dispatch({ type: 'visit', position })
+      position = validPosition(
+        data,
+        typeof target === 'number' ? { byte: target, offset: 0 } : target,
+      ),
+      visits = [...navRef.current.visits, navRef.current.view]
+    audio.stop()
+    navigate({ type: 'visit', position })
     setPanel(null)
     commit(
       {
@@ -373,28 +492,30 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   }
   function returnMain() {
     const old = remember(),
-      position = nav.resume
-    audio.suspend()
-    dispatch({ type: 'restore', position, visits: [] })
+      position = navRef.current.resume
+    audio.stop()
+    navigate({ type: 'restore', position, visits: [] })
     setPanel(null)
     commit({ ...old, depth: old.depth + 1, panel: null, view: position, visits: [], sound: null })
     locate(position)
   }
   function continueHere() {
-    dispatch({ type: 'continue' })
+    captureCurrent()
+    cancelFollow()
+    navigate({ type: 'continue' })
+    audio.stop()
     const s = snapshot()
-    commit({ ...s, visits: [] }, true)
-    audio.suspend()
+    commit({ ...s, visits: [], sound: null }, true)
   }
   function start(fresh = false) {
-    const position = fresh ? { byte: data.blocks[0].byte_start, offset: 0 } : nav.resume
+    const position = fresh ? { byte: data.blocks[0].byte_start, offset: 0 } : navRef.current.resume
     const old = remember()
     audio.stop()
     audio.setAutomatic(false)
     if (fresh) {
-      dispatch({ type: 'restart', position })
+      navigate({ type: 'restart', position })
       setCompleted(false)
-    } else dispatch({ type: 'restore', position, visits: [] })
+    } else navigate({ type: 'restore', position, visits: [] })
     const s = {
       ...old,
       started: true,
@@ -405,7 +526,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       sound: null,
     }
     // Preserve the furthest location on continue; start-over intentionally resets the reading session.
-    if (!fresh) dispatch({ type: 'scroll', position })
+    if (!fresh) navigate({ type: 'scroll', position })
     commit(s, panel === 'restart')
     setPanel(null)
     setStarted(true)
@@ -417,31 +538,51 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       const root = scroll.current
       if (!root || panel || layoutLocked.current || performance.now() < freeze.current) return
       const before = navRef.current.view.byte,
-        position = capturePosition(root)
-      const slow = Math.abs(root.scrollTop - previousY.current) < root.clientHeight * 0.7
+        position = validPosition(data, capturePosition(root)),
+        delta = root.scrollTop - previousY.current
       previousY.current = root.scrollTop
-      dispatch({ type: 'scroll', position })
-      audio.leave(position.byte)
+      journey.current = followScroll(journey.current, before, position.byte, delta)
+      navigate({ type: 'scroll', position })
+      const slow = isReadingStep(journey.current, root.clientHeight)
+      audioRef.current.leave(
+        visibleAudioIds(root),
+        journey.current.distance >= root.clientHeight * 0.7,
+      )
       if (settle.current) clearTimeout(settle.current)
-      if (!navRef.current.visits.length && slow && position.byte > before)
-        settle.current = setTimeout(() => {
-          if (
-            !screen.current.panel &&
-            !navRef.current.visits.length &&
-            performance.now() >= freeze.current
-          )
-            audioRef.current.autoAt(before, position.byte)
-        }, 220)
+      const token = motion.current,
+        soundToken = audioRef.current.revision()
+      settle.current = setTimeout(() => {
+        const step = journey.current
+        journey.current = null
+        if (
+          step &&
+          slow &&
+          token === motion.current &&
+          !screen.current.panel &&
+          !navRef.current.visits.length &&
+          performance.now() >= freeze.current
+        )
+          audioRef.current.autoAt(step.from, step.to, visibleAudioIds(root), soundToken)
+      }, 220)
     })
   }
+
   function bookmark() {
-    if (marks.some((m) => !m.ranges && m.position.byte === at)) {
+    captureCurrent()
+    const position = navRef.current.view
+    if (marks.some((m) => !m.ranges && sameBookmarkPosition(m.position, position))) {
       setNotice('这里已经有书签。')
       return
     }
     setMarks((v) => [
       ...v,
-      { id: crypto.randomUUID(), position: nav.view, text: quoteAt(data, at) },
+      {
+        id: crypto.randomUUID(),
+        position,
+        text: position.plate
+          ? `${plates.find((p) => p.id === position.plate)?.title || '插图'} · 图内 ${Math.round((position.imageOffset || 0) * 100)}%`
+          : quoteAt(data, position.byte),
+      },
     ])
     setNotice('书签已保存。')
   }
@@ -453,15 +594,18 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     setNotice('原文摘录已保存。')
   }
   function read(id: string, byte?: number) {
+    cancelFollow()
     if (byte !== undefined && (byte < active.byte_start || byte >= active.byte_end)) visit(byte)
     else if (panel) {
       const old = snapshot()
       commit({ ...old, panel: null }, true)
       setPanel(null)
     }
+    if (scroll.current) audio.leave(visibleAudioIds(scroll.current))
     audio.play(id)
   }
   function settings(update: Partial<typeof preferences>) {
+    cancelFollow()
     audio.suspend()
     setPreferences((v) => ({ ...v, ...update }))
   }
@@ -469,6 +613,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     {
       contents: '章节与场景',
       map: '赤壁战区地图',
+      graph: '脉络',
       settings: '阅读设置',
       about: '本卷说明',
       search: '搜索原文',
@@ -492,8 +637,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
         <section className="reader-cover" aria-label="章节封面">
           {cover && (
             <img
+              key={`${cover.id}:${imageRequests[cover.id]?.attempt || 0}`}
               className="reader-cover-art"
               src={cover.url}
+              onLoad={() => loaded(cover.id)}
               alt={`${data.config.title}章节封面`}
               onError={() => failed(cover.id)}
             />
@@ -561,9 +708,16 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               <span>原文完整保留</span>
             </p>
           </div>
-          <button className="reader-cover-about" onClick={() => open('about')}>
-            素材与说明
-          </button>
+          <div className="reader-cover-about">
+            {data.config.cover_asset_id && (
+              <ReaderImageRetry
+                request={imageRequests[data.config.cover_asset_id]}
+                label="封面"
+                onRetry={() => retryImage(data.config.cover_asset_id!)}
+              />
+            )}
+            <button onClick={() => open('about')}>素材与说明</button>
+          </div>
         </section>
       ) : (
         <>
@@ -619,9 +773,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               >
                 {image && (
                   <img
-                    key={image.id}
+                    key={`${image.id}:${imageRequests[image.id]?.attempt || 0}`}
                     className="reader-background"
                     src={image.url}
+                    onLoad={() => loaded(image.id)}
                     alt={presentation?.place_label || scene?.title || '场景'}
                     onError={() => failed(image.id)}
                   />
@@ -631,6 +786,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   <div className="reader-stage-fallback">
                     <span>{data.config.title}</span>
                     <p>场景图片暂不可用，正文仍可阅读。</p>
+                    {presentation?.image_asset_id && (
+                      <ReaderImageRetry
+                        request={imageRequests[presentation.image_asset_id]}
+                        label="场景图片"
+                        onRetry={() => retryImage(presentation.image_asset_id)}
+                      />
+                    )}
                   </div>
                 )}
                 <div
@@ -653,7 +815,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           }
                         >
                           <img
+                            key={`${figure.id}:${imageRequests[figure.id]?.attempt || 0}`}
                             src={figure.url}
+                            onLoad={() => loaded(figure.id)}
                             alt={`${c.name}立绘`}
                             onError={() => failed(figure.id)}
                           />
@@ -799,9 +963,11 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           <ReaderPlate
                             key={p.id}
                             plate={p}
-                            asset={data.media[p.image_asset_id]}
+                            asset={imageSource(p.image_asset_id) || undefined}
                             sourceByte={block.byte_end - byteLength([...block.text].at(-1)!)}
-                            failed={failedImages.includes(p.image_asset_id)}
+                            request={imageRequests[p.image_asset_id]}
+                            onLoad={() => loaded(p.image_asset_id)}
+                            onRetry={() => retryImage(p.image_asset_id)}
                             onError={() => failed(p.image_asset_id)}
                             onOpen={() => {
                               setViewerAsset(p.image_asset_id)
@@ -873,6 +1039,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   地图
                 </button>
               )}
+              {storyGraph && <button onClick={() => open('graph')}>脉络</button>}
               <button onClick={() => setTools((v) => !v)} aria-expanded={tools}>
                 {tools ? '收起' : '工具'}
               </button>
@@ -897,7 +1064,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   const r = readRecord(data, externalRecord)
                   conflict.current = false
                   setExternalRecord(null)
-                  dispatch({ type: 'restart', position: r.resume })
+                  navigate({ type: 'restart', position: r.resume })
                   setPreferences(r.preferences)
                   setMarks(r.marks)
                   setCompleted(r.completed)
@@ -939,7 +1106,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       )}
       <dialog
         ref={dialog}
-        className={`reader-dialog ${panel === 'map' ? 'reader-map-dialog' : ''} ${panel === 'image' || panel === 'gallery' ? 'reader-art-dialog' : ''}`}
+        className={`reader-dialog ${panel === 'map' ? 'reader-map-dialog' : ''} ${panel === 'graph' ? 'reader-story-graph-dialog' : ''} ${panel === 'image' || panel === 'gallery' ? 'reader-art-dialog' : ''}`}
         onCancel={(e) => {
           e.preventDefault()
           close()
@@ -965,6 +1132,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               <button onClick={close}>取消</button>
             </>
           )}
+          {panel === 'graph' && storyGraph && (
+            <ReaderStoryGraph graph={storyGraph} at={at} onVisit={visit} />
+          )}
           {panel === 'map' && data.map && (
             <ReaderMap key={mapEntry?.id || at} data={data.map} at={at} entry={mapEntry} />
           )}
@@ -978,7 +1148,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               >
                 <img
                   className="reader-expanded-image"
+                  key={`${expandedImage.id}:${imageRequests[expandedImage.id]?.attempt || 0}`}
                   src={expandedImage.url}
+                  onLoad={() => loaded(expandedImage.id)}
+                  onError={() => failed(expandedImage.id)}
                   alt={expandedPlate?.description || presentation?.place_label || '当前画面'}
                 />
               </div>
@@ -1008,21 +1181,46 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               )}
             </>
           )}
+          {panel === 'image' && expandedId && (
+            <ReaderImageRetry
+              request={imageRequests[expandedId]}
+              label={expandedPlate?.title || '当前画面'}
+              onRetry={() => retryImage(expandedId)}
+            />
+          )}
+          {panel === 'image' && !expandedImage && <p>这幅画面暂不可用，正文与续读位置已保留。</p>}
           {panel === 'gallery' && (
             <div className="reader-gallery">
               <p>全章插图，可自由回看；查看画面不会改变续读位置。</p>
               <div>
                 {plates.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setViewerAsset(p.image_asset_id)
-                      open('image')
-                    }}
-                  >
-                    <img src={data.media[p.image_asset_id]?.url} alt="" loading="lazy" />
-                    <span>{p.title}</span>
-                  </button>
+                  <div className="reader-gallery-item" key={p.id}>
+                    <button
+                      onClick={() => {
+                        setViewerAsset(p.image_asset_id)
+                        open('image')
+                      }}
+                    >
+                      {media(p.image_asset_id) ? (
+                        <img
+                          key={`${p.image_asset_id}:${imageRequests[p.image_asset_id]?.attempt || 0}`}
+                          src={imageSource(p.image_asset_id)?.url}
+                          alt=""
+                          loading="lazy"
+                          onLoad={() => loaded(p.image_asset_id)}
+                          onError={() => failed(p.image_asset_id)}
+                        />
+                      ) : (
+                        <span className="reader-gallery-missing">画面暂不可用</span>
+                      )}
+                      <span>{p.title}</span>
+                    </button>
+                    <ReaderImageRetry
+                      request={imageRequests[p.image_asset_id]}
+                      label={`插图：${p.title}`}
+                      onRetry={() => retryImage(p.image_asset_id)}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -1084,7 +1282,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               {!marks.length && <p>还没有书签或摘录。</p>}
               {marks.map((m) => (
                 <div className="reader-mark" key={m.id}>
-                  <button onClick={() => visit(m.position.byte)}>
+                  <button onClick={() => visit(m.position)}>
                     {m.ranges ? '摘录 · ' : '书签 · '}
                     {m.text}
                   </button>
@@ -1184,6 +1382,32 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               >
                 {preferences.stage ? '收起场景画面' : '展开场景画面'}
               </button>
+              {Object.entries(imageRequests).some(
+                ([, r]) => r.status === 'failed' || (r.status === 'loading' && r.attempt > 0),
+              ) && (
+                <section className="reader-failed-images">
+                  <h3>未能载入的画面</h3>
+                  <p>仅在点击时重试，不影响正文或续读位置。</p>
+                  {Object.entries(imageRequests)
+                    .filter(
+                      ([, r]) => r.status === 'failed' || (r.status === 'loading' && r.attempt > 0),
+                    )
+                    .map(([id, request]) => (
+                      <div key={id}>
+                        <span>
+                          {plates.find((p) => p.image_asset_id === id)?.title ||
+                            data.media[id]?.label ||
+                            '阅读画面'}
+                        </span>
+                        <ReaderImageRetry
+                          request={request}
+                          label={data.media[id]?.label || '阅读画面'}
+                          onRetry={() => retryImage(id)}
+                        />
+                      </div>
+                    ))}
+                </section>
+              )}
               <h3>对白与地图</h3>
               <p>声音由 AI 合成，仅覆盖已制作的部分对白；快速跳读与回看不会自动重播。</p>
               <button

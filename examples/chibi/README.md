@@ -1,10 +1,12 @@
 # 赤壁 · 可复制的在线主体验
 
-[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [0.2.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.2.0) · [短篇制作教程《末班灯》](../last-light/README.md)
+[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [0.3.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.0) · [短篇制作教程《末班灯》](../last-light/README.md)
 
 《三国演义》第四十九、五十回的视觉小说体验：12 幅情境插图、8 位主要角色、9 张立绘、55 段画面编排，以及夹江对峙、火攻推进、战后撤军三个地图阶段。另有封面和5张环境背景，共27张图片。正文逐字保留，默认连续插图阅读，也可在设置中切换分栏。
 
 0.2 新增可编辑公开工程、12 个有原文依据及人物表演设计的镜头、9 个场景的物件状态和带素材哈希的制作检查。公开工程与阅读包均不含系统演示语音、声音文件、音色配置或密钥。下载包以正式发布页实际列出的附件为准。
+
+0.3 增加随阅读进度揭示的阵营关系、阶段与因果脉络；证据绑定本版原文，回读会隐藏后文结果。旧版配方、原文和图片不因此改号。
 
 ## 从公开材料复建
 
@@ -24,15 +26,15 @@ npm --prefix frontend ci
 npm --prefix frontend run build
 uv run --project backend python tools/build_chibi_demo.py \
   --source /path/to/taleprism-v0.1.0-chibi-reader.zip \
-  --output .release/v0.2.0-chibi
+  --output .release/v0.3.0-chibi
 ```
 
 脚本不联网、不生成图片、不调用配音服务。它在临时工作台中恢复公开内容，确认方案并重放已经完成的助手制作检查，然后在另一个空工作台中导入工程、再次导出阅读包。不会读取本机私有历史工程或修改用户 `data`。
 
 输出：
 
-- `taleprism-v0.2.0-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
-- `taleprism-v0.2.0-chibi-reader.zip`：可独立托管的阅读器；先解压并运行 `python3 verify_package.py`，再以本地网页服务器打开。
+- `taleprism-v0.3.0-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
+- `taleprism-v0.3.0-chibi-reader.zip`：可独立托管的阅读器；先解压并运行 `python3 verify_package.py`，再以本地网页服务器打开。
 - `chibi-demo-manifest.json`：两个附件的大小与校验值、输入来源、配方和检查记录校验值、重建结果。
 
 原文、图片、角色 ID、正文锚点、55 段编排和地图保持一致。新生成的本地工程 ID、制作检查写入时间及导出 ID 可因运行而异，因此复建不承诺 ZIP 逐字节相同。比较复建结果应使用 manifest 和内容检查；发布附件自身各有固定 SHA-256。

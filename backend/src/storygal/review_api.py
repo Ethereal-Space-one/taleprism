@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import llm
-from .review import ConflictError, Review
+from .review import EXTERNAL_REVIEW_LIMIT, ConflictError, Review
 
 
 class Input(BaseModel):
@@ -39,6 +39,10 @@ class AssetInput(Input):
 
 class AnalysisInput(Input):
     allow_remote: Literal[True]
+
+
+class ExternalTaskInput(Input):
+    revision: int = Field(ge=0, strict=True)
 
 
 class SampleAssetInput(Input):
@@ -78,6 +82,15 @@ def mount_review(app, store):
     @app.get("/api/projects/{project_id}/review")
     def state(project_id: str):
         return review.state(project_id)
+
+    @app.post("/api/projects/{project_id}/review/external-task")
+    def external_task(project_id: str, body: ExternalTaskInput):
+        return review.external_task(project_id, body.revision)
+
+    @app.post("/api/projects/{project_id}/review/external-response")
+    async def external_response(project_id: str, file: Annotated[UploadFile, File()]):
+        raw = await file.read(EXTERNAL_REVIEW_LIMIT + 1)
+        return review.import_external_response(project_id, raw)
 
     @app.post("/api/projects/{project_id}/characters", status_code=201)
     def create_character(project_id: str, body: CharacterInput):

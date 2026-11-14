@@ -232,7 +232,7 @@ const visible = (t) =>
     await maker.goto(base)
     await maker.evaluate((id) => localStorage.setItem('storygal-project', id), fixture.project_id)
     await maker.reload()
-    await maker.getByRole('button', { name: '阅读器与场景', exact: true }).click()
+    await maker.getByRole('button', { name: '独立阅读器', exact: true }).click()
     await maker.getByRole('heading', { name: '章节编排与位置意见' }).waitFor()
     await maker
       .getByLabel('在所选原文位置记录意见', { exact: true })

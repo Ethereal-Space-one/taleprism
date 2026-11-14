@@ -13,7 +13,7 @@ from PIL import Image
 from test_production_bundles import repack
 
 from storygal import app as app_module
-from storygal import llm, openai_speech, speech
+from storygal import bundles, llm, openai_speech, speech
 from storygal.app import create_app
 from storygal.reader_api import Configuration
 
@@ -479,3 +479,181 @@ def test_reader_versions_include_production_revision_and_default_zero(project):
         db.execute("DELETE FROM production_states WHERE project_id=?", (pid,))
         assert r.version_state(db, pid)["production_revision"] == 0
     assert r.content(pid)["versions"]["production_revision"] == 0
+
+
+def test_preflight_reports_exact_inventory_without_reading_media(project, monkeypatch):
+    c, pid, *_ = project
+    archive = c.get(f"/api/projects/{pid}/bundle")
+    assert archive.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(archive.content)) as z:
+        expected = {info.filename: info.file_size for info in z.infolist()}
+    original_read = type(c.app.state.store.root).read_bytes
+
+    def no_media_read(path):
+        assert path.suffix not in {".png", ".wav", ".svg"}
+        return original_read(path)
+
+    monkeypatch.setattr(type(c.app.state.store.root), "read_bytes", no_media_read)
+    response = c.get(f"/api/projects/{pid}/bundle/preflight")
+    assert response.status_code == 200, response.text
+    info = response.json()
+    assert info["can_export"] and info["validation"] == "size_and_presence_only"
+    assert info["uncompressed_bytes"] == sum(expected.values())
+    assert info["members"] == len(expected)
+    assert info["media_bytes"] == sum(size for name, size in expected.items() if "/" in name)
+    assert info["largest_media"] and not info["missing_files"] and not info["errors"]
+    assert info["limits"] == {
+        "archive_bytes": 160_000_000,
+        "uncompressed_bytes": 160_000_000,
+        "members": 3000,
+        "json_bytes": 5_000_000,
+        "rows_per_table": 5000,
+    }
+
+
+@pytest.mark.parametrize("bound", ["bytes", "members", "json", "rows"])
+def test_export_preflight_and_import_share_format_limits(project, monkeypatch, bound):
+    c, pid, *_ = project
+    archive = c.get(f"/api/projects/{pid}/bundle").content
+    info = c.get(f"/api/projects/{pid}/bundle/preflight").json()
+    if bound == "bytes":
+        monkeypatch.setattr(bundles, "LIMIT", info["uncompressed_bytes"] - 1)
+    elif bound == "members":
+        monkeypatch.setattr(bundles, "MEMBER_LIMIT", info["members"] - 1)
+    elif bound == "json":
+        monkeypatch.setattr(bundles, "JSON_LIMIT", info["json_bytes"]["project.json"] - 1)
+    else:
+        monkeypatch.setattr(bundles, "ROW_LIMIT", 0)
+    before = c.get("/api/projects").json()
+    info = c.get(f"/api/projects/{pid}/bundle/preflight").json()
+    assert not info["can_export"] and info["errors"]
+    exported = c.get(f"/api/projects/{pid}/bundle")
+    imported = c.post("/api/project-bundles", files={"file": ("old.zip", archive)})
+    assert exported.status_code == imported.status_code == 400
+    for error in info["errors"]:
+        assert error in exported.json()["detail"]
+        assert error in imported.json()["detail"]
+    assert c.get("/api/projects").json() == before
+
+
+def test_exact_format_boundaries_are_allowed():
+    sizes = {"project.json": 5_000_000, "manifest.json": 5_000_000, "media": 150_000_000}
+    sizes.update({f"file-{index}": 0 for index in range(2997)})
+    assert len(sizes) == 3000 and sum(sizes.values()) == 160_000_000
+    assert bundles.limit_errors(sizes, {"dialogues": [None] * 5000}) == []
+    assert bundles.limit_errors(sizes | {"extra": 0})
+    assert bundles.limit_errors(sizes | {"media": 150_000_001})
+    assert bundles.limit_errors({"project.json": 5_000_001})
+    assert bundles.limit_errors({}, {"dialogues": [None] * 5001})
+
+
+def test_export_and_restore_at_exact_measured_limits(project, monkeypatch, tmp_path):
+    c, pid, *_ = project
+    info = c.get(f"/api/projects/{pid}/bundle/preflight").json()
+    monkeypatch.setattr(bundles, "LIMIT", info["uncompressed_bytes"])
+    monkeypatch.setattr(bundles, "MEMBER_LIMIT", info["members"])
+    monkeypatch.setattr(bundles, "JSON_LIMIT", max(info["json_bytes"].values()))
+    monkeypatch.setattr(bundles, "ROW_LIMIT", max(info["rows"].values()))
+    assert c.get(f"/api/projects/{pid}/bundle/preflight").json()["can_export"]
+    archive = c.get(f"/api/projects/{pid}/bundle")
+    assert archive.status_code == 200, archive.text[:200]
+    other = TestClient(create_app(tmp_path / "exact-limits"))
+    restored = other.post("/api/project-bundles", files={"file": ("exact.zip", archive.content)})
+    assert restored.status_code == 201, restored.text
+
+
+def test_export_checks_zip_upload_size_not_just_uncompressed_size(project, monkeypatch):
+    c, pid, *_ = project
+    info = c.get(f"/api/projects/{pid}/bundle/preflight").json()
+    # ZIP headers make a stored (uncompressed) ZIP larger than its file contents.
+    original_zip = zipfile.ZipFile
+
+    def stored_zip(file, mode="r", compression=zipfile.ZIP_STORED, **kwargs):
+        return original_zip(file, mode, zipfile.ZIP_STORED, **kwargs)
+
+    monkeypatch.setattr(bundles.zipfile, "ZipFile", stored_zip)
+    monkeypatch.setattr(bundles, "LIMIT", info["uncompressed_bytes"] + 1)
+    response = c.get(f"/api/projects/{pid}/bundle")
+    assert response.status_code == 400, response.text
+    assert "工程包超过" in response.json()["detail"]
+
+
+def test_missing_or_corrupt_media_is_named_and_never_silently_skipped(project):
+    c, pid, _, asset, *_ = project
+    name = f"reader-assets/{asset['id']}.png"
+    path = c.app.state.store.project_dir(pid) / name
+    original = path.read_bytes()
+    path.unlink()
+    info = c.get(f"/api/projects/{pid}/bundle/preflight").json()
+    assert not info["can_export"] and info["missing_files"] == [name]
+    response = c.get(f"/api/projects/{pid}/bundle")
+    assert response.status_code == 400 and name in response.json()["detail"]
+    path.write_bytes(b"damaged")
+    response = c.get(f"/api/projects/{pid}/bundle")
+    assert response.status_code == 400 and name in response.json()["detail"]
+    path.write_bytes(original)
+    assert c.get(f"/api/projects/{pid}/bundle").status_code == 200
+
+
+def test_import_names_missing_recorded_media_without_creating_project(project, tmp_path):
+    c, pid, _, asset, *_ = project
+    archive = c.get(f"/api/projects/{pid}/bundle").content
+    name = f"reader-assets/{asset['id']}.png"
+    damaged = repack(archive, lambda files: files.pop(name))
+    other = TestClient(create_app(tmp_path / "missing-media"))
+    response = other.post("/api/project-bundles", files={"file": ("missing.zip", damaged)})
+    assert response.status_code == 400 and name in response.json()["detail"]
+    assert other.get("/api/projects").json() == []
+
+
+def test_export_refuses_structurally_unrestorable_state_without_publishing(project):
+    c, pid, *_ = project
+    c.get(f"/api/projects/{pid}/bundle/preflight")  # initialize the same snapshot defaults
+    before = c.get("/api/projects").json()
+    with c.app.state.store.db() as db:
+        row = db.execute("SELECT data FROM reader_states WHERE project_id=?", (pid,)).fetchone()
+        config = json.loads(row[0])
+        config["scenes"][0]["character_ids"] = [str(uuid.uuid4())]
+        db.execute("UPDATE reader_states SET data=? WHERE project_id=?", (json.dumps(config), pid))
+    response = c.get(f"/api/projects/{pid}/bundle")
+    assert response.status_code == 400 and "恢复校验" in response.json()["detail"]
+    assert c.get("/api/projects").json() == before
+    assert not list((c.app.state.store.root / ".imports").glob("tmp*"))
+
+
+def test_isolated_image_audio_edit_and_second_restore_remain_lossless(
+    project, tmp_path, monkeypatch
+):
+    c, pid, _, asset, _, raw = project
+    audio = cloud_take(project, monkeypatch)
+    original_image = (
+        c.app.state.store.project_dir(pid) / f"reader-assets/{asset['id']}.png"
+    ).read_bytes()
+    original_plan = c.app.state.production.load(pid)
+    first, imported = restore(project, tmp_path)
+    new = imported["id"]
+    assert first.app.state.production.load(new) == original_plan
+    assert first.get(f"/api/projects/{new}/source").content == raw
+    assert (
+        first.app.state.store.project_dir(new) / f"reader-assets/{asset['id']}.png"
+    ).read_bytes() == original_image
+    take = first.app.state.speech.state(new)["lines"][0]["segments"][0]["accepted"]
+    assert first.get(take["url"]).content == audio
+    reader = first.app.state.reader
+    rev, config = reader.load(new)
+    config["title"] = "恢复后继续编辑"
+    reader.save(new, rev, config)
+    edited = first.get(f"/api/projects/{new}/bundle")
+    assert edited.status_code == 200, edited.text[:200]
+    second = TestClient(create_app(tmp_path / "second-restore"))
+    result = second.post("/api/project-bundles", files={"file": ("edited.zip", edited.content)})
+    assert result.status_code == 201, result.text
+    final = result.json()["id"]
+    assert second.app.state.reader.load(final) == reader.load(new)
+    assert second.app.state.production.load(final) == original_plan
+    assert second.get(f"/api/projects/{final}/source").content == raw
+    assert (
+        second.app.state.store.project_dir(final) / f"reader-assets/{asset['id']}.png"
+    ).read_bytes() == original_image
+    take = second.app.state.speech.state(final)["lines"][0]["segments"][0]["accepted"]
+    assert second.get(take["url"]).content == audio

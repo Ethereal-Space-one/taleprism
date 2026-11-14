@@ -6,8 +6,10 @@ import json
 import re
 import uuid
 import warnings
+from typing import Literal
 
 from PIL import Image, UnidentifiedImageError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from . import llm
 from .storage import Store, now
@@ -16,6 +18,22 @@ from .text import sha256
 
 class ConflictError(ValueError):
     pass
+
+
+EXTERNAL_REVIEW_LIMIT = 4_000_000
+
+
+class ExternalReviewResponse(BaseModel):
+    """Only the response is untrusted; payload/anchors come from the local task snapshot."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    format: Literal["taleprism.character-review.response.v1"]
+    task_id: str = Field(min_length=1, max_length=80)
+    project_id: str = Field(min_length=1, max_length=80)
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    review_revision: int = Field(ge=0)
+    proposals: list[llm.AnalysisProposal] = Field(min_length=1, max_length=1000)
 
 
 def uid() -> str:
@@ -122,6 +140,7 @@ class Review:
                 CREATE TABLE IF NOT EXISTS assets (project_id TEXT, id TEXT, data TEXT NOT NULL, PRIMARY KEY(project_id,id));
                 CREATE TABLE IF NOT EXISTS review_audit (id INTEGER PRIMARY KEY, project_id TEXT, action TEXT, actor TEXT, created_at TEXT, before_data TEXT, after_data TEXT);
                 CREATE TABLE IF NOT EXISTS analysis_cache (cache_key TEXT PRIMARY KEY, data TEXT NOT NULL, usage TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS external_review_tasks (id TEXT PRIMARY KEY, project_id TEXT NOT NULL, source_sha256 TEXT NOT NULL, review_revision INTEGER NOT NULL, payloads TEXT NOT NULL, created_at TEXT NOT NULL, imported_at TEXT);
             """)
 
     def source(self, project_id: str) -> bytes:
@@ -321,7 +340,11 @@ class Review:
                 }
             )
             item.update(
-                display_name=name, aliases=aliases, description=description.strip(), status=status
+                display_name=name,
+                aliases=aliases,
+                description=description.strip(),
+                status=status,
+                origin="manual",
             )
             self.put(db, "characters", project_id, item)
             if before and before["status"] != status:
@@ -671,10 +694,193 @@ class Review:
             config | {"requests": len(payloads) - cached, "cache_hits": cached, "usage": usage},
         )
 
-    def apply_proposals(self, project_id: str, proposals: list[dict], info: dict):
+    def external_task(self, project_id: str, revision: int) -> dict:
+        """Export locally. This path never reads credentials or calls an AI provider."""
+        payloads = self.payloads(project_id)
+        if len(payloads) > 1000:
+            raise ValueError("本章对白过多，请拆分章节后再生成外部 AI 任务。")
+        source_hash = sha256(self.source(project_id))
+        task_id = uid()
+        response = {
+            "format": "taleprism.character-review.response.v1",
+            "task_id": task_id,
+            "project_id": project_id,
+            "source_sha256": source_hash,
+            "review_revision": revision,
+            "proposals": [
+                {
+                    "characters": [],
+                    "speakers": [
+                        {
+                            "dialogue_id": d["id"],
+                            "speaker_name": None,
+                            "evidence_span_ids": d["span_ids"],
+                            "confidence": 0,
+                        }
+                        for d in payload["dialogues"]
+                    ],
+                }
+                for payload in payloads
+            ],
+        }
+        with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current = db.execute(
+                "SELECT revision FROM review_states WHERE project_id=?", (project_id,)
+            ).fetchone()
+            if current is None or current[0] != revision:
+                raise ConflictError("审校内容已更新，请刷新后重新下载外部 AI 任务。")
+            db.execute(
+                "INSERT INTO external_review_tasks VALUES (?, ?, ?, ?, ?, ?, NULL)",
+                (task_id, project_id, source_hash, revision, json.dumps(payloads), now()),
+            )
+        return {
+            "format": "taleprism.character-review.task.v1",
+            "instructions": (
+                llm.SYSTEM
+                + "\n这是离线往返任务，不要调用 Taleprism 接口。按 payloads 顺序分别填写 "
+                "response_template.proposals，每个批次只引用该批次的证据和对白编号。"
+                "response_template 中的 null 是未知占位，不是已完成的分析。"
+                "只返回填写后的 response_template JSON，不要返回任务、Markdown 或额外字段。"
+                "原样保留 format、task_id、project_id、source_sha256、review_revision；"
+                "不得确认角色、覆盖人工信息或改写原文，所有结果只是待审候选。"
+            ),
+            "data_warning": "本文件含本章原文、对白和已确认角色。下载不会发送数据；若交给外部 AI，内容将离开本机，请先确认分享权利和服务商隐私规则。",
+            "payloads": payloads,
+            "response_template": response,
+            "response_schema": ExternalReviewResponse.model_json_schema(),
+        }
+
+    def import_external_response(self, project_id: str, raw: bytes) -> dict:
+        self.ensure(project_id)
+        if not raw or len(raw) > EXTERNAL_REVIEW_LIMIT:
+            raise ValueError("请选择不超过 4 MB 的外部 AI 回复 JSON 文件。")
+
+        def unique_object(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("回复 JSON 含重复字段，请让外部 AI 重新输出纯 JSON。")
+                result[key] = value
+            return result
+
+        def invalid_constant(_value):
+            raise ValueError("回复 JSON 含非标准数字，请使用 0–1 的置信度。")
+
+        try:
+            document = json.loads(
+                raw.decode("utf-8-sig"),
+                object_pairs_hook=unique_object,
+                parse_constant=invalid_constant,
+            )
+        except UnicodeDecodeError:
+            raise ValueError("回复文件不是 UTF-8 JSON，请另存为 UTF-8 后重试。") from None
+        except RecursionError:
+            raise ValueError(
+                "回复 JSON 嵌套过深，请按任务结构重新生成，不要附加其他数据。"
+            ) from None
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"回复 JSON 第 {exc.lineno} 行、第 {exc.colno} 列无法读取。请移除 Markdown 代码围栏，只保留回复 JSON。"
+            ) from None
+        try:
+            response = ExternalReviewResponse.model_validate(document, strict=True)
+        except ValidationError as exc:
+            # Only schema field names/indices are exposed, never supplied values or extra keys.
+            allowed = {
+                "format",
+                "task_id",
+                "project_id",
+                "source_sha256",
+                "review_revision",
+                "proposals",
+                "characters",
+                "speakers",
+                "name",
+                "aliases",
+                "evidence_span_ids",
+                "dialogue_id",
+                "speaker_name",
+                "confidence",
+            }
+            location = (
+                ".".join(
+                    str(part)
+                    for part in exc.errors()[0]["loc"]
+                    if isinstance(part, int) or part in allowed
+                )
+                or "根对象"
+            )
+            raise ValueError(
+                f"回复结构不正确（{location}）。请按任务内 response_schema 返回 response_template，不要上传任务文件。"
+            ) from None
+        if response.project_id != project_id:
+            raise ValueError("回复属于另一个项目，请在生成任务的项目中导入。")
+        with self.store.db() as db:
+            task = db.execute(
+                "SELECT * FROM external_review_tasks WHERE id=? AND project_id=?",
+                (response.task_id, project_id),
+            ).fetchone()
+        if task is None:
+            raise ConflictError(
+                "找不到本机生成的任务，请在此项目重新下载任务；备份恢复后的旧任务不可复用。"
+            )
+        if task["imported_at"]:
+            raise ConflictError("此回复任务已经导入，不会重复应用。需要再次分析时请下载新任务。")
+        if response.source_sha256 != task["source_sha256"] or (
+            sha256(self.source(project_id)) != task["source_sha256"]
+        ):
+            raise ConflictError("回复的原文指纹与任务不一致，请勿修改绑定字段，并重新下载任务。")
+        if response.review_revision != task["review_revision"]:
+            raise ConflictError("回复的审校版本与任务不一致，请勿修改绑定字段，并重新下载任务。")
+        payloads = json.loads(task["payloads"])
+        if len(response.proposals) != len(payloads):
+            raise ValueError("回复的批次数量不完整，请为任务的每个 payload 返回一份 proposal。")
+        try:
+            proposals = [
+                self.validate_proposal(proposal.model_dump(), payload, project_id)
+                for proposal, payload in zip(response.proposals, payloads, strict=True)
+            ]
+        except ValueError as exc:
+            raise ValueError(f"外部 AI 候选未导入：{exc}") from None
+        return self.apply_proposals(
+            project_id,
+            proposals,
+            {"model": "外部 AI 文件（待人工审校）", "requests": 0, "cache_hits": 0},
+            expected_revision=response.review_revision,
+            external_task_id=response.task_id,
+            origin="external_ai",
+        )
+
+    def apply_proposals(
+        self,
+        project_id: str,
+        proposals: list[dict],
+        info: dict,
+        *,
+        expected_revision: int | None = None,
+        external_task_id: str | None = None,
+        origin: str = "llm",
+    ):
         spans = self.store.parts(project_id, "spans")
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            if external_task_id:
+                task = db.execute(
+                    "SELECT * FROM external_review_tasks WHERE id=? AND project_id=?",
+                    (external_task_id, project_id),
+                ).fetchone()
+                current = db.execute(
+                    "SELECT revision FROM review_states WHERE project_id=?", (project_id,)
+                ).fetchone()
+                if task is None or task["imported_at"]:
+                    raise ConflictError("此任务已导入或已失效，请下载新任务。")
+                if current is None or current[0] != expected_revision:
+                    raise ConflictError(
+                        "任务下载后审校内容已更新；为保留人工修改，请重新下载任务。"
+                    )
+                if sha256(self.source(project_id)) != task["source_sha256"]:
+                    raise ConflictError("本章原文已变化，请重新下载外部 AI 任务。")
             characters = self.rows(db, "characters", project_id)
             for proposal in proposals:
                 for candidate in proposal["characters"]:
@@ -686,7 +892,7 @@ class Review:
                     ]
                     if len(matches) == 1:
                         item = matches[0]
-                        if item["status"] != "candidate":
+                        if item["status"] != "candidate" or item["origin"] == "manual":
                             continue  # Manual identity decisions are authoritative.
                         item["aliases"] = sorted(
                             set(item["aliases"] + candidate["aliases"]) - {item["display_name"]}
@@ -702,7 +908,7 @@ class Review:
                             "evidence": [],
                             "status": "candidate",
                             "active_figure_id": None,
-                            "origin": "llm",
+                            "origin": origin,
                             "merged_into": None,
                         }
                         characters.append(item)
@@ -729,7 +935,7 @@ class Review:
                         suggested_speaker_id=matches[0]["id"] if len(matches) == 1 else None,
                         confidence=speaker["confidence"] if len(matches) == 1 else 0,
                         evidence=evidence(spans, speaker["evidence_span_ids"]),
-                        origin="llm",
+                        origin=origin,
                     )
                     self.put(db, "dialogues", project_id, item)
             info = info | {"completed_at": now()}
@@ -737,7 +943,19 @@ class Review:
                 "UPDATE review_states SET revision=revision+1,last_analysis=? WHERE project_id=?",
                 (json.dumps(info), project_id),
             )
-            self.audit(db, project_id, "analysis.apply", None, info, actor=info.get("model", "llm"))
+            if external_task_id:
+                db.execute(
+                    "UPDATE external_review_tasks SET imported_at=? WHERE id=?",
+                    (info["completed_at"], external_task_id),
+                )
+            self.audit(
+                db,
+                project_id,
+                "analysis.external-import" if external_task_id else "analysis.apply",
+                None,
+                info,
+                actor="external-ai-file" if external_task_id else info.get("model", "llm"),
+            )
         return info
 
     def presentation(self, project_id: str) -> tuple[list[dict], dict]:

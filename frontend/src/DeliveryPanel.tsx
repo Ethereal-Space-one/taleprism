@@ -73,7 +73,7 @@ export function DeliveryPanel({
         </button>
       </div>
       <p className="asset-helper">
-        先修复阻止导出的问题，再打开成品从头读到结尾。自动检查与人工复核分别记录。
+        推荐交付独立阅读器，保留完整图文与编排。自动检查与人工复核分别记录，导出后仍需从头试读。
       </p>
       {(state.error || save.error) && (
         <p className="error" role="alert">
@@ -84,7 +84,10 @@ export function DeliveryPanel({
       {data && (
         <>
           <p className={data.ready ? 'saved-note' : 'error'} role="status">
-            {data.ready ? '✓ 当前制作状态可以导出。' : '请先修复以下问题，再导出当前版本。'}
+            {data.ready ? '✓ 自动检查通过。' : '请先修复以下问题，再导出当前版本。'}
+          </p>
+          <p className="asset-helper">
+            以下检查针对{job?.kind === 'export' ? '最近的 WebGAL 兼容交付' : '独立阅读器交付'}。
           </p>
           <div className="delivery-checks">
             {data.checks.map((c) => (
@@ -116,22 +119,25 @@ export function DeliveryPanel({
               ))}
             </aside>
           )}
-          <button
-            className="primary"
-            disabled={busy || !data.ready}
-            onClick={() =>
-              !data.latest || data.latest.kind === 'reader_export' ? onLocate('reader') : onExport()
-            }
-          >
-            {busy
-              ? '正在导出…'
-              : !data.latest || data.latest.kind === 'reader_export'
-                ? '前往阅读器导出'
-                : '导出当前版本'}
+          <button className="primary" onClick={() => onLocate('reader')}>
+            前往独立阅读器与导出 →
           </button>
+          <details className="webgal-compatibility">
+            <summary>其他格式 · WebGAL 兼容导出</summary>
+            <p>
+              仅在需要 WebGAL
+              引擎时使用。章节插图、阅读器场景和地图等专属内容不会自动转换，导出前会逐项列明。
+            </p>
+            <button disabled={busy} onClick={onExport}>
+              {busy ? '正在打包 WebGAL…' : '检查 WebGAL 兼容性'}
+            </button>
+          </details>
           {result && (
             <div className="delivery-output">
-              <h3>{data.stale ? '之前的成品 · 制作状态已变化' : '当前成品'}</h3>
+              <h3>
+                {data.stale ? '之前的成品 · 制作状态已变化' : '当前成品'} ·{' '}
+                {job?.kind === 'export' ? 'WebGAL 兼容版' : '独立阅读器'}
+              </h3>
               <p>
                 {result.file_count ? `${result.file_count} 个文件 · ` : ''}
                 {new Date(job!.created_at).toLocaleString('zh-CN')}

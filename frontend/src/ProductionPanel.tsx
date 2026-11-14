@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type ReviewState } from './api'
 import type { ReaderState } from './reader-types'
+import { ShotExchange, type ImageTasks } from './ShotExchange'
+import { BundleBackup } from './BundleBackup'
 import {
   SceneLibrary,
   ShotContinuity,
@@ -65,6 +67,10 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
     queryKey: ['reader', projectId],
     queryFn: () => api<ReaderState>(prefix + '/reader'),
   })
+  const tasks = useQuery({
+    queryKey: ['production-tasks', projectId],
+    queryFn: () => api<ImageTasks>(prefix + '/production/tasks'),
+  })
   const review = useQuery({
     queryKey: ['review', projectId],
     queryFn: () => api<ReviewState>(prefix + '/review'),
@@ -81,11 +87,16 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
       key={projectId}
       initial={state.data}
       reader={reader.data}
+      tasks={tasks.data}
+      taskError={tasks.error?.message}
+      retryTasks={() => {
+        void tasks.refetch()
+      }}
       review={review.data}
       prefix={prefix}
       refresh={async () => {
         await Promise.all(
-          ['production', 'reader', 'reader-content', 'delivery'].map((k) =>
+          ['production', 'production-tasks', 'reader', 'reader-content', 'delivery'].map((k) =>
             cache.invalidateQueries({ queryKey: [k, projectId] }),
           ),
         )
@@ -96,12 +107,18 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
 function Editor({
   initial,
   reader,
+  tasks,
+  taskError,
+  retryTasks,
   review,
   prefix,
   refresh,
 }: {
   initial: State
   reader: ReaderState
+  tasks?: ImageTasks
+  taskError?: string
+  retryTasks: () => void
   review: ReviewState
   prefix: string
   refresh: () => Promise<void>
@@ -112,7 +129,13 @@ function Editor({
     [dirty, setDirty] = useState(cached?.dirty || false),
     [checkDrafts, setCheckDrafts] = useState<Record<string, CheckDraft>>(cached?.checks || {}),
     [message, setMessage] = useState(''),
-    [importError, setImportError] = useState('')
+    [importError, setImportError] = useState(''),
+    [importPending, setImportPending] = useState(false),
+    [uploadPending, setUploadPending] = useState(false)
+  const importing = useRef(false)
+  const uploading = useRef(false)
+  const mutationInFlight = useRef(false)
+
   const hasCheckDrafts = Object.values(checkDrafts).some((d) => d.notes || d.checks.length)
   const unsaved = dirty || hasCheckDrafts
   const remoteChanged = initial.revision > base.revision
@@ -131,6 +154,7 @@ function Editor({
       request: string | { action: string; notes: string; decision: CheckDecision },
     ) => {
       const action = typeof request === 'string' ? request : request.action
+      if (importing.current || uploading.current) throw Error('正在核对导入或上传图片，请稍候。')
       if (dirty && action !== 'save') throw Error('请先保存方案草稿，再进行检查或应用。')
       const headers = { 'Content-Type': 'application/json' }
       if (action === 'save')
@@ -155,6 +179,9 @@ function Editor({
         }),
       })
     },
+    onSettled: () => {
+      mutationInFlight.current = false
+    },
     onSuccess: async (data, action) => {
       if ('plan' in data) {
         setBase(data)
@@ -171,12 +198,20 @@ function Editor({
       await refresh()
     },
   })
+  function runOperation(
+    request: string | { action: string; notes: string; decision: CheckDecision },
+  ) {
+    if (mutationInFlight.current || importing.current || uploading.current) return
+    mutationInFlight.current = true
+    operation.mutate(request)
+  }
+  const busy = operation.isPending || importPending || uploadPending
   useEffect(() => {
-    if (!unsaved && !operation.isPending && initial.revision >= base.revision) {
+    if (!unsaved && !busy && initial.revision >= base.revision) {
       setBase(initial)
       setPlan(initial.plan)
     }
-  }, [initial, base.revision, unsaved, operation.isPending])
+  }, [initial, base.revision, unsaved, busy])
   useEffect(() => {
     if (unsaved) drafts.set(prefix, { base, plan, dirty, checks: checkDrafts })
     else drafts.delete(prefix)
@@ -192,27 +227,47 @@ function Editor({
   }, [unsaved])
   const chars = review.characters.filter((c) => !['merged', 'rejected'].includes(c.status))
   async function importPlan(file?: File) {
-    if (!file || unsaved || operation.isPending) return
+    if (
+      !file ||
+      unsaved ||
+      operation.isPending ||
+      mutationInFlight.current ||
+      importing.current ||
+      uploading.current
+    )
+      return
+    importing.current = true
+    setImportPending(true)
+    setImportError('')
+    setMessage('')
     try {
       const data = JSON.parse(await file.text())
+      if (!data || typeof data !== 'object' || Array.isArray(data))
+        throw Error('请选择导出任务对应的 JSON 方案文件。')
+      if (typeof data.project_id !== 'string' || !Number.isInteger(data.base_plan_revision))
+        throw Error('旧版方案缺少项目与基础版本。请重新导出 AI 任务，原文件可保留作手工参考。')
       if (data.source_sha256 !== initial.source_sha256)
         throw Error('方案原文不匹配，请使用当前项目导出的任务。')
-      const candidate = data.plan
-      if (!candidate || !Array.isArray(candidate.shots))
-        throw Error('需要包含 source_sha256 和 plan 的方案文件。')
+      if (!data.plan || !Array.isArray(data.plan.shots))
+        throw Error('方案文件缺少 plan 或镜头列表，请按任务中的 schema 返回 JSON。')
       const validated = await api<Plan>(prefix + '/production/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          revision: initial.revision,
-          source_sha256: data.source_sha256,
-          plan: candidate,
-        }),
+        // Do not replace the task's binding with the latest project or revision.
+        body: JSON.stringify(data),
+      })
+      setBase({
+        ...initial,
+        revision: data.base_plan_revision,
+        source_sha256: data.source_sha256,
       })
       change(validated)
-      setImportError('')
+      setMessage('已导入待审草稿，尚未保存。请核对内容后保存；保存时会再次检查版本。')
     } catch (e) {
       setImportError((e as Error).message)
+    } finally {
+      importing.current = false
+      setImportPending(false)
     }
   }
   function addShot() {
@@ -244,7 +299,7 @@ function Editor({
   return (
     <fieldset
       className="production-panel"
-      disabled={operation.isPending}
+      disabled={busy}
       style={{ border: 0, margin: 0, minWidth: 0 }}
     >
       <div className="panel-head">
@@ -252,72 +307,79 @@ function Editor({
           <h2>章节制作方案</h2>
           <p>先读懂人物处境，再安排镜头与素材。每个镜头放在对应原文段落之后。</p>
         </div>
-        <a
-          href={prefix + '/bundle'}
-          aria-disabled={unsaved || operation.isPending}
-          onClick={(e) => {
-            if (unsaved || operation.isPending) e.preventDefault()
-          }}
-        >
-          下载可编辑工程 ↓
-        </a>
+        <BundleBackup prefix={prefix} disabled={unsaved || busy} />
       </div>
       <div className="production-toolbar">
-        <button onClick={() => operation.mutate('save')} disabled={!dirty || operation.isPending}>
+        <button onClick={() => runOperation('save')} disabled={!dirty || busy}>
           保存方案
         </button>
         <button
-          disabled={unsaved || operation.isPending || !initial.model_configured}
+          disabled={unsaved || busy || !initial.model_configured}
           onClick={() => {
             if (
               window.confirm(
                 '将本章原文和人物资料发送到你配置的文本模型，生成候选方案并替换当前方案（可能产生服务费用）。继续吗？',
               )
             )
-              operation.mutate('generate')
+              runOperation('generate')
           }}
         >
           AI 起草候选
         </button>
         <a
           href={prefix + '/production/tasks?kind=plan'}
-          aria-disabled={unsaved || operation.isPending}
+          aria-disabled={unsaved || busy}
           onClick={(e) => {
-            if (unsaved || operation.isPending) e.preventDefault()
+            if (unsaved || busy) e.preventDefault()
           }}
         >
           导出 AI 任务
         </a>
         <label className="file-button">
-          导入方案
+          导入 AI 方案
           <input
             aria-label="导入制作方案"
-            disabled={unsaved || operation.isPending}
+            disabled={unsaved || busy}
             type="file"
             accept=".json"
-            onChange={(e) => importPlan(e.target.files?.[0])}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              void importPlan(file)
+            }}
           />
         </label>
         <a
           href={prefix + '/production/tasks'}
-          aria-disabled={unsaved || operation.isPending}
+          aria-disabled={unsaved || busy}
           onClick={(e) => {
-            if (unsaved || operation.isPending) e.preventDefault()
+            if (unsaved || busy) e.preventDefault()
           }}
         >
           下载生图提示词
         </a>
-        <button disabled={unsaved || operation.isPending} onClick={() => operation.mutate('apply')}>
+        <button disabled={unsaved || busy} onClick={() => runOperation('apply')}>
           应用已确认镜头
         </button>
         <a href={prefix.replace('/api/projects/', '/read/')} target="_blank" rel="noreferrer">
           阅读预览 ↗
         </a>
       </div>
+      <p className="notice">
+        外部 AI
+        任务绑定当前项目与已保存的方案版本。任务导出后若修改方案，请重新导出，不要修改旧结果的版本字段。
+      </p>
+      {taskError && (
+        <p className="error" role="alert">
+          素材任务暂时无法核对：{taskError} <button onClick={retryTasks}>重试任务核对</button>
+          。方案与本地草稿仍然保留。
+        </p>
+      )}
+      {importPending && <p role="status">正在核对任务归属、版本与方案内容…</p>}
       {!initial.model_configured && (
         <p className="notice">
           可直接手工填写，也可导出任务交给你使用的 AI，再导入方案。生图提示词可用于 Codex
-          或其他图片工具，完成后在“阅读器与场景”上传图片并回填。
+          或其他图片工具。每个镜头可下载带实际参考图的任务包，完成后直接在该镜头上传候选并绑定。
         </p>
       )}
       {dirty && <p role="status">有未保存修改。保存后才能确认镜头、下载最新提示词或应用编排。</p>}
@@ -411,6 +473,7 @@ function Editor({
         <details
           className="production-shot"
           key={s.id}
+          id={`shot-${s.id}`}
           open={plan.shots.length < 3 ? true : undefined}
         >
           <summary>
@@ -435,9 +498,33 @@ function Editor({
               </select>
             </label>
           </div>
+          <p className="shot-exchange-eyebrow">原文锚点 · 段落结束字节 {s.after_byte}</p>
           <blockquote>
             {reader.paragraphs.find((p) => p.byte_end === s.after_byte)?.text}
           </blockquote>
+          <ShotExchange
+            prefix={prefix}
+            shot={s}
+            revision={base.revision}
+            reader={reader}
+            task={
+              !taskError && tasks?.plan_revision === base.revision
+                ? tasks.tasks.find((task) => task.id === s.id)
+                : undefined
+            }
+            locked={unsaved}
+            stale={remoteChanged}
+            pending={busy}
+            bind={(id) => update(s.id, { image_asset_id: id, continuity_check: null })}
+            setBusy={(value) => {
+              if (value && (mutationInFlight.current || importing.current || uploading.current))
+                return false
+              uploading.current = value
+              setUploadPending(value)
+              return true
+            }}
+            refresh={refresh}
+          />
           <div className="production-fields">
             {(
               [
@@ -580,8 +667,8 @@ function Editor({
               </select>
             </label>
             <button
-              disabled={dirty || operation.isPending || s.status === 'approved'}
-              onClick={() => operation.mutate(s.id + '/approve')}
+              disabled={dirty || busy || s.status === 'approved'}
+              onClick={() => runOperation(s.id + '/approve')}
             >
               确认此镜头方案
             </button>
@@ -605,7 +692,7 @@ function Editor({
                   : {}),
               })
             }
-            locked={dirty || operation.isPending}
+            locked={dirty || busy}
             draft={checkDrafts[s.id] || { notes: '', checks: [] }}
             changeDraft={(draft) => setCheckDrafts((current) => ({ ...current, [s.id]: draft }))}
             references={s.actors.map((actor) => {
@@ -622,16 +709,9 @@ function Editor({
               }
             })}
             check={(notes, decision) =>
-              operation.mutate({ action: s.id + '/continuity-check', notes, decision })
+              runOperation({ action: s.id + '/continuity-check', notes, decision })
             }
           />
-          {s.image_asset_id && !s.continuity.scene_id && (
-            <img
-              className="production-preview"
-              alt={s.title}
-              src={reader.assets.find((a) => a.id === s.image_asset_id)?.url}
-            />
-          )}
         </details>
       ))}
       <button disabled={plan.shots.length >= plan.budget} onClick={addShot}>

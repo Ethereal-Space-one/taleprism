@@ -21,7 +21,7 @@ class Delivery:
                 project_id TEXT, export_id TEXT, data TEXT NOT NULL,
                 PRIMARY KEY(project_id,export_id))""")
 
-    def versions(self, pid, reader=False):
+    def versions(self, pid, reader=False, webgal_reader=False):
         with self.store.db() as db:
             result = {}
             for table, key in [
@@ -40,6 +40,11 @@ class Delivery:
                     "SELECT revision FROM production_states WHERE project_id=?", (pid,)
                 ).fetchone()
                 result["production_revision"] = row[0] if row else 0
+            elif webgal_reader:
+                row = db.execute(
+                    "SELECT revision FROM reader_states WHERE project_id=?", (pid,)
+                ).fetchone()
+                result["reader_revision"] = row[0] if row else 0
             return result
 
     def completed(self, pid, eid):
@@ -191,7 +196,11 @@ class Delivery:
                             "detail": "制作意见待处理或内容已变需重新核对：" + issue["note"][:120],
                         }
                     )
-        versions = self.versions(pid, reader=reader_export)
+        versions = self.versions(
+            pid,
+            reader=reader_export,
+            webgal_reader=bool(latest and "reader_revision" in latest["result"]),
+        )
         with self.store.db() as db:
             records = [
                 json.loads(r[0])
@@ -223,7 +232,11 @@ class Delivery:
         archive_hash = sha256(archive.read_bytes())
         if job["result"].get("archive_sha256") not in {None, archive_hash}:
             raise ValueError("成品压缩包已变化，请重新导出后复核。")
-        versions = self.versions(pid, reader=job["kind"] == "reader_export")
+        versions = self.versions(
+            pid,
+            reader=job["kind"] == "reader_export",
+            webgal_reader="reader_revision" in job["result"],
+        )
         if any(job["result"].get(k, 0) != v for k, v in versions.items()):
             raise ConflictError("制作状态已变，请导出当前版本并复核后记录。")
         editorial = (

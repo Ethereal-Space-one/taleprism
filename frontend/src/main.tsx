@@ -3,13 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type Job, type Project, type TextData, type ReviewState } from './api'
 import { ReviewPanel } from './ReviewPanel'
-import { SpeechPanel, type SpeechState } from './SpeechPanel'
-import { VisualPanel, type VisualState } from './VisualPanel'
+import { SpeechPanel } from './SpeechPanel'
+import { VisualPanel } from './VisualPanel'
 import { DeliveryPanel } from './DeliveryPanel'
 import { ReaderApp } from './ReaderApp'
 import { ReaderPanel } from './ReaderPanel'
 import { ProductionPanel } from './ProductionPanel'
 import { ProjectExchange } from './ProjectExchange'
+import { GuidedSampleIntro, GuidedSampleSteps, type GuidedProject } from './GuidedSample'
 import './style.css'
 
 const rights: Record<string, string> = { owned: '自有作品', authorized: '已获授权', public_domain: '公有领域', local_test: '仅本地测试' }
@@ -18,42 +19,102 @@ const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }
 function App() {
   const cache = useQueryClient()
   const [selected, setSelected] = useState<string | null>(localStorage.getItem('storygal-project'))
+  const [guidedProject, setGuidedProject] = useState<GuidedProject | null>(() => {
+    try {
+      const value = JSON.parse(localStorage.getItem('taleprism-guided-last-light') || 'null')
+      return value && typeof value.projectId === 'string' && typeof value.shotId === 'string'
+        ? { ...value, restoreIssues: Array.isArray(value.restoreIssues) && value.restoreIssues.every((item: unknown) => typeof item === 'string') ? value.restoreIssues : [] }
+        : null
+    } catch {
+      return null
+    }
+  })
+  const guidedOpening = useRef(false)
+  const navigationVersion = useRef(0)
+  const [guidedReady, setGuidedReady] = useState<GuidedProject | null>(null)
+  const [focusShot, setFocusShot] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [marks, setMarks] = useState(true)
   const [check, setCheck] = useState(false)
   const [mode, setMode] = useState<'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader' | 'production'>('text')
   const dialog = useRef<HTMLDialogElement>(null)
+  const [webgalOpen, setWebgalOpen] = useState(false)
   const projects = useQuery({ queryKey: ['projects'], queryFn: () => api<Project[]>('/api/projects') })
   const project = projects.data?.find(p => p.id === selected)
   const data = useQuery({ queryKey: ['text', selected], queryFn: () => api<TextData>(`/api/projects/${selected}/text`), enabled: !!project })
   const review = useQuery({ queryKey: ['review', selected], queryFn: () => api<ReviewState>(`/api/projects/${selected}/review`), enabled: !!project })
   const jobs = useQuery({ queryKey: ['jobs', selected], queryFn: () => api<Job[]>(`/api/projects/${selected}/jobs`), enabled: !!project,
     refetchInterval: query => query.state.data?.some(j => j.state === 'running') ? 900 : false })
-  const speech = useQuery({ queryKey: ['speech', selected], queryFn: () => api<SpeechState>(`/api/projects/${selected}/speech`), enabled: !!project })
-  const visual = useQuery({ queryKey: ['visual', selected], queryFn: () => api<VisualState>(`/api/projects/${selected}/visual`), enabled: !!project })
   const latest = jobs.data?.find(j => j.kind === 'export')
-  const exported = jobs.data?.find(j => j.kind === 'export' && j.state === 'completed')?.result
-  const stale = !!exported && ((review.data?.revision || 0) > (exported.review_revision || 0) || (speech.data?.revision || 0) > (exported.speech_revision || 0) || (visual.data?.revision || 0) > (exported.visual_revision || 0))
   const unit = data.data?.units[page]
 
+  function keepCurrentWork() { navigationVersion.current += 1 }
+  function navigateMode(next: typeof mode) { keepCurrentWork(); setMode(next) }
+  function openImportDialog() { keepCurrentWork(); upload.reset(); dialog.current?.showModal() }
   function choose(id: string) {
-    setSelected(id); localStorage.setItem('storygal-project', id); setPage(0); setCheck(false); setMode('text')
+    navigationVersion.current += 1
+    setSelected(id); localStorage.setItem('storygal-project', id); setPage(0); setCheck(false); setWebgalOpen(false); setFocusShot(null); setMode('text')
   }
   function created(p: Project) {
     cache.invalidateQueries({ queryKey: ['projects'] }); choose(p.id); dialog.current?.close()
   }
+  const guided = useMutation({
+    mutationFn: (_request: { navigation: number }) =>
+      api<Project & { guided_shot_id: string; restore_issues?: string[] }>('/api/samples/last-light/guided', {
+        method: 'POST',
+      }),
+    onSuccess: (p, request) => {
+      const guide = { projectId: p.id, shotId: p.guided_shot_id, restoreIssues: p.restore_issues }
+      cache.invalidateQueries({ queryKey: ['projects'] })
+      if (request.navigation === navigationVersion.current) {
+        setGuidedProject(guide)
+        localStorage.setItem('taleprism-guided-last-light', JSON.stringify(guide))
+        created(p)
+        setGuidedReady(null)
+        setMode('production')
+        setFocusShot(guide.shotId)
+      } else setGuidedReady(guide)
+      cache.invalidateQueries({ queryKey: ['guided-last-light'] })
+    },
+    onSettled: () => {
+      guidedOpening.current = false
+    },
+  })
+  const guidedStart = {
+    pending: guided.isPending,
+    error: guided.error,
+    start: () => {
+      if (guidedOpening.current) return
+      guidedOpening.current = true
+      guided.mutate({ navigation: navigationVersion.current })
+    },
+  }
+  function editGuidedShot(id: string) {
+    navigateMode('production')
+    setFocusShot(id)
+  }
+  useEffect(() => {
+    if (mode !== 'production' || !focusShot) return
+    const reveal = () => {
+      const element = document.getElementById(`shot-${focusShot}`)
+      if (!element) return false
+      if (element instanceof HTMLDetailsElement) element.open = true
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setFocusShot(null)
+      return true
+    }
+    if (reveal()) return
+    const observer = new MutationObserver(() => {
+      if (reveal()) observer.disconnect()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [mode, focusShot])
   const sample = useMutation({ mutationFn: () => api<Project>('/api/samples/last-light', { method: 'POST' }), onSuccess: created })
   const upload = useMutation({ mutationFn: (form: FormData) => api<Project>('/api/projects', { method: 'POST', body: form }), onSuccess: created })
   const verify = useMutation({ mutationFn: () => api(`/api/projects/${selected}/verify`, { method: 'POST' }), onSuccess: () => setCheck(true) })
-  const exportJob = useMutation({ mutationFn: async () => {
-    const r = await api<{config: {presentations?: unknown[]; map_entries?: unknown[]}}>(`/api/projects/${selected}/reader`)
-    const p6 = !!(r.config.presentations?.length || r.config.map_entries?.length)
-    if (p6 && !window.confirm('WebGAL 会简化段内人物编排、事件呈现和地图入口。完整体验请在“阅读器与场景”导出独立阅读器。仍要导出简化版吗？')) throw Error('已取消简化导出，可前往阅读器与场景。')
-    return api(`/api/projects/${selected}/exports${p6 ? '?simplified=true' : ''}`, { method: 'POST' })
-  },
-    onSuccess: async () => { await cache.invalidateQueries({ queryKey: ['jobs', selected] }); await cache.invalidateQueries({ queryKey: ['delivery', selected] }) } })
-  const busy = exportJob.isPending || latest?.state === 'running'
-  const error = projects.error || data.error || jobs.error || sample.error || verify.error || exportJob.error
+  const busy = latest?.state === 'running'
+  const error = projects.error || data.error || jobs.error || sample.error || verify.error
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -65,14 +126,14 @@ function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [data.data, mode])
 
-  return <div className="app">
+  return <div className="app creator-workbench">
     <header className="masthead">
       <a className="brand" href="/" aria-label="Taleprism 首页"><b>Taleprism<span className="brand-dot">.</span></b><span>VISUAL STORIES</span></a>
       <span className="local-note"><span className="status-dot" />本地制作台 <small>本地版</small></span>
     </header>
     <div className="workspace">
       <aside className="sidebar" aria-label="项目导航">
-        <div className="sidebar-head"><h2>我的文本</h2><button className="plus" onClick={() => { upload.reset(); dialog.current?.showModal() }} aria-label="导入新文本">＋</button></div>
+        <div className="sidebar-head"><h2>我的文本</h2><button className="plus" onClick={openImportDialog} aria-label="导入新文本">＋</button></div>
         <div className="project-list">
           {projects.isPending && <p role="status">正在读取项目…</p>}
           {projects.data?.map(p => <button key={p.id} className={`project ${p.id === selected ? 'selected' : ''}`} onClick={() => choose(p.id)} title={p.filename}>
@@ -80,34 +141,32 @@ function App() {
           </button>)}
           {projects.data?.length === 0 && <p className="sidebar-empty">还没有项目。<br />导入一章，开始制作。</p>}
         </div>
-        <ProjectExchange onCreated={(p) => { created(p); setMode('production') }} />
+        <ProjectExchange onCreated={(p) => { created(p); setMode('production') }} guidedStart={guidedStart} onNavigate={keepCurrentWork} rawSample={{ pending: sample.isPending, start: () => { keepCurrentWork(); sample.mutate() } }} />
         <div className="sidebar-foot"><span>文本 → 标注 → 试读</span><p>项目与产物保存在这台电脑。</p></div>
       </aside>
-      <main>
+      <main onInputCapture={() => { if (guidedOpening.current) keepCurrentWork() }}>
         {error && <p className="error" role="alert">{error.message}</p>}
-        {!project ? <div className="empty-state">
-          <span className="folio">原文在这里，故事向前。</span>
-          <h1>从一章原文开始。</h1>
-          <p>导入文本，查看切分，再把这一章<br className="desktop-break" />变成可以连续阅读的视觉作品。</p>
-          <div className="empty-actions"><button className="primary" onClick={() => { upload.reset(); dialog.current?.showModal() }}>导入 TXT <span>↗</span></button>
-          <button className="text-button" disabled={sample.isPending} onClick={() => sample.mutate()}>{sample.isPending ? '正在准备样例…' : '从《末班灯》原文练习 →'}</button></div>
-          <div className="empty-detail"><span>01 / 文本底座</span><p>支持 UTF-8、GB18030 · 单篇最多 30,000 字<br />原文完整留存，显示内容可以逐框核对。</p></div>
-        </div> : <>
+        {guidedReady && <div className="notice" role="status"><p>完整样例已另存为新项目。你切换后的当前项目未改动。</p><button onClick={() => { choose(guidedReady.projectId); setGuidedProject(guidedReady); localStorage.setItem('taleprism-guided-last-light', JSON.stringify(guidedReady)); setGuidedReady(null); setMode('production'); setFocusShot(guidedReady.shotId) }}>打开刚准备的《末班灯》副本 →</button></div>}
+        {!project ? <>
+          <GuidedSampleIntro start={guidedStart} />
+          <div className="guided-manual-intro"><button onClick={openImportDialog}>导入自己的 TXT ↗</button><p>已有原文？从空白项目开始。完整示例与工程 ZIP 导入在左侧「手动导入与原文练习」。</p></div>
+        </> : <>
           <div className="project-heading"><div><p className="eyebrow">文本工作台 <span>／</span> {rights[project.rights_status]}</p><h1>{project.filename.replace(/\.txt$/i, '')}</h1><p className="project-meta">{project.character_count.toLocaleString()} 字 <span>·</span> {data.data?.units.length || project.unit_count} 个显示框 <span>·</span> {project.encoding.toUpperCase()}</p></div>
-          <div className="heading-actions"><button disabled={verify.isPending} onClick={() => verify.mutate()}>{verify.isPending ? '正在校验…' : check ? '✓ 原文校验通过' : '校验原文'}</button><a className="primary" href={`/read/${project.id}`} target="_blank" rel="noreferrer">阅读预览 ↗</a><button disabled={busy || data.isPending || !!data.error} onClick={() => exportJob.mutate()}>{busy ? '正在导出…' : '导出 WebGAL'}<span>↗</span></button></div></div>
+          <div className="heading-actions"><button disabled={verify.isPending} onClick={() => { keepCurrentWork(); verify.mutate() }}>{verify.isPending ? '正在校验…' : check ? '✓ 原文校验通过' : '校验原文'}</button><a href={`/read/${project.id}`} onClick={keepCurrentWork} target="_blank" rel="noreferrer">阅读预览 ↗</a><button className="primary" onClick={() => navigateMode('reader')}>独立阅读器与导出 <span>→</span></button></div></div>
+          {guidedProject?.projectId === project.id && <GuidedSampleSteps guide={guidedProject} mode={mode} onEdit={editGuidedShot} onPreview={() => navigateMode('reader')} onNavigate={keepCurrentWork} onLeave={() => { keepCurrentWork(); setGuidedProject(null); localStorage.removeItem('taleprism-guided-last-light') }} />}
           {latest?.state === 'failed' && <p className="error" role="alert">导出未完成：{latest.error} 可重新导出。</p>}
-          {busy && <p className="notice" role="status">正在检查原文并打包工程，完成后可以播放和下载。</p>}
-          {exported && <div className="export-result" role="status"><span>{stale ? '审校已更新，下方是旧版本，请重新导出。' : '✓ 工程已导出，原文与解析检查通过。'}</span><div><a href={exported.play_url} target="_blank" rel="noreferrer">打开播放 ↗</a><a href={exported.download_url}>下载工程 ↓</a></div></div>}
-          <nav className="workspace-tabs" aria-label="工作台视图"><button aria-pressed={mode === 'production'} onClick={() => setMode('production')}>章节制作方案</button><button aria-pressed={mode === 'text'} onClick={() => setMode('text')}>原文与预览</button><button aria-pressed={mode === 'review'} onClick={() => setMode('review')}>人物与审校{review.data ? ` · ${review.data.pending_count} 待审` : ''}</button><button aria-pressed={mode === 'speech'} onClick={() => setMode('speech')}>对白配音</button><button aria-pressed={mode === 'visual'} onClick={() => setMode('visual')}>视觉与图解</button><button aria-pressed={mode === 'reader'} onClick={() => setMode('reader')}>阅读器与场景</button><button aria-pressed={mode === 'delivery'} onClick={() => setMode('delivery')}>交付检查</button></nav>
+          {busy && <p className="notice" role="status">正在打包 WebGAL 兼容版本，完成后请到交付检查查看。</p>}
+
+          <nav className="workspace-tabs" aria-label="工作台视图"><button aria-pressed={mode === 'production'} onClick={() => navigateMode('production')}>章节制作方案</button><button aria-pressed={mode === 'text'} onClick={() => navigateMode('text')}>原文与预览</button><button aria-pressed={mode === 'review'} onClick={() => navigateMode('review')}>人物与审校{review.data ? ` · ${review.data.pending_count} 待审` : ''}</button><button aria-pressed={mode === 'speech'} onClick={() => navigateMode('speech')}>对白配音</button><button aria-pressed={mode === 'visual'} onClick={() => navigateMode('visual')}>视觉与图解</button><button aria-pressed={mode === 'reader'} onClick={() => navigateMode('reader')}>独立阅读器</button><button aria-pressed={mode === 'delivery'} onClick={() => navigateMode('delivery')}>交付检查</button></nav>
           {mode === 'production' && <ProductionPanel key={project.id} projectId={project.id} />}
           {mode === 'reader' && <ReaderPanel key={project.id} projectId={project.id} review={review.data} />}
-          {mode === 'delivery' && <DeliveryPanel key={project.id} projectId={project.id} onLocate={setMode} onExport={() => exportJob.mutate()} busy={busy} />}
+          {mode === 'delivery' && <DeliveryPanel key={project.id} projectId={project.id} onLocate={navigateMode} onExport={() => { keepCurrentWork(); setWebgalOpen(true) }} busy={busy} />}
           {mode === 'visual' && data.data && <VisualPanel key={project.id} projectId={project.id} spans={data.data.spans} units={data.data.units} />}
           {mode === 'speech' && <SpeechPanel key={project.id} projectId={project.id} />}
           {mode === 'review' && <ReviewPanel key={project.id} projectId={project.id} onLocate={(start, end) => {
             const found = data.data?.units.findIndex(u => start < u.byte_end && end > u.byte_start) ?? -1
             if (found >= 0) setPage(found)
-            setMode('text')
+            navigateMode('text')
           }} />}
           {data.isPending && <p role="status">正在读取原文与切分…</p>}
           {data.data && mode === 'text' && <div className="review-grid">
@@ -131,9 +190,10 @@ function App() {
             </aside>
           </div>}
         </>}
-        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.1.0 / 公开试用版</span></footer>
+        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.3.0 / 公开试用版</span></footer>
       </main>
     </div>
+    {webgalOpen && project && <WebgalExportDialog key={project.id} projectId={project.id} busy={busy} onClose={() => setWebgalOpen(false)} onReader={() => { setWebgalOpen(false); navigateMode('reader') }} />}
     <dialog ref={dialog} className="import-dialog"><form onSubmit={e => { e.preventDefault(); upload.mutate(new FormData(e.currentTarget)) }}>
       <div className="dialog-head"><h2>导入一章文本</h2><button type="button" aria-label="关闭导入" onClick={() => dialog.current?.close()}>×</button></div>
       <p>建议 5,000–15,000 字，最多 30,000 字。</p>
@@ -145,6 +205,163 @@ function App() {
       <button className="primary" type="submit" disabled={upload.isPending}>{upload.isPending ? '正在导入…' : '导入并预览'}<span>→</span></button>
     </form></dialog>
   </div>
+}
+
+type WebgalCompatibility = {
+  reader_revision: number
+  compatible: boolean
+  losses: { field: string; label: string; detail: string }[]
+}
+
+function WebgalExportDialog({
+  projectId,
+  busy,
+  onClose,
+  onReader,
+}: {
+  projectId: string
+  busy: boolean
+  onClose: () => void
+  onReader: () => void
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const cache = useQueryClient()
+  const [approvedRevision, setApprovedRevision] = useState<number | null>(null)
+  const report = useQuery({
+    queryKey: ['webgal-compatibility', projectId],
+    queryFn: () => api<WebgalCompatibility>(`/api/projects/${projectId}/exports/compatibility`),
+    staleTime: 0,
+  })
+  const submit = useMutation({
+    mutationFn: (snapshot: WebgalCompatibility) =>
+      api(
+        `/api/projects/${projectId}/exports?reader_revision=${snapshot.reader_revision}${snapshot.losses.length ? '&simplified=true' : ''}`,
+        { method: 'POST' },
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: ['jobs', projectId] }),
+        cache.invalidateQueries({ queryKey: ['delivery', projectId] }),
+      ])
+      onClose()
+    },
+    onError: async () => {
+      setApprovedRevision(null)
+      await report.refetch()
+    },
+  })
+  useEffect(() => {
+    const element = dialog.current
+    if (element && !element.open) element.showModal()
+  }, [])
+  const data = report.data
+  const lossy = !!data?.losses.length
+  return (
+    <dialog
+      ref={dialog}
+      className="export-dialog"
+      aria-labelledby="webgal-title"
+      aria-describedby="webgal-description"
+      onCancel={(e) => {
+        if (submit.isPending) e.preventDefault()
+        else onClose()
+      }}
+      onClose={() => { if (!submit.isPending) onClose() }}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (
+            data &&
+            !report.isFetching &&
+            !submit.isPending &&
+            !busy &&
+            (!lossy || approvedRevision === data.reader_revision)
+          )
+            submit.mutate(data)
+        }}
+      >
+        <div className="dialog-head">
+          <h2 id="webgal-title">WebGAL 兼容导出</h2>
+          <button type="button" aria-label="关闭 WebGAL 导出" disabled={submit.isPending} onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <p id="webgal-description">
+          用于需要 WebGAL
+          引擎的逐框播放。保留原文、审校后的对白、已选配音与“视觉与图解”中启用的图页，不等同于独立阅读器。
+        </p>
+        {report.isFetching && <p role="status">正在核对当前阅读器配置…</p>}
+        {submit.isPending && <p role="status">请求提交中，请稍候。提交成功后会在后台打包，此时不能取消已提交的请求。</p>}
+        {(report.error || submit.error) && (
+          <p className="error" role="alert">
+            {(submit.error || report.error)?.message}
+          </p>
+        )}
+        {report.error && (
+          <button type="button" onClick={() => report.refetch()} disabled={report.isFetching}>
+            重新检查
+          </button>
+        )}
+        {data && !report.error && (
+          <>
+            {lossy ? (
+              <section aria-labelledby="webgal-loss-heading">
+                <h3 id="webgal-loss-heading">此版本将省略的内容</h3>
+                <ul className="export-losses">
+                  {data.losses.map((loss) => (
+                    <li key={loss.field}>
+                      <strong>{loss.label}</strong>
+                      <p>{loss.detail}</p>
+                    </li>
+                  ))}
+                </ul>
+                <label className="inline-check">
+                  <input
+                    type="checkbox"
+                    checked={approvedRevision === data.reader_revision}
+                    onChange={(e) =>
+                      setApprovedRevision(e.target.checked ? data.reader_revision : null)
+                    }
+                    disabled={report.isFetching || submit.isPending}
+                  />
+                  我已了解上述省略内容，仍要导出简化版。
+                </label>
+              </section>
+            ) : (
+              <p className="saved-note">
+                当前没有配置会被省略的阅读器专属内容，仍将使用 WebGAL 逐框播放。
+              </p>
+            )}
+            <p className="asset-helper">
+              原项目不会改动。完整保留章节插图、编排和地图，请选择独立阅读器。
+            </p>
+          </>
+        )}
+        <div className="export-dialog-actions">
+          <button type="button" className="primary" disabled={submit.isPending} onClick={onReader}>
+            改用独立阅读器 →
+          </button>
+          <button
+            type="submit"
+            disabled={
+              !data ||
+              !!report.error ||
+              report.isFetching ||
+              submit.isPending ||
+              busy ||
+              (lossy && approvedRevision !== data.reader_revision)
+            }
+          >
+            {submit.isPending ? '正在提交…' : lossy ? '导出 WebGAL 简化版' : '导出 WebGAL 兼容版'}
+          </button>
+          <button type="button" className="text-button" disabled={submit.isPending} onClick={onClose}>
+            取消
+          </button>
+        </div>
+      </form>
+    </dialog>
+  )
 }
 
 const readerProject = /^\/read\/([0-9a-f-]{36})\/?$/.exec(location.pathname)?.[1]

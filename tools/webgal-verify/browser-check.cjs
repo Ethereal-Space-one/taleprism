@@ -16,8 +16,11 @@ async function getJson(request, url) {
 }
 
 async function exportUI(page) {
-  await page.getByRole('button', { name: '导出 WebGAL' }).click();
-  const link = page.getByRole('link', { name: '打开播放 ↗' });
+  await page.getByRole('button', { name: '交付检查', exact: true }).click();
+  await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).click();
+  await page.getByRole('button', { name: '检查 WebGAL 兼容性', exact: true }).click();
+  await page.getByRole('dialog', { name: 'WebGAL 兼容导出' }).getByRole('button', { name: '导出 WebGAL 兼容版', exact: true }).click();
+  const link = page.getByRole('link', { name: '打开完整播放 ↗' });
   await link.waitFor({ timeout: 60000 });
   return link.getAttribute('href');
 }

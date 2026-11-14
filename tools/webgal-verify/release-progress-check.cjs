@@ -6,8 +6,8 @@ const http = require('node:http')
 const {chromium} = require('playwright')
 const root = path.resolve(__dirname, '../..')
 const oldSite = path.resolve(process.argv[2] || path.join(root, '.release/chibi-demo/site'))
-const target = process.argv[3] || path.join(root, '.release/v0.2.0/site-chibi')
-const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.2.0/browser/progress'))
+const target = process.argv[3] || path.join(root, '.release/v0.3.0/site-chibi')
+const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.3.0/browser/progress'))
 
 async function serve(site) {
   const server = http.createServer((req, res) => {

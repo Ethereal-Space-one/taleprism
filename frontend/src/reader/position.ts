@@ -30,7 +30,8 @@ export function restorePosition(root: HTMLElement, p: Position, focus = false) {
       (e) => e.dataset.illustrationId === p.plate,
     )
   if (plate) {
-    const rect = plate.getBoundingClientRect()
+    const art = plate.querySelector<HTMLElement>('[data-illustration-anchor]') || plate
+    const rect = art.getBoundingClientRect()
     root.scrollTop +=
       rect.top + rect.height * (p.imageOffset || 0) - root.getBoundingClientRect().top - 24
     if (focus) root.focus({ preventScroll: true })
@@ -56,11 +57,13 @@ export function capturePosition(root: HTMLElement): Position {
     },
   )
   if (plate) {
-    const rect = plate.getBoundingClientRect()
+    const art = plate.querySelector<HTMLElement>('[data-illustration-anchor]') || plate
+    const rect = art.getBoundingClientRect()
     return {
       byte: Number(plate.dataset.sourceByte),
       offset: 0,
       plate: plate.dataset.illustrationId,
+      imageAsset: plate.dataset.imageAsset,
       imageOffset: Math.max(0, Math.min(1, (top - rect.top) / rect.height)),
     }
   }
@@ -116,4 +119,16 @@ export function selectedExcerpt(root: HTMLElement) {
         position: { byte: ranges[0].start, offset: 0 },
       }
     : null
+}
+
+export function visibleAudioIds(root: HTMLElement) {
+  const viewport = root.getBoundingClientRect()
+  return new Set(
+    Array.from(root.querySelectorAll<HTMLElement>('[data-take]'))
+      .filter((span) => {
+        const rect = span.getBoundingClientRect()
+        return rect.bottom > viewport.top && rect.top < viewport.bottom
+      })
+      .map((span) => span.dataset.take!),
+  )
 }

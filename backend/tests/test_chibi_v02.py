@@ -311,7 +311,7 @@ def test_full_public_rebuild_preserves_source_media_choreography_and_bookmark_ke
     new = read_zip((out / reader_item["file"]).read_bytes())
     verify_inventory(new)
     content = json.loads(new["reader.json"])
-    assert record["version"] == "0.2.0"
+    assert record["version"] == builder.VERSION
     assert content["project"]["id"] == old_content["project"]["id"]
     assert content["project"]["canonical_sha256"] == old_content["project"]["canonical_sha256"]
     assert content["blocks"] == old_content["blocks"]

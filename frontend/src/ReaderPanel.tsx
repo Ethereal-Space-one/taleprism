@@ -261,6 +261,8 @@ export function ReaderPanel({ projectId, review }: { projectId: string; review?:
   const used = new Set([
     data?.config.cover_asset_id,
     ...(data?.config.scenes.map((s) => s.asset_id) || []),
+    ...(data?.config.presentations?.map((p) => p.image_asset_id) || []),
+    ...(data?.config.illustrations?.map((p) => p.image_asset_id) || []),
   ])
   const pendingAssets =
     data?.assets.filter((a) => used.has(a.id) && a.status !== 'accepted').length || 0
@@ -273,13 +275,14 @@ export function ReaderPanel({ projectId, review }: { projectId: string; review?:
   return (
     <section className="reader-editor" aria-label="阅读器制作">
       <div className="panel-head">
-        <h2>阅读器与场景</h2>
+        <h2>独立阅读器</h2>
         <a href={`/read/${projectId}`} target="_blank" rel="noreferrer">
           打开阅读预览 ↗
         </a>
       </div>
       <p className="asset-helper">
-        按原段落连续阅读，封面与场景图持续展示，人物语音复用已接受片段。先预览，再接受图像并导出。
+        推荐交付格式。保留章节插图、场景编排与地图，按原段落连续阅读，复用已接受配音。
+        先预览并审查素材，再导出可独立运行的阅读器。
       </p>
       {error && (
         <p className="error" role="alert">
@@ -294,12 +297,6 @@ export function ReaderPanel({ projectId, review }: { projectId: string; review?:
         <>
           <div className="visual-actions">
             <button
-              disabled={busy || !data.chibi_sample}
-              onClick={() => change.mutate({ path: '/sample' })}
-            >
-              导入赤壁封面与场景候选
-            </button>
-            <button
               disabled={
                 busy ||
                 content.isPending ||
@@ -312,6 +309,11 @@ export function ReaderPanel({ projectId, review }: { projectId: string; review?:
             >
               导出独立阅读器
             </button>
+            {data.chibi_sample && (
+              <button disabled={busy} onClick={() => change.mutate({ path: '/sample' })}>
+                导入赤壁封面与场景候选
+              </button>
+            )}
           </div>
           {!!pendingAssets && (
             <p className="asset-helper">

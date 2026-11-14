@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — Public Preview
+
+- Add evidence-bound Chibi faction, relationship, phase and chapter-causality views that reveal only material already read and roll back on backward navigation.
+- Harden reader image retry, audio cleanup, position restore, launcher workspace/process recovery and interrupted/repeated interactions.
+- Add guided Last Light editing copies, portable project backup/restore notices and revision-bound shot prompt/image exchange.
+- Support manual external-AI character/dialogue task exchange without sending content automatically, and report explicit WebGAL export losses.
+- Rebuild and separately pin both public editable projects and standalone readers; retain prompt-library 0.2.0, project-format v2 and existing storage keys. Preserve v0.2.0 tags and attachments.
+
 ## 0.2.0
 
 - Publish Chibi as a reproducible editable project with twelve source-bound shots and an updated online reader; keep Last Light as the short-story tutorial.

@@ -41,7 +41,10 @@ const report={passed:false,checked_at:new Date().toISOString()};
   await first.getByRole('button',{name:'接受本句音频'}).click();await until(s=>!!s.lines[0].segments[0].accepted);
   assert.equal((await state()).lines[1].segments[0].accepted.id,stable);
   for(const width of [320,375,414,768,1440]){await page.setViewportSize({width,height:1000});await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(out,`speech-${width}.png`),fullPage:true})}
-  await page.getByRole('button',{name:'导出 WebGAL'}).click();const exported=await job('export');report.export_url=exported.result.play_url;
+  await page.getByRole('button', { name: '交付检查', exact: true }).click();
+  await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).click();
+  await page.getByRole('button', { name: '检查 WebGAL 兼容性', exact: true }).click();
+  await page.getByRole('dialog', { name: 'WebGAL 兼容导出' }).getByRole('button', { name: '导出 WebGAL 兼容版', exact: true }).click();const exported=await job('export');report.export_url=exported.result.play_url;
   const manifest=await json(report.export_url.replace('index.html','storygal-manifest.json'));assert.equal(manifest.units.filter(u=>u.vocal_id).length,3);
   const source=await page.request.get(base+`/api/projects/${pid}/source`);assert.equal((await source.body()).toString(),story);
   const engine=await browser.newPage({viewport:{width:1440,height:1000}});engine.on('pageerror',e=>errors.push(e.message));

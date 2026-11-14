@@ -104,7 +104,10 @@ async function waitJob(page, pid, kind, oldId) {
       await page.screenshot({ path: path.join(out, `review-${width}.png`), fullPage: true });
       report.ui.push({ width, no_horizontal_overflow: true });
     }
-    await page.getByRole('button', { name: '导出 WebGAL' }).click();
+    await page.getByRole('button', { name: '交付检查', exact: true }).click();
+    await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).click();
+    await page.getByRole('button', { name: '检查 WebGAL 兼容性', exact: true }).click();
+    await page.getByRole('dialog', { name: 'WebGAL 兼容导出' }).getByRole('button', { name: '导出 WebGAL 兼容版', exact: true }).click();
     const exported = await waitJob(page, pid, 'export');
     const url = exported.result.play_url;
     report.export_url = url;

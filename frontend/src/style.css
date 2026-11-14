@@ -295,3 +295,23 @@ kbd { font-family: var(--font-code); font-size: 11px; color: var(--color-muted);
 .continuity-record[data-status="rejected"] { border-left-color:#a33131; }
 .continuity-record[data-status="revoked"], .continuity-record[data-status="stale"] { border-left-color:#94631c; }
 @media(max-width:700px){.continuity-compare{grid-template-columns:1fr}.scene-library{padding:12px}}
+
+/* Compatibility is a secondary, explicit delivery path, not a competing reader. */
+.webgal-compatibility { margin-top: var(--space-lg); border-block: 1px solid var(--color-rule); padding-block: var(--space-md); max-width: 760px; }
+.webgal-compatibility summary { cursor: pointer; min-height: 44px; display: list-item; align-content: center; color: var(--color-muted); }
+.webgal-compatibility p { margin-block: var(--space-sm) var(--space-md); }
+.export-dialog { width: min(680px, calc(100vw - 32px)); max-height: 88vh; overflow-y: auto; border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-paper); color: var(--color-ink); padding: clamp(20px, 4vw, 36px); }
+.export-dialog::backdrop { background: var(--color-overlay); }
+.export-dialog form { display: grid; gap: var(--space-lg); }
+.export-dialog .dialog-head { gap: var(--space-md); }
+.export-dialog .dialog-head h2 { font-size: 24px; }
+.export-dialog h3 { font-size: 14px; margin: 0; }
+.export-dialog p { line-height: 1.8; }
+.export-dialog .inline-check { align-items: flex-start; }
+.export-dialog .inline-check input { flex-shrink: 0; margin-top: 5px; }
+.export-losses { padding: 0; margin: var(--space-md) 0 var(--space-lg); list-style: none; border-top: 1px solid var(--color-rule); }
+.export-losses li { padding-block: var(--space-sm); border-bottom: 1px solid var(--color-rule); }
+.export-losses p { font-size: 13px; color: var(--color-muted); margin-top: 4px; }
+.export-dialog-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.export-dialog-actions button { white-space: normal; }
+@media (max-width: 500px) { .export-dialog-actions { align-items: stretch; flex-direction: column; } }

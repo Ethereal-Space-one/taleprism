@@ -12,14 +12,60 @@ from pydantic import BaseModel, ConfigDict, Field
 from .bundles import mount_bundles
 from .delivery import Delivery
 from .exporter import REPO, export_project
+from .guided_sample import mount_guided_sample
 from .production import mount_production
 from .reader_api import mount_reader
+from .review import ConflictError
 from .review_api import mount_review
 from .settings import load_env
 from .speech_api import mount_speech
 from .storage import Store
 from .text import MAX_BYTES, sha256
 from .visual_api import mount_visual
+
+
+def webgal_losses(config: dict, default_title: str) -> list[dict]:
+    """Describe configured reader features the legacy WebGAL exporter does not use."""
+    losses = []
+
+    def add(field, label, detail):
+        losses.append({"field": field, "label": label, "detail": detail})
+
+    if config.get("illustrations"):
+        add(
+            "illustrations",
+            "章节插图",
+            f"{len(config['illustrations'])} 张章节插图及其段后位置、名称和说明不会进入 WebGAL。",
+        )
+    if config.get("reading_layout", "split") != "split":
+        add("reading_layout", "图文阅读版式", "连续图文版式会改为 WebGAL 逐框显示。")
+    if config.get("cover_asset_id"):
+        add("cover_asset_id", "章节封面", "阅读器封面图不会进入 WebGAL。")
+    if config.get("scenes"):
+        add(
+            "scenes",
+            "场景与人物出入场",
+            f"{len(config['scenes'])} 个阅读器场景的背景、起始位置和人物名单不会进入 WebGAL。",
+        )
+    if config.get("presentations"):
+        add(
+            "presentations",
+            "段内编排与事件呈现",
+            f"{len(config['presentations'])} 条段内编排的画面、人物左右位置、时间与地点标记不会保留。",
+        )
+    if config.get("map_profile"):
+        add("map_profile", "交互地图", "阅读器交互地图及其资料说明不会进入 WebGAL。")
+    if config.get("map_entries"):
+        add(
+            "map_entries",
+            "正文地图入口",
+            f"{len(config['map_entries'])} 处正文地图入口及其阶段、地点关联不会保留。",
+        )
+    if config.get("title") and config["title"] != default_title:
+        add("title", "自定义章节名称", "阅读器的自定义章节名称不会用作 WebGAL 标题。")
+    if config.get("subtitle"):
+        add("subtitle", "章节副标题", "阅读器副标题不会进入 WebGAL。")
+    return losses
 
 
 def create_app(data_dir: Path | None = None) -> FastAPI:
@@ -44,7 +90,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.3.0", lifespan=lifespan)
     instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)
@@ -53,6 +99,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     reader = mount_reader(app, store, review, speech)
     mount_production(app, reader)
     mount_bundles(app)
+    mount_guided_sample(app)
     delivery = Delivery(store, review, speech, visual, reader)
     app.state.delivery = delivery
 
@@ -81,7 +128,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def health():
         return {
             "status": "ok",
-            "version": "0.2.0",
+            "version": "0.3.0",
             "service": "taleprism",
             "workspace_id": sha256(str(REPO.resolve()).encode()),
             "data_id": sha256(str(store.root).encode()),
@@ -146,9 +193,25 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def verify(project_id: str):
         return store.verify(project_id)
 
-    def run_export(project_id: str, job_id: str):
+    def webgal_compatibility(project_id: str):
+        revision, config = reader.load(project_id)
+        default_title = store.get(project_id)["filename"].removesuffix(".txt")
+        losses = webgal_losses(config, default_title)
+        return {"reader_revision": revision, "compatible": not losses, "losses": losses}
+
+    @app.get("/api/projects/{project_id}/exports/compatibility")
+    def compatibility(project_id: str):
+        return webgal_compatibility(project_id)
+
+    def run_export(project_id: str, job_id: str, report: dict):
         try:
-            result = export_project(store, project_id, job_id)
+            result = export_project(
+                store,
+                project_id,
+                job_id,
+                reader_revision=report["reader_revision"],
+                compatibility=report,
+            )
             store.finish_job(job_id, result=result)
         except Exception as exc:  # noqa: BLE001 -- Record all worker failures for retry in the UI.
             store.finish_job(
@@ -159,14 +222,25 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             )
 
     @app.post("/api/projects/{project_id}/exports", status_code=202)
-    def export(project_id: str, background: BackgroundTasks, simplified: bool = False):
-        _, config = reader.load(project_id)
-        if (config.get("presentations") or config.get("map_entries")) and not simplified:
+    def export(
+        project_id: str,
+        background: BackgroundTasks,
+        simplified: bool = False,
+        reader_revision: int | None = None,
+    ):
+        report = webgal_compatibility(project_id)
+        if reader_revision is not None and reader_revision != report["reader_revision"]:
+            raise ConflictError("阅读器配置已变化，请重新查看 WebGAL 兼容性说明后再选择导出。")
+        if report["losses"] and not simplified:
             raise ValueError(
-                "本项目包含段内人物编排、事件呈现或地图入口，WebGAL 将简化为原有逐框表现。请优先导出独立阅读器，或明确选择简化导出。"
+                "WebGAL 简化导出会省略以下内容："
+                + "；".join(loss["detail"] for loss in report["losses"])
+                + "请优先导出独立阅读器，或查看兼容性说明并明确选择简化导出。"
             )
+        if report["losses"] and reader_revision is None:
+            raise ConflictError("请先查看当前 WebGAL 兼容性说明，携带 reader_revision 明确选择简化导出。")
         job_id = store.start_job(project_id)
-        background.add_task(run_export, project_id, job_id)
+        background.add_task(run_export, project_id, job_id, report)
         return {"job_id": job_id, "state": "running"}
 
     @app.get("/api/projects/{project_id}/jobs")

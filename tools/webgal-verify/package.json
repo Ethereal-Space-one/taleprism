@@ -1,8 +1,8 @@
 {
   "name": "webgal-verify",
   "private": true,
-  "version": "0.2.0",
-  "description": "\u7528 WebGAL \u5b98\u65b9\u89e3\u6790\u5668\u56de\u8bfb\u5bfc\u51fa\u7684\u573a\u666f\u811a\u672c",
+  "version": "0.3.0",
+  "description": "用 WebGAL 官方解析器回读导出的场景脚本",
   "type": "module",
   "dependencies": {
     "webgal-parser": "4.6.5"

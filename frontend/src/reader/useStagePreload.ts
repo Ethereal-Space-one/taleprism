@@ -4,6 +4,7 @@ import type { ReaderContent } from '../reader-types'
 // A small moving window. No audio requests, API calls, or whole-chapter eager loading.
 export function useStagePreload(data: ReaderContent, id: string | undefined, enabled: boolean) {
   const cache = useRef(new Map<string, HTMLImageElement>())
+  const failed = useRef(new Set<string>())
   useEffect(() => {
     if (!enabled) {
       cache.current.clear()
@@ -22,13 +23,16 @@ export function useStagePreload(data: ReaderContent, id: string | undefined, ena
     const timer = window.setTimeout(() => {
       for (const key of cache.current.keys()) if (!urls.has(key)) cache.current.delete(key)
       for (const url of urls) {
-        if (cache.current.has(url)) continue
+        if (cache.current.has(url) || failed.current.has(url)) continue
         const image = new Image()
         image.decoding = 'async'
         image.fetchPriority = 'low'
         cache.current.set(url, image)
         image.src = url
-        image.decode().catch(() => cache.current.delete(url))
+        image.decode().catch(() => {
+          failed.current.add(url)
+          cache.current.delete(url)
+        })
       }
     }, 120)
     return () => window.clearTimeout(timer)

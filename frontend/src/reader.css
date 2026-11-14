@@ -1551,3 +1551,65 @@
 .reader-art-dialog {
   width: min(1320px, calc(100% - 32px));
 }
+
+/* Recovery controls stay quiet, keyboard reachable, and outside disabled art buttons. */
+.reader-image-recovery {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--reader-space-sm);
+  font-size: 13px;
+  color: var(--reader-muted);
+}
+.reader-image-recovery button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--reader-rule);
+  background: var(--reader-paper);
+  color: var(--reader-ink);
+}
+.reader-plate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--reader-space-sm);
+}
+.reader-plate-actions > button {
+  border: 0;
+  background: var(--reader-clear);
+  color: var(--reader-muted);
+}
+.reader-cover-about {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--reader-space-md);
+}
+.reader-gallery-item {
+  min-width: 0;
+}
+.reader-gallery-item > button {
+  width: 100%;
+  padding: 0 0 var(--reader-space-md);
+  overflow: clip;
+  text-align: left;
+  background: var(--reader-paper);
+}
+.reader-gallery-missing {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  color: var(--reader-muted);
+}
+.reader-gallery-item > .reader-image-recovery {
+  margin-top: var(--reader-space-sm);
+}
+.reader-failed-images > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--reader-space-sm);
+  margin-block: var(--reader-space-sm);
+}

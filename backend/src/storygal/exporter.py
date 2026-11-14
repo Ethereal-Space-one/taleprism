@@ -43,7 +43,14 @@ def assert_versions(db, pid, expected):
             raise ValueError("制作状态在导出期间发生变化，本次未发布。请重新导出。")
 
 
-def export_project(store: Store, project_id: str, job_id: str) -> dict:
+def export_project(
+    store: Store,
+    project_id: str,
+    job_id: str,
+    *,
+    reader_revision: int | None = None,
+    compatibility: dict | None = None,
+) -> dict:
     checks = store.verify(project_id)
     metadata = store.get(project_id)
     review = Review(store)
@@ -73,7 +80,11 @@ def export_project(store: Store, project_id: str, job_id: str) -> dict:
         "speech_revision": speech_state["revision"],
         "visual_revision": visual_state["revision"],
     }
+    if reader_revision is not None:
+        versions["reader_revision"] = reader_revision
     try:
+        with store.db() as db:
+            assert_versions(db, project_id, versions)
         staging.mkdir()
         for entry in ["assets", "icons"]:
             shutil.copytree(ENGINE / entry, staging / entry)
@@ -196,6 +207,8 @@ def export_project(store: Store, project_id: str, job_id: str) -> dict:
             "visual": visual_state,
             "visual_events": visual_events,
         }
+        if compatibility is not None:
+            manifest["webgal_compatibility"] = compatibility
         manifest_path = staging / "storygal-manifest.json"
         manifest_path.write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -292,6 +305,7 @@ def export_project(store: Store, project_id: str, job_id: str) -> dict:
             "checks": checks,
             "play_url": f"/play/{project_id}/{job_id}/index.html",
             "download_url": f"/api/projects/{project_id}/exports/{job_id}/download",
+            **({"webgal_compatibility": compatibility} if compatibility is not None else {}),
         }
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)

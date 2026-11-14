@@ -24,6 +24,9 @@ from .speech_models import StoredProfile, validate_take_profile
 from .text import sha256
 
 LIMIT = 160_000_000
+MEMBER_LIMIT = 3000
+JSON_LIMIT = 5_000_000
+ROW_LIMIT = 5000
 ROW_TABLES = ("characters", "dialogues", "assets", "reader_assets", "speech_takes", "visual_assets")
 STATE_TABLES = ("reader_states", "speech_states", "visual_states", "production_states")
 MEDIA = {
@@ -47,17 +50,33 @@ def encoded(value):
     return json.dumps(value, ensure_ascii=False, indent=2).encode()
 
 
+def limit_errors(sizes, records=None):
+    """One set of format bounds for the exporter, preflight and ZIP reader."""
+    errors = []
+    if len(sizes) > MEMBER_LIMIT:
+        errors.append(f"工程包含 {len(sizes)} 个文件，超过 {MEMBER_LIMIT} 个文件限制。")
+    total = sum(sizes.values())
+    if total > LIMIT:
+        errors.append(f"工程解压后共 {total:,} 字节，超过 {LIMIT:,} 字节（160MB）限制。")
+    for name in ("project.json", "manifest.json"):
+        if sizes.get(name, 0) > JSON_LIMIT:
+            errors.append(f"{name} 为 {sizes[name]:,} 字节，超过 {JSON_LIMIT:,} 字节 JSON 限制。")
+    for table, rows in (records or {}).items():
+        if len(rows) > ROW_LIMIT:
+            errors.append(f"{table} 有 {len(rows)} 条记录，超过每表 {ROW_LIMIT} 条限制。")
+    return errors
+
+
 class Bundles:
     def __init__(self, app):
         self.app, self.store = app, app.state.store
 
-    def export(self, pid):
+    def snapshot(self, pid):
         a = self.app.state
         a.review.ensure(pid)
         for component in [a.reader, a.speech, a.visual, a.production]:
             component.load(pid)
         self.store.verify(pid)
-        files = {}
         with self.store.db() as db:
             db.execute("BEGIN")
             meta = self.store.get(pid)
@@ -81,19 +100,6 @@ class Bundles:
             review_revision = db.execute(
                 "SELECT revision FROM review_states WHERE project_id=?", (pid,)
             ).fetchone()[0]
-        for name in ["original.txt", "source.utf8.txt"]:
-            files[name] = (self.store.project_dir(pid) / name).read_bytes()
-        for table, (directory, ext) in MEDIA.items():
-            for asset in rows[table]:
-                relative = directory + "/" + asset["id"] + ext
-                files[relative] = (self.store.project_dir(pid) / relative).read_bytes()
-                if sha256(files[relative]) != asset["sha256"]:
-                    raise ValueError("工程图片或声音已损坏，请先修复再打包。")
-                if table == "visual_assets" and asset.get("svg_sha256"):
-                    relative = directory + "/" + asset["id"] + ".svg"
-                    files[relative] = (self.store.project_dir(pid) / relative).read_bytes()
-                    if sha256(files[relative]) != asset["svg_sha256"]:
-                        raise ValueError("图解源文件校验失败。")
         document = {
             "format": "storygal-project",
             "version": 2,
@@ -106,10 +112,87 @@ class Bundles:
             "states": states,
             "review_note": "素材接受与方案确认是原工程制作记录；本包不包含接收者或发布者最终复核。",
         }
-        files["project.json"] = encoded(document)
+        return document
+
+    def inventory(self, pid, document):
+        """Stat all recorded media, including old/unselected takes; never silently omit any."""
+        files = {"project.json": encoded(document)}
         files["README.txt"] = (
             "Taleprism 可编辑工程。请在制作台导入工程包，不要手动运行包内文件。包含原文、制作状态与媒体；不含密钥、模型缓存、工作日志或个人阅读进度。\n".encode()
         )
+        paths = {name: None for name in ("original.txt", "source.utf8.txt")}
+        for table, (directory, ext) in MEDIA.items():
+            for asset in document["records"][table]:
+                paths[f"{directory}/{asset['id']}{ext}"] = asset["sha256"]
+                if table == "visual_assets" and asset.get("svg_sha256"):
+                    paths[f"{directory}/{asset['id']}.svg"] = asset["svg_sha256"]
+        missing = []
+        sizes = {name: len(raw) for name, raw in files.items()}
+        for name in paths:
+            try:
+                sizes[name] = (self.store.project_dir(pid) / name).stat().st_size
+            except FileNotFoundError:
+                missing.append(name)
+                sizes[name] = 0
+        # Every digest has the same encoded length; preflight needn't load large media.
+        manifest = encoded(
+            {
+                "format": "storygal-project-inventory",
+                "version": 1,
+                "files": {name: "0" * 64 for name in [*files, *paths]},
+            }
+        )
+        sizes["manifest.json"] = len(manifest)
+        return files, paths, sizes, missing
+
+    def preflight(self, pid):
+        document = self.snapshot(pid)
+        _, paths, sizes, missing = self.inventory(pid, document)
+        errors = limit_errors(sizes, document["records"])
+        if missing:
+            errors.append(f"有 {len(missing)} 个已记录文件缺失，不能生成完整工程备份。")
+        media = [{"path": name, "bytes": sizes[name]} for name in paths if "/" in name]
+        return {
+            "can_export": not errors,
+            "validation": "size_and_presence_only",
+            "note": "预检只检查大小、数量与文件存在；导出时还会校验哈希、素材与可恢复结构。ZIP 包本身也须不超过160MB。不会跳过旧素材或自动删除文件。",
+            "limits": {
+                "archive_bytes": LIMIT,
+                "uncompressed_bytes": LIMIT,
+                "members": MEMBER_LIMIT,
+                "json_bytes": JSON_LIMIT,
+                "rows_per_table": ROW_LIMIT,
+            },
+            "uncompressed_bytes": sum(sizes.values()),
+            "members": len(sizes),
+            "json_bytes": {name: sizes[name] for name in ("project.json", "manifest.json")},
+            "rows": {table: len(rows) for table, rows in document["records"].items()},
+            "media_bytes": sum(item["bytes"] for item in media),
+            "media_files": len(media),
+            "largest_media": sorted(media, key=lambda item: item["bytes"], reverse=True)[:10],
+            "missing_files": missing,
+            "errors": errors,
+        }
+
+    def export(self, pid):
+        document = self.snapshot(pid)
+        files, paths, sizes, missing = self.inventory(pid, document)
+        errors = limit_errors(sizes, document["records"])
+        if missing:
+            errors.append("已记录文件缺失：" + "、".join(missing[:5]))
+        if errors:
+            raise ValueError(
+                "不能导出完整可编辑工程："
+                + " ".join(errors)
+                + " 不会跳过素材；请停止工作台后复制完整数据目录作为备份。"
+            )
+        for name, expected_hash in paths.items():
+            try:
+                files[name] = (self.store.project_dir(pid) / name).read_bytes()
+            except FileNotFoundError as exc:
+                raise ValueError(f"工程文件缺失：{name}；未导出不完整备份。") from exc
+            if expected_hash and sha256(files[name]) != expected_hash:
+                raise ValueError(f"工程素材哈希校验失败：{name}；未导出不完整备份。")
         files["manifest.json"] = encoded(
             {
                 "format": "storygal-project-inventory",
@@ -117,8 +200,9 @@ class Bundles:
                 "files": {name: sha256(raw) for name, raw in files.items()},
             }
         )
-        if sum(map(len, files.values())) > LIMIT:
-            raise ValueError("工程超过160MB，请减少未用素材后再导出。")
+        errors = limit_errors({name: len(raw) for name, raw in files.items()}, document["records"])
+        if errors:
+            raise ValueError("不能导出完整可编辑工程：" + " ".join(errors))
         with self.store.db() as db:
             current = {
                 t: db.execute(f"SELECT revision FROM {t} WHERE project_id=?", (pid,)).fetchone()[0]
@@ -127,15 +211,22 @@ class Bundles:
             current_review = db.execute(
                 "SELECT revision FROM review_states WHERE project_id=?", (pid,)
             ).fetchone()[0]
-        if current_review != review_revision or any(
-            current[t] != states[t]["revision"] for t in STATE_TABLES
+        if current_review != document["review_revision"] or any(
+            current[t] != document["states"][t]["revision"] for t in STATE_TABLES
         ):
             raise ValueError("打包期间工程发生修改，请重试。")
         out = io.BytesIO()
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             for name, raw in files.items():
                 z.writestr(name, raw)
-        return out.getvalue()
+        raw = out.getvalue()
+        # Use the actual restore path, including media and structural validation,
+        # before advertising a ZIP as an editable backup. Nothing is published.
+        try:
+            self.import_project(raw, validate_only=True)
+        except ValueError as exc:
+            raise ValueError(f"工程无法通过恢复校验，未导出备份：{exc}") from exc
+        return raw
 
     def inspect(self, raw):
         if len(raw) > LIMIT:
@@ -144,12 +235,11 @@ class Bundles:
             with zipfile.ZipFile(io.BytesIO(raw)) as z:
                 infos = z.infolist()
                 names = [i.filename for i in infos]
-                if (
-                    len(infos) > 3000
-                    or len(set(names)) != len(names)
-                    or sum(i.file_size for i in infos) > LIMIT
-                ):
-                    raise ValueError("工程包文件重复或解压大小超过限制。")
+                if len(set(names)) != len(names):
+                    raise ValueError("工程包包含重复文件。")
+                errors = limit_errors({i.filename: i.file_size for i in infos})
+                if errors:
+                    raise ValueError(" ".join(errors))
                 if any(
                     i.is_dir()
                     or not re.fullmatch(r"(?:[a-z0-9-]+/)?[a-zA-Z0-9_.-]+", i.filename)
@@ -158,11 +248,8 @@ class Bundles:
                     for i in infos
                 ):
                     raise ValueError("工程包包含不允许的路径或链接。")
-                if any(
-                    i.filename in {"manifest.json", "project.json"} and i.file_size > 5_000_000
-                    for i in infos
-                ):
-                    raise ValueError("工程清单过大。")
+                if any(i.flag_bits & 1 for i in infos):
+                    raise ValueError("不支持加密工程包，请使用未加密的可编辑工程 ZIP。")
                 files = {name: z.read(name) for name in names}
             manifest = json.loads(files.pop("manifest.json"))
             if (
@@ -188,13 +275,14 @@ class Bundles:
                 raise ValueError("工程包包含未知字段。")
             if set(doc["records"]) != set(ROW_TABLES) or set(doc["states"]) != set(STATE_TABLES):
                 raise ValueError("工程包记录类型不匹配。")
+            if any(not isinstance(rows, list) for rows in doc["records"].values()):
+                raise ValueError("工程记录类型无效。")
+            errors = limit_errors({}, doc["records"])
+            if errors:
+                raise ValueError(" ".join(errors))
             allowed = {"original.txt", "source.utf8.txt", "project.json", "README.txt"}
             for table, records in doc["records"].items():
-                if (
-                    not isinstance(records, list)
-                    or len(records) > 5000
-                    or len({r["id"] for r in records}) != len(records)
-                ):
+                if len({r["id"] for r in records}) != len(records):
                     raise ValueError("工程记录重复或超出限制。")
                 for row in records:
                     if not ID.fullmatch(row["id"]) or not set(row) <= set(FIELDS[table].split()):
@@ -203,6 +291,8 @@ class Bundles:
                         directory, ext = MEDIA[table]
                         name = directory + "/" + row["id"] + ext
                         allowed.add(name)
+                        if name not in files:
+                            raise ValueError(f"工程包缺少已记录素材：{name}。")
                         media = files[name]
                         if sha256(media) != row["sha256"]:
                             raise ValueError("素材记录与文件不匹配。")
@@ -220,6 +310,8 @@ class Bundles:
                         if table == "visual_assets" and row.get("svg_sha256"):
                             name = directory + "/" + row["id"] + ".svg"
                             allowed.add(name)
+                            if name not in files:
+                                raise ValueError(f"工程包缺少图解源文件：{name}。")
                             if sha256(files[name]) != row["svg_sha256"]:
                                 raise ValueError("图解源文件哈希不匹配。")
                             xml = ElementTree.fromstring(files[name])
@@ -247,13 +339,16 @@ class Bundles:
             TypeError,
             AttributeError,
             zipfile.BadZipFile,
+            NotImplementedError,
+            RuntimeError,
+            SyntaxError,
             UnicodeDecodeError,
             ElementTree.ParseError,
             OSError,
         ) as exc:
             raise ValueError("工程包结构或素材损坏，未导入任何项目。") from exc
 
-    def import_project(self, raw):
+    def import_project(self, raw, *, validate_only=False):
         doc, files = self.inspect(raw)
         from .app import create_app
 
@@ -413,6 +508,8 @@ class Bundles:
                 for item in staged.visual.load(pid)[1]["items"]:
                     staged.visual.validate(pid, item)
                 staged.store.verify(pid)
+                if validate_only:
+                    return {"restore_issues": sorted(set(restore_issues))}
                 destination = self.store.project_dir(pid)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(staged.store.project_dir(pid), destination)
@@ -452,6 +549,10 @@ class Bundles:
 def mount_bundles(app):
     bundles = Bundles(app)
     app.state.bundles = bundles
+
+    @app.get("/api/projects/{pid}/bundle/preflight")
+    def preflight(pid: str):
+        return bundles.preflight(pid)
 
     @app.get("/api/projects/{pid}/bundle")
     def export(pid: str):

@@ -26,7 +26,10 @@ const report={checked_at:new Date().toISOString(),passed:false};
   await page.getByLabel('我已逐项核对节点、连线和方向的原文依据').check();await page.getByRole('button',{name:'接受并启用',exact:true}).click();
   s=await until(s=>s.items.find(i=>i.id===diagram.id).enabled);assert.equal(s.items.filter(i=>i.enabled).length,2);
   for(const width of [320,375,414,768,1440]){await page.setViewportSize({width,height:1000});await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(output,`visual-${width}.png`),fullPage:true})}
-  await page.getByRole('button',{name:'导出 WebGAL'}).click();let job;
+  await page.getByRole('button', { name: '交付检查', exact: true }).click();
+  await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).click();
+  await page.getByRole('button', { name: '检查 WebGAL 兼容性', exact: true }).click();
+  await page.getByRole('dialog', { name: 'WebGAL 兼容导出' }).getByRole('button', { name: '导出 WebGAL 兼容版', exact: true }).click();let job;
   for(let i=0;i<120;i++){job=(await request(`/api/projects/${pid}/jobs`)).find(j=>j.kind==='export');if(job&&job.state!=='running')break;await page.waitForTimeout(500)}assert.equal(job.state,'completed',job.error);
   report.export_url=job.result.play_url;const manifest=await request(report.export_url.replace('index.html','storygal-manifest.json'));assert.equal(manifest.visual_events.length,2);
   const original=await page.request.get(base+`/api/projects/${pid}/source`);assert.ok((await original.body()).equals(raw));

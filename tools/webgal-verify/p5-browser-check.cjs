@@ -50,7 +50,7 @@ const visible = text => text.replace(/^\uFEFF/, '').split(/\r\n|\r|\n/).map(line
       assert.equal(failed.state, 'failed'); report.pending_assets_blocked = true;
     }
     await maker.goto(base); await maker.evaluate(pid => localStorage.setItem('storygal-project', pid), fixture.project_id); await maker.reload();
-    await maker.getByRole('button', { name: '阅读器与场景', exact: true }).click();
+    await maker.getByRole('button', { name: '独立阅读器', exact: true }).click();
     await maker.locator('.reader-asset-grid figure').first().waitFor();
     for (const asset of pending) {
       const card = maker.locator('.reader-asset-grid figure').filter({ has: maker.locator('figcaption', { hasText: asset.sample_key }) });

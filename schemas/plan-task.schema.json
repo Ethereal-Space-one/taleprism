@@ -556,11 +556,21 @@
   },
   "type": "object",
   "required": [
+    "project_id",
+    "base_plan_revision",
     "source_sha256",
     "plan"
   ],
   "additionalProperties": false,
   "properties": {
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_plan_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
     "source_sha256": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"

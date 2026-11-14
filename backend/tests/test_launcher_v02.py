@@ -7,6 +7,9 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
+import time
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -39,7 +42,7 @@ def context(monkeypatch, tmp_path):
         **launcher.identity(root, data),
         "service": "taleprism",
         "status": "ok",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "pid": 54321,
         "instance_id": "instance-a",
     }
@@ -241,7 +244,7 @@ def test_real_launch_reuse_stop_and_wrong_data_protection(actual, monkeypatch):
     base = f"http://127.0.0.1:{port}"
     body = launcher.health(base)
     assert launcher.matches(body, launcher.identity(root, data))
-    assert body["version"] == "0.2.0"
+    assert body["version"] == "0.3.0"
     record_path = data / f"workbench-{port}.pid"
     record = json.loads(record_path.read_text())
     assert record["instance_id"] == body["instance_id"]
@@ -364,3 +367,90 @@ def test_env_file_resolves_the_same_data_and_port(context, monkeypatch):
     launcher.main(["--no-open"])
     assert seen == ["http://127.0.0.1:18081"]
     assert not (root / "data").exists()
+
+
+def test_stop_timeout_preserves_record_until_process_and_lock_are_finished(
+    context, monkeypatch, capsys
+):
+    _, data, port, body = context
+    data.mkdir()
+    path = data / f"workbench-{port}.pid"
+    path.write_text(json.dumps({**body, "port": port}))
+    signals = []
+    monkeypatch.setattr(launcher.os, "kill", lambda *args: signals.append(args))
+    monkeypatch.setattr(launcher, "process_running", lambda _: True)
+    monkeypatch.setattr(launcher, "data_lock_available", lambda _: False)
+    monkeypatch.setattr(launcher.time, "sleep", lambda _: None)
+    with pytest.raises(ValueError, match="进程仍在退出或数据锁尚未释放"):
+        launcher.main(["--stop"])
+    assert signals == [(body["pid"], launcher.signal.SIGTERM)]
+    assert path.exists() and "已停止" not in capsys.readouterr().out
+    monkeypatch.setattr(launcher, "health", lambda _: None)
+    monkeypatch.setattr(launcher, "process_running", lambda _: False)
+    with pytest.raises(ValueError, match="数据目录仍被占用"):
+        launcher.main(["--stop"])
+    assert path.exists()
+    monkeypatch.setattr(launcher, "data_lock_available", lambda _: True)
+    launcher.main(["--stop"])
+    assert not path.exists() and "已停止" in capsys.readouterr().out
+    assert len(signals) == 1  # A retry never sends another signal to an unverified PID.
+
+
+def test_stop_waits_for_real_worker_after_http_socket_closes(actual, capsys):
+    root, data, port, processes = actual
+    source = root / "backend/src/storygal/app.py"
+    fixture = """
+    def drain_worker():
+        import time
+        (store.root / "worker-started").touch()
+        while not (store.root / "worker-release").exists():
+            time.sleep(0.02)
+        (store.root / "worker-finished").touch()
+
+    @app.post("/api/test/drain-worker")
+    def start_worker(background: BackgroundTasks):
+        background.add_task(drain_worker)
+        return {"started": True}
+
+"""
+    source.write_text(source.read_text().replace("    dist = REPO", fixture + "    dist = REPO"))
+    launcher.main(["--no-open"])
+    process = processes[0]
+    base = f"http://127.0.0.1:{port}"
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with opener.open(
+        urllib.request.Request(base + "/api/test/drain-worker", method="POST"), timeout=2
+    ):
+        pass
+    deadline = time.monotonic() + 3
+    while not (data / "worker-started").exists() and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert (data / "worker-started").exists()
+    record = data / f"workbench-{port}.pid"
+    failures = []
+
+    def stop_in_background():
+        try:
+            launcher.main(["--stop"])
+        except (OSError, ValueError) as exc:
+            failures.append(exc)
+
+    thread = threading.Thread(target=stop_in_background)
+    thread.start()
+    try:
+        deadline = time.monotonic() + 3
+        while launcher.health(base) is not None and time.monotonic() < deadline:
+            time.sleep(0.02)
+        assert launcher.health(base) is None
+        assert launcher.process_running(process.pid)
+        assert not launcher.data_lock_available(data)
+        assert thread.is_alive() and record.exists()
+        assert "已停止" not in capsys.readouterr().out
+    finally:
+        (data / "worker-release").touch()
+        thread.join(timeout=5)
+    assert not thread.is_alive() and failures == []
+    process.wait(timeout=5)
+    assert (data / "worker-finished").exists()
+    assert launcher.data_lock_available(data) and not record.exists()
+    assert "已停止" in capsys.readouterr().out

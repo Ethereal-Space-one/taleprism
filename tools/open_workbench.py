@@ -157,13 +157,71 @@ def find_legacy_record(pidfile, record, body, root, data, port):
     return None
 
 
+def process_running(pid):
+    """A closed HTTP socket is not process exit (uvicorn may be draining workers)."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    try:
+        proc = Path(f"/proc/{pid}/stat")
+        if proc.exists():
+            return proc.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+        result = subprocess.run(
+            ["ps", "-p", str(pid), "-o", "stat="],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=2,
+        )
+        return not result.stdout.lstrip().startswith("Z")
+    except (OSError, subprocess.SubprocessError, IndexError):
+        return True  # If exit cannot be proved, do not announce a safe backup point.
+
+
+def data_lock_available(data):
+    import fcntl
+
+    try:
+        with (data / ".instance.lock").open("r+") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+        return True
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+
+
+def stopped(record, data):
+    return not process_running(record["pid"]) and data_lock_available(data)
+
+
 def stop(pidfile, body, expected, root, data, port, base):
     record = read_record(pidfile)
+    if (
+        record
+        and not record.get("legacy")
+        and body is None
+        and all(record.get(k) == v for k, v in expected.items())
+        and record.get("port") == port
+    ):
+        if stopped(record, data):
+            if read_record(pidfile) == record:
+                pidfile.unlink(missing_ok=True)
+            print("Taleprism 已停止，项目与作品保留。")
+            return
+        raise ValueError(
+            "服务尚未确认退出或数据目录仍被占用；保留启动记录，请稍后重试。"
+        )
     owned = (
         record
         and matches(body, expected)
         and all(
-            record.get(k) == body.get(k) for k in ["pid", "instance_id", "workspace_id", "data_id"]
+            record.get(k) == body.get(k)
+            for k in ["pid", "instance_id", "workspace_id", "data_id"]
         )
         and record.get("port") == port
     )
@@ -172,30 +230,32 @@ def stop(pidfile, body, expected, root, data, port, base):
         if legacy:
             pidfile, record = legacy
         elif record:
-            raise ValueError("启动记录与当前工作区、数据或运行实例不一致；没有停止任何程序。")
+            raise ValueError(
+                "启动记录与当前工作区、数据或运行实例不一致；没有停止任何程序。"
+            )
         else:
-            print("没有有效后台启动记录。前台服务请在对应终端按 Control+C；没有停止其他程序。")
+            print(
+                "没有有效后台启动记录。前台服务请在对应终端按 Control+C；没有停止其他程序。"
+            )
             return
     # Recheck immediately before signalling: an old pid file must not target a replacement.
     current = health(base)
-    still_owned = current == body if owned else legacy_matches(current, record, root, data, port)
+    still_owned = (
+        current == body if owned else legacy_matches(current, record, root, data, port)
+    )
     if not still_owned or read_record(pidfile) != record:
         raise ValueError("运行实例已改变；没有停止任何程序，请重新检查。")
     os.kill(record["pid"], signal.SIGTERM)
     for _ in range(50):
-        current = health(base)
-        still_same = (
-            current and current.get("instance_id") == record.get("instance_id")
-            if owned
-            else legacy_matches(current, record, root, data, port)
-        )
-        if not still_same:
+        if stopped(record, data):
             if read_record(pidfile) == record:
                 pidfile.unlink(missing_ok=True)
             print("Taleprism 已停止，项目与作品保留。")
             return
         time.sleep(0.1)
-    raise ValueError("已请求停止，服务仍在退出；保留启动记录，请稍后重试。")
+    raise ValueError(
+        "已请求停止，进程仍在退出或数据锁尚未释放；保留启动记录，请稍后重试。"
+    )
 
 
 def occupied(port):
@@ -229,7 +289,9 @@ def main(argv=None):
             raise ValueError()
     except ValueError:
         raise ValueError("端口应为 1–65535 之间的整数。") from None
-    configured_data = Path(os.environ.get("STORYGAL_DATA_DIR") or root / "data").expanduser()
+    configured_data = Path(
+        os.environ.get("STORYGAL_DATA_DIR") or root / "data"
+    ).expanduser()
     data = (root / configured_data).resolve()
     expected = identity(root, data)
     base = f"http://127.0.0.1:{port}"
@@ -310,7 +372,9 @@ def main(argv=None):
     if reuse:
         print("已复用此工作区及数据目录的现有实例。")
     else:
-        print("服务在后台运行；需要退出时使用同一数据配置双击「停止Taleprism.command」。")
+        print(
+            "服务在后台运行；需要退出时使用同一数据配置双击「停止Taleprism.command」。"
+        )
     if not args.no_open and not args.foreground:
         webbrowser.open(base)
 

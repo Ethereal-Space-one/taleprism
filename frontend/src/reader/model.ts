@@ -2,7 +2,13 @@ import type { ReaderContent, ReaderBlock, ReaderPresentation } from '../reader-t
 
 const encoder = new TextEncoder()
 export const byteLength = (s: string) => encoder.encode(s).length
-export type Position = { byte: number; offset: number; plate?: string; imageOffset?: number }
+export type Position = {
+  byte: number
+  offset: number
+  plate?: string
+  imageAsset?: string
+  imageOffset?: number
+}
 export type Mark = {
   id: string
   position: Position
@@ -49,10 +55,33 @@ export function navigationReducer(s: Navigation, a: NavigationAction): Navigatio
 export const defaults: Preferences = { size: 21, leading: 1.95, width: 680, stage: true }
 export function validPosition(data: ReaderContent, value: unknown): Position {
   const p = value as Partial<Position> | null
-  const b = data.blocks.find(
-    (b) => typeof p?.byte === 'number' && b.byte_start <= p.byte && p.byte < b.byte_end,
-  )
+  const finite = (value: unknown, fallback = 0) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  const plate =
+    data.config.illustrations?.find((i) =>
+      p?.imageAsset ? i.image_asset_id === p.imageAsset && i.id === p.plate : i.id === p?.plate,
+    ) ||
+    (p?.imageAsset
+      ? data.config.illustrations?.find((i) => i.image_asset_id === p.imageAsset)
+      : undefined)
+  // Image identity wins over an old text anchor when an illustration is moved.
+  // Pre-image v2 positions still migrate through their plate ID; text-only v1/v2
+  // positions remain text positions instead of guessing which image was intended.
+  const b = plate
+    ? data.blocks.find((b) => b.byte_end === plate.after_byte)
+    : data.blocks.find(
+        (b) => typeof p?.byte === 'number' && b.byte_start <= p.byte && p.byte < b.byte_end,
+      )
   if (!b) return { byte: data.blocks[0].byte_start, offset: 0 }
+  const lastByte = b.byte_end - byteLength([...b.text].at(-1)!)
+  if (plate)
+    return {
+      byte: lastByte,
+      offset: 0,
+      plate: plate.id,
+      imageAsset: plate.image_asset_id,
+      imageOffset: Math.max(0, Math.min(1, finite(p?.imageOffset))),
+    }
   let byte = b.byte_start
   for (const c of b.text) {
     const next = byte + byteLength(c)
@@ -60,13 +89,22 @@ export function validPosition(data: ReaderContent, value: unknown): Position {
     byte = next
   }
   return {
-    byte: Math.min(byte, b.byte_end - byteLength([...b.text].at(-1)!)),
-    offset: Math.max(-2, Math.min(2, Number(p?.offset) || 0)),
-    ...(data.config.illustrations?.some((i) => i.id === p?.plate && i.after_byte === b.byte_end)
-      ? { plate: p!.plate, imageOffset: Math.max(0, Math.min(1, Number(p?.imageOffset) || 0)) }
-      : {}),
+    byte: Math.min(byte, lastByte),
+    offset: Math.max(-2, Math.min(2, finite(p?.offset))),
   }
 }
+export function sameBookmarkPosition(a: Position, b: Position) {
+  if (a.plate || b.plate)
+    return (
+      !!a.plate &&
+      !!b.plate &&
+      a.plate === b.plate &&
+      (!a.imageAsset || !b.imageAsset || a.imageAsset === b.imageAsset) &&
+      Math.abs((a.imageOffset || 0) - (b.imageOffset || 0)) < 0.025
+    )
+  return a.byte === b.byte
+}
+
 export function readRecord(data: ReaderContent, raw: string | null): RecordData {
   let r: any = {}
   try {
@@ -94,7 +132,7 @@ export function readRecord(data: ReaderContent, raw: string | null): RecordData 
     },
     marks: Array.isArray(r.marks)
       ? r.marks
-          .filter((m: any) => typeof m.id === 'string' && typeof m.text === 'string')
+          .filter((m: any) => m && typeof m.id === 'string' && typeof m.text === 'string')
           .slice(0, 300)
           .map((m: Mark) => ({
             ...m,

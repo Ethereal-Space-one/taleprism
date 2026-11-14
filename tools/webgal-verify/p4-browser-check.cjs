@@ -88,7 +88,7 @@ function figuresOnStage() {
     await page.evaluate(id => localStorage.setItem('storygal-project', id), pid);
     await page.reload();
     await page.getByRole('button', { name: '交付检查', exact: true }).click();
-    assert.equal(await page.getByRole('button', { name: '导出当前版本', exact: true }).isDisabled(), true);
+    await page.getByText('请先修复以下问题，再导出当前版本。', { exact: true }).waitFor();
     const failed = await waitJob((await json(prefix + '/exports', 'POST')).job_id);
     assert.equal(failed.state, 'failed');
     for (const line of (await speech()).lines.filter(l => l.selected)) {
@@ -125,7 +125,9 @@ function figuresOnStage() {
     await json(prefix + `/visual/items/${illustration.id}/review`, 'PATCH', { revision: v.revision, status: 'accepted', enabled: true });
     await page.getByRole('button', { name: '重新检查', exact: true }).click();
     await page.getByText('✓ 当前制作状态可以导出。', { exact: true }).waitFor();
-    await page.getByRole('button', { name: '导出当前版本', exact: true }).click();
+    await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).click();
+    await page.getByRole('button', { name: '检查 WebGAL 兼容性', exact: true }).click();
+    await page.getByRole('dialog', { name: 'WebGAL 兼容导出' }).getByRole('button', { name: '导出 WebGAL 兼容版', exact: true }).click();
     let exported;
     for (let i = 0; i < 160; i++) {
       exported = (await json(prefix + '/jobs')).find(j => j.kind === 'export' && j.id !== failed.id);
@@ -136,7 +138,7 @@ function figuresOnStage() {
     report.export_url = exported.result.play_url;
     report.download_url = exported.result.download_url;
     await page.getByRole('link', { name: '打开完整播放 ↗', exact: true }).waitFor();
-    await page.getByRole('button', { name: /^导出 WebGAL/ }).waitFor();
+    await page.getByText('其他格式 · WebGAL 兼容导出', { exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: '保存人工复核记录', exact: true }).isDisabled(), true);
     for (const width of [320, 375, 414, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
