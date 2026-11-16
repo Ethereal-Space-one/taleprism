@@ -5,6 +5,7 @@ can run without installing a test runner: python3 backend/tests/test_reader_laun
 """
 
 import concurrent.futures
+import contextlib
 import hashlib
 import http.server
 import importlib.util
@@ -244,6 +245,18 @@ class ReaderLauncherTests(unittest.TestCase):
         with self.request(record, "/assets/app.js") as response:
             self.assertEqual(response.status, 200)
 
+    def test_readiness_diagnostic_separates_index_and_reader_head_failures(self):
+        record = self.start()
+        index = self.root / "index.html"
+        original = index.read_bytes()
+        index.unlink()
+        self.assertEqual(launcher.readiness_phase(record), ("index_head", "http_404"))
+        self.assertFalse(launcher.ready(record))
+        index.write_bytes(original)
+        (self.root / "reader.json").unlink()
+        self.assertEqual(launcher.readiness_phase(record), ("reader_head", "http_404"))
+        self.assertFalse(launcher.ready(record))
+
     def test_missing_or_invalid_reader_gives_actionable_error_without_browser(self):
         (self.root / "reader.json").unlink()
         result = self.run_launcher("--no-open")
@@ -357,6 +370,111 @@ class ReaderLauncherTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(json.loads(result.stdout)["passed"])
+
+
+class ReaderLauncherDiagnosticTests(unittest.TestCase):
+    def test_summary_discloses_only_exact_allowlisted_codes(self):
+        sentinel = "private-token-and-path-not-for-output"
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            (directory / "launcher.log").write_text(
+                sentinel
+                + "\n"
+                + launcher.PHASE_PREFIX
+                + "package:ok\n"
+                + launcher.PHASE_PREFIX
+                + "server_constructor:pending\n"
+                + launcher.PHASE_PREFIX
+                + sentinel
+                + ":ok\n"
+                + launcher.PHASE_PREFIX
+                + "record:written "
+                + sentinel
+                + "\n"
+            )
+            summary = launcher.startup_summary(directory, ("record", "missing"))
+            self.assertEqual(
+                summary,
+                " [startup parent=record:missing; child=server_constructor:pending]",
+            )
+            self.assertNotIn(sentinel, summary)
+            invalid = launcher.startup_summary(directory, (sentinel, "ok"))
+            self.assertIn("parent=diagnostic:unavailable", invalid)
+            self.assertNotIn(sentinel, invalid)
+            (directory / "launcher.log").unlink()
+            self.assertIn(
+                "child=unobserved", launcher.startup_summary(directory, ("status", "unconfirmed"))
+            )
+
+    def test_child_emitter_rejects_arbitrary_values_without_printing_them(self):
+        output = io.StringIO()
+        with contextlib.redirect_stderr(output):
+            launcher.child_phase("entry", "ok")
+            with self.assertRaises(ValueError):
+                launcher.child_phase("private-token-or-path", "ok")
+            with self.assertRaises(ValueError):
+                launcher.child_phase("entry", "private-token-or-path")
+        self.assertEqual(output.getvalue(), launcher.PHASE_PREFIX + "entry:ok\n")
+
+    def test_status_failure_prevents_head_probes(self):
+        with (
+            patch.object(launcher, "control", return_value=False),
+            patch.object(launcher.urllib.request, "build_opener") as opener,
+        ):
+            self.assertEqual(launcher.readiness_phase({}), ("status", "unconfirmed"))
+        opener.assert_not_called()
+
+    def test_head_outcomes_do_not_disclose_error_urls_or_messages(self):
+        record = {"port": 1}
+        for code, expected in ((403, "http_403"), (404, "http_404"), (500, "http_other")):
+            with self.subTest(code=code):
+                error = urllib.error.HTTPError("private-path", code, "private-message", {}, None)
+                opener = Mock()
+                opener.open.side_effect = error
+                with (
+                    patch.object(launcher, "control", return_value=True),
+                    patch.object(launcher.urllib.request, "build_opener", return_value=opener),
+                ):
+                    self.assertEqual(launcher.readiness_phase(record), ("index_head", expected))
+        opener = Mock()
+        opener.open.side_effect = [
+            contextlib.nullcontext(Mock(status=200)),
+            OSError("private-path-and-message"),
+        ]
+        with (
+            patch.object(launcher, "control", return_value=True),
+            patch.object(launcher.urllib.request, "build_opener", return_value=opener),
+        ):
+            self.assertEqual(launcher.readiness_phase(record), ("reader_head", "request_failed"))
+
+    def test_early_child_exit_reports_phase_without_copying_child_log(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "index.html").write_text("reader")
+            (root / "reader.json").write_text("{}")
+            child = Mock()
+            child.stdin = io.BytesIO()
+            child.poll.return_value = 1
+
+            def spawn(*_args, **kwargs):
+                kwargs["stdout"].write(
+                    (
+                        launcher.PHASE_PREFIX + "server_constructor:pending\nprivate-path-token\n"
+                    ).encode()
+                )
+                return child
+
+            with (
+                patch.object(launcher.subprocess, "Popen", side_effect=spawn),
+                patch.object(launcher.webbrowser, "open") as browser,
+                self.assertRaises(ValueError) as caught,
+            ):
+                launcher.start(root, root)
+            message = str(caught.exception)
+            self.assertIn("parent=record:missing; child=server_constructor:pending", message)
+            self.assertNotIn("private-path-token", message)
+            child.terminate.assert_not_called()
+            browser.assert_not_called()
 
 
 class ReaderLauncherPackagingTests(unittest.TestCase):

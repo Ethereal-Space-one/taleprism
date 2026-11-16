@@ -32,6 +32,56 @@ SERVICE = "taleprism-reader"
 CONTROL = "/__taleprism_reader__/"
 HEADER = "X-Taleprism-Reader-Instance"
 START_TIMEOUT = 15
+# Diagnostic vocabulary is deliberately closed: no records, paths, URLs, tokens,
+# exception messages, response bodies, or arbitrary child output can be emitted.
+PHASE_PREFIX = "TALEPRISM_READER_PHASE "
+CHILD_PHASES = {
+    ("entry", "ok"),
+    ("package", "ok"),
+    ("cache", "ok"),
+    ("server_lock", "pending"),
+    ("server_lock", "held"),
+    ("server_constructor", "pending"),
+    ("server_constructor", "ok"),
+    ("record", "written"),
+    ("serve_loop", "pending"),
+}
+PARENT_PHASES = {
+    ("child", "started"),
+    ("record", "missing"),
+    ("record", "instance_mismatch"),
+    ("server_lock", "not_held"),
+    ("status", "unconfirmed"),
+    ("ready", "ok"),
+    *{
+        (phase, outcome)
+        for phase in ("index_head", "reader_head")
+        for outcome in ("http_403", "http_404", "http_other", "request_failed")
+    },
+}
+
+
+def child_phase(phase, outcome):
+    if (phase, outcome) not in CHILD_PHASES:
+        raise ValueError("Unsupported startup diagnostic code")
+    print(PHASE_PREFIX + phase + ":" + outcome, file=sys.stderr, flush=True)
+
+
+def startup_summary(directory, parent_phase):
+    if parent_phase not in PARENT_PHASES:
+        parent_phase = ("diagnostic", "unavailable")
+    child = "unobserved"
+    try:
+        with (directory / "launcher.log").open("rb") as log:
+            # Only recognize complete, exact, allowlisted lines. Never copy raw logs.
+            for line in log.read(8192).decode("utf-8", errors="replace").splitlines():
+                if line.startswith(PHASE_PREFIX):
+                    pair = tuple(line[len(PHASE_PREFIX) :].split(":"))
+                    if pair in CHILD_PHASES:
+                        child = ":".join(pair)
+    except OSError:
+        pass
+    return " [startup parent=" + ":".join(parent_phase) + "; child=" + child + "]"
 
 
 def package_id(root):
@@ -142,19 +192,25 @@ def control(record, action="status"):
         return False
 
 
-def ready(record):
+def readiness_phase(record):
     if not control(record):
-        return False
+        return ("status", "unconfirmed")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    try:
-        for name in ("index.html", "reader.json"):
+    for name, phase in (("index.html", "index_head"), ("reader.json", "reader_head")):
+        try:
             request = urllib.request.Request(base_url(record) + "/" + name, method="HEAD")
             with opener.open(request, timeout=0.5) as response:
                 if response.status != 200:
-                    return False
-        return True
-    except (OSError, urllib.error.URLError):
-        return False
+                    return (phase, "http_other")
+        except urllib.error.HTTPError as exc:
+            return (phase, {403: "http_403", 404: "http_404"}.get(exc.code, "http_other"))
+        except (OSError, urllib.error.URLError):
+            return (phase, "request_failed")
+    return ("ready", "ok")
+
+
+def ready(record):
+    return readiness_phase(record) == ("ready", "ok")
 
 
 def validate_package(root):
@@ -251,20 +307,27 @@ class ReaderHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def serve(instance_id):
+    child_phase("entry", "ok")
     validate_package(ROOT)
+    child_phase("package", "ok")
     directory = state_directory(ROOT)
+    child_phase("cache", "ok")
+    child_phase("server_lock", "pending")
     with lock(directory / "server.lock", wait=False):
+        child_phase("server_lock", "held")
         previous = read_record(directory, ROOT)
         handler = functools.partial(ReaderHandler, directory=str(ROOT))
         # Reuse the previous OS-selected port where possible to retain the browser
         # origin. If it is occupied, ask the OS for another free loopback port.
         port = previous["port"] if previous else 0
+        child_phase("server_constructor", "pending")
         try:
             server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
         except OSError:
             if not port:
                 raise
             server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        child_phase("server_constructor", "ok")
         server.record = {
             "service": SERVICE,
             "package_id": package_id(ROOT),
@@ -273,6 +336,7 @@ def serve(instance_id):
         }
         with server:
             write_record(directory, server.record)
+            child_phase("record", "written")
 
             # A launcher-time failure terminates only this newly created child.
             # Raising lets the context manager release its socket and lifetime lock.
@@ -281,6 +345,7 @@ def serve(instance_id):
 
             signal.signal(signal.SIGTERM, exit_signal)
             signal.signal(signal.SIGINT, exit_signal)
+            child_phase("serve_loop", "pending")
             server.serve_forever(poll_interval=0.05)
     # Keep only the last port record for browser-origin continuity. No PID is used.
 
@@ -334,23 +399,29 @@ def start(directory, root, open_browser=True):
             process.stdin.write(instance_id.encode("ascii"))
             process.stdin.close()
             deadline = time.monotonic() + START_TIMEOUT
+            phase = ("child", "started")
             while time.monotonic() < deadline:
                 record = read_record(directory, root)
-                if (
-                    record
-                    and record["instance_id"] == instance_id
-                    and running(directory)
-                    and ready(record)
-                ):
-                    break
+                if not record:
+                    phase = ("record", "missing")
+                elif record["instance_id"] != instance_id:
+                    phase = ("record", "instance_mismatch")
+                elif not running(directory):
+                    phase = ("server_lock", "not_held")
+                else:
+                    phase = readiness_phase(record)
+                    if phase == ("ready", "ok"):
+                        break
                 if process.poll() is not None:
                     raise ValueError(
                         "阅读器服务提前退出。 / The reader server exited during startup."
+                        + startup_summary(directory, phase)
                     )
                 time.sleep(0.05)
             else:
                 raise ValueError(
                     "阅读器启动超时。 / The reader server did not become ready in time."
+                    + startup_summary(directory, phase)
                 )
         except BaseException:
             # This handle belongs only to the child we just created, never a saved PID.
