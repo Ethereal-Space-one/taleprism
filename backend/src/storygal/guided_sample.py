@@ -17,7 +17,7 @@ ARCHIVE_FILE = "taleprism-v0.3.2-last-light-project.zip"
 ARCHIVE_URL = (
     "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.2/" + ARCHIVE_FILE
 )
-ARCHIVE_SHA256 = "b763fcc93fd8798ed2cb7f54e98123994bbf9c01f0efa9a68b49446d25dc416d"
+ARCHIVE_SHA256 = "221535e36c0da669f4cfc2c7f061378dc7a4cb34fb4a29e0220e7e04dbe57994"
 MAX_ARCHIVE_BYTES = 25_000_000
 DOWNLOAD_SECONDS = 45
 MAX_REDIRECTS = 3
