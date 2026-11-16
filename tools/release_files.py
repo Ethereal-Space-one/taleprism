@@ -57,6 +57,8 @@ ROOT_FILES = (
     "docs/VALIDATION-v0.3.0.md",
     "docs/RELEASE-v0.3.1.md",
     "docs/VALIDATION-v0.3.1.md",
+    "docs/RELEASE-v0.3.2.md",
+    "docs/VALIDATION-v0.3.2.md",
     "docs/Taleprism-v0.2.0-发布计划.md",
 )
 

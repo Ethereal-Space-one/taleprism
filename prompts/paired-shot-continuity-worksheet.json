@@ -1,6 +1,6 @@
 {
   "format": "taleprism-paired-shot-worksheet",
-  "version": 1,
+  "version": 2,
   "purpose": "Maker-only paired review; fill from actual images, not intended prompts. No automatic creator approval.",
   "group_id": "",
   "source_sha256": "",
@@ -18,7 +18,30 @@
       "offscreen_objects": [],
       "time_light_wind": "",
       "actual_observation": "",
-      "image_inspected": false
+      "image_inspected": false,
+      "result_status": "not_recorded",
+      "provenance": {
+        "parent_result_id": null,
+        "parent_result_sha256": null,
+        "actual_prompt": null,
+        "actual_reference_order": [],
+        "generation_artifact": null,
+        "tool": null,
+        "model_version": null,
+        "seed": null
+      }
+    }
+  ],
+  "shared_references": [
+    {
+      "reference_id": "",
+      "asset_id": null,
+      "path": null,
+      "sha256": null,
+      "role": "palette_or_object_reference_or_edit_target",
+      "scope": "",
+      "basis": "source_or_explicit_artistic_choice",
+      "limits": ""
     }
   ],
   "shared_world_state": [
@@ -27,7 +50,8 @@
       "must_match": "",
       "basis": "source_or_explicit_artistic_choice",
       "allowed_changes_with_cause": [],
-      "different_objects_not_to_equate": []
+      "different_objects_not_to_equate": [],
+      "reference_ids": []
     }
   ],
   "pair_checks": [
@@ -42,8 +66,13 @@
     }
   ],
   "decision": "not_checked",
-  "allowed_decisions": ["not_checked", "needs_revision", "warning", "passed"],
-  "gate_rule": "Any unsupported must-match change => needs_revision; ambiguous or compressed action => warning. Missing image inspection => not_checked. A hash match is not an art pass. Keep proposed corrections separate from actual output.",
+  "allowed_decisions": [
+    "not_checked",
+    "needs_revision",
+    "warning",
+    "passed"
+  ],
+  "gate_rule": "Any unsupported must-match change => needs_revision; ambiguous or compressed action => warning. Missing image inspection => not_checked. Keep each dimension's warning even when a scoped correction passes; an unresolved warning is not an overall passed result. A hash match is not an art pass. Keep proposed corrections separate from actual output; each candidate needs its own exact result hash, actual prompt and reference record. Unknown provenance stays null.",
   "reviewer": "",
   "creator_final_art_review": "pending",
   "new_edit_result_id": null,

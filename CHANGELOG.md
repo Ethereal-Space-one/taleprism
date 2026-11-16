@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 — Public Preview
+
+- Add a one-click, loopback-only macOS launcher to standalone reader packages.
+- Warn before revealing future titles and art in the complete Chibi gallery while preserving intentional full-chapter viewing.
+- Update the independent prompt library to 0.2.1: source-bound reader intent, reference purpose, and separate visual and reader checks.
+- Preserve canonical text, approved example artwork, project format v2 and existing online reader storage identity.
+
 ## 0.3.1 — Public Preview
 
 - For the reviewed Chibi edition, keep future chapter titles and battle stages out of the default directory and map views; readers can deliberately reveal the full views.

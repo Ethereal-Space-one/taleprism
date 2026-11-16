@@ -12,6 +12,7 @@ try {
     '--jsx', 'react-jsx', '--outDir', temp,
     path.join(root, 'frontend/src/reader/imageBrowsing.ts'),
     path.join(root, 'frontend/src/reader/ReaderImageDisclosure.tsx'),
+    path.join(root, 'frontend/src/reader/ReaderGalleryDisclosure.tsx'),
     path.join(root, 'frontend/src/reader/storyGraph.ts'),
   ], { encoding: 'utf8' })
   assert.equal(compile.status, 0, compile.stdout + compile.stderr)
@@ -20,6 +21,8 @@ try {
     openImageVisit, requestImage, confirmImageDisclosure, cancelImageDisclosure,
   } = require(path.join(temp, 'reader/imageBrowsing.js'))
   const { ReaderImageDisclosure } = require(path.join(temp, 'reader/ReaderImageDisclosure.js'))
+  const React = require(path.join(temp, 'node_modules/react'))
+  const { ReaderGalleryDisclosure } = require(path.join(temp, 'reader/ReaderGalleryDisclosure.js'))
   const { renderToStaticMarkup } = require(path.join(temp, 'node_modules/react-dom/server'))
   const { resolveStoryGraph } = require(path.join(temp, 'reader/storyGraph.js'))
   const raw = fs.readFileSync(path.join(root, 'samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt'))
@@ -101,7 +104,50 @@ try {
   const buttons = tree.props.children[2].props.children
   buttons.forEach((button) => button.props.onClick())
   assert.deepEqual(calls, ['return', 'stay', 'confirm'])
-  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, whole gallery, generic fallback and accessible neutral notice passed.')
+  // The gallery must not even construct future media, labels or recovery controls
+  // until its own intentional reveal. No DOM, history or storage is available.
+  function mountGallery(protectFuture) {
+    let revealed = false, tree
+    const original = React.useState
+    const props = {
+      protectFuture,
+      onCancel: () => calls.push('cancel-gallery'),
+      children: () => {
+        calls.push('render-gallery')
+        return React.createElement('div', { className: 'reader-gallery' },
+          React.createElement('img', { src: '/future-fire.svg', alt: 'future-description' }),
+          React.createElement('button', { 'aria-label': '重试后文火船' }, '后文火船'))
+      },
+    }
+    function render() {
+      React.useState = () => [revealed, (value) => { revealed = value }]
+      try { tree = ReaderGalleryDisclosure(props) } finally { React.useState = original }
+    }
+    render()
+    return {
+      html: () => renderToStaticMarkup(tree),
+      cancel: () => { tree.props.children[2].props.children[0].props.onClick(); render() },
+      confirm: () => { tree.props.children[2].props.children[1].props.onClick(); render() },
+    }
+  }
+  calls.length = 0
+  const gallery = mountGallery(protectFuture)
+  for (const label of ['全章画卷含后文画面与标题', '尚未读到的场景', '取消', '查看全章画卷（含后文）']) {
+    assert.ok(gallery.html().includes(label))
+  }
+  assert.ok(!/后文火船|future-fire|future-description|<img|<dialog/.test(gallery.html()))
+  assert.deepEqual(calls, [], 'opening the warning constructs no gallery subtree')
+  gallery.cancel()
+  assert.deepEqual(calls, ['cancel-gallery'], 'cancel uses only the existing return callback')
+  assert.ok(!gallery.html().includes('<img'), 'cancel does not reveal or preload thumbnails')
+  gallery.confirm()
+  assert.ok(gallery.html().includes('后文火船'))
+  assert.ok(gallery.html().includes('<img'), 'deliberate confirmation retains the whole gallery')
+  assert.deepEqual(calls, ['cancel-gallery', 'render-gallery'])
+  assert.ok(!mountGallery(true).html().includes('后文火船'), 'reentry and Back/Forward start protected')
+  assert.ok(mountGallery(false).html().includes('后文火船'), 'unsupported texts keep free browsing')
+  assert.equal(JSON.stringify(record), before, 'gallery permission changes no progress or marks')
+  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, whole gallery, generic fallback, accessible neutral notice and gallery warning/cancel/reentry/no pre-reveal subtree passed.')
 } finally {
   fs.rmSync(temp, { force: true, recursive: true })
 }

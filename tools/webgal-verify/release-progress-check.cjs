@@ -1,13 +1,15 @@
-// Verify saved 0.1 Chibi progress/preferences/bookmarks against the new public reader.
+// Verify saved Chibi progress/preferences/bookmarks against the candidate.
+// The prior reader directory must be provided (use the actual live release as baseline).
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const http = require('node:http')
 const {chromium} = require('playwright')
 const root = path.resolve(__dirname, '../..')
-const oldSite = path.resolve(process.argv[2] || path.join(root, '.release/chibi-demo/site'))
-const target = process.argv[3] || path.join(root, '.release/v0.3.1/site-chibi')
-const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.3.1/browser/progress'))
+if (!process.argv[2]) throw new Error('Pass the extracted prior live Chibi reader as the first argument.')
+const oldSite = path.resolve(process.argv[2])
+const target = process.argv[3] || path.join(root, '.release/v0.3.2/site-chibi')
+const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.3.2/browser/progress'))
 
 async function serve(site) {
   const server = http.createServer((req, res) => {

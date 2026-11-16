@@ -1,5 +1,6 @@
 import json
 import shutil
+import stat
 import zipfile
 
 from .exporter import assert_versions, copy_verified
@@ -150,10 +151,14 @@ def export_reader(reader, pid, jid):
             encoding="utf-8",
         )
         (staging / "README.txt").write_text(
-            "Taleprism · 视觉小说阅读器\n\n先运行 python3 verify_package.py，再运行 python3 -m http.server 8080 --bind 127.0.0.1\n打开 http://127.0.0.1:8080，不能直接双击 HTML。\n\n正文连续阅读，场景随原文位置切换。声音仅覆盖已制作的部分对白，需主动开启；目录、搜索和收藏可临时查阅，再返回阅读处。地图可自由对照阶段，标明正文所在阶段。\n进度和字号只保存在当前浏览器；不向制作台或分析服务发送阅读进度，不同步到其他设备。\n原文保存在 storygal-source；素材与地图来源见 reader.json。\n本包为成品快照，继续编辑请另存制作台的可编辑工程 ZIP。\n",
+            "Taleprism · 视觉小说阅读器\n\nmacOS：完整解压 ZIP 后双击「打开阅读器.command」，无需输入终端命令；本地服务就绪后自动打开浏览器。\n阅读完成后双击「停止阅读器.command」，只停止此阅读包的服务。关闭网页不会自动停服。\n需要现有的 Python 3.9+；启动器不安装软件、不修改安全设置，也不启动制作台。若系统阻止启动，请勿关闭系统保护，可请提供者托管阅读器网页。\n服务仅绑定 127.0.0.1，自动选择可用端口，不占用或停止其他程序。\n同一路径优先沿用上次自动分配的端口；端口被占用时会换用空闲端口。浏览器记录属于同一浏览器与网址（含端口），换端口或移动目录后可能看不到原有记录，旧记录不会被删除。\n请先停止服务再移动或删除阅读包。运行记录与日志存于用户缓存，不修改本包。\n其他系统或需手动检查时：先运行 python3 verify_package.py，再运行 python3 -m http.server 8080 --bind 127.0.0.1，打开 http://127.0.0.1:8080。不能直接双击 HTML。\n\n正文连续阅读，场景随原文位置切换。声音仅覆盖已制作的部分对白，需主动开启；目录、搜索和收藏可临时查阅，再返回阅读处。地图可自由对照阶段，标明正文所在阶段。\n进度和字号只保存在当前浏览器；不向制作台或分析服务发送阅读进度，不同步到其他设备。\n原文保存在 storygal-source；素材与地图来源见 reader.json。\n本包为成品快照，继续编辑请另存制作台的可编辑工程 ZIP。\n",
             encoding="utf-8",
         )
         shutil.copy2(REPO / "tools/verify_package.py", staging / "verify_package.py")
+        shutil.copy2(REPO / "tools/reader_launcher.py", staging / "reader_launcher.py")
+        for name in ("打开阅读器.command", "停止阅读器.command"):
+            shutil.copy2(REPO / "tools/reader_launcher.command", staging / name)
+            (staging / name).chmod(0o755)
         secret = api_key().encode()
         if secret and any(secret in p.read_bytes() for p in staging.rglob("*") if p.is_file()):
             raise ValueError("导出物包含本机服务密钥，已停止打包。")
@@ -176,7 +181,14 @@ def export_reader(reader, pid, jid):
         with zipfile.ZipFile(zip_staging, "w", zipfile.ZIP_DEFLATED) as z:
             for p in sorted(staging.rglob("*")):
                 if p.is_file():
-                    z.write(p, p.relative_to(staging))
+                    if p.suffix == ".command":
+                        # Preserve Finder executability even when exporting on Windows.
+                        info = zipfile.ZipInfo.from_file(p, p.relative_to(staging))
+                        info.create_system = 3
+                        info.external_attr = (stat.S_IFREG | 0o755) << 16
+                        z.writestr(info, p.read_bytes(), compress_type=zipfile.ZIP_DEFLATED)
+                    else:
+                        z.write(p, p.relative_to(staging))
         with zipfile.ZipFile(zip_staging) as z:
             if z.testzip() is not None or set(z.namelist()) != set(inventory["files"]) | {
                 "storygal-delivery.json"

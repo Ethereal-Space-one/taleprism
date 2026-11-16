@@ -35,7 +35,8 @@ def pack(files):
         for name, raw in sorted(files.items()):
             info = zipfile.ZipInfo(name, (2026, 11, 12, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = 0o100644 << 16
+            info.create_system = 3
+            info.external_attr = (0o100755 if name.endswith(".command") else 0o100644) << 16
             archive.writestr(info, raw)
     return stream.getvalue()
 

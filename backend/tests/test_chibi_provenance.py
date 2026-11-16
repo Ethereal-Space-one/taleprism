@@ -1,5 +1,6 @@
 """Maker provenance must distinguish historical requests from reconstructed intent."""
 
+import copy
 import json
 import os
 import shutil
@@ -106,6 +107,118 @@ def test_paired_gate_is_honest_and_template_is_reusable_not_a_pass():
     assert sheet["decision"] == "not_checked"
     assert sheet["new_edit_result_id"] is None
     assert sheet["shots"][0]["image_inspected"] is False
+
+
+def test_paired_worksheet_v2_has_explicit_reference_and_candidate_slots_without_claims():
+    sheet = read(WORKSHEET)
+    assert sheet["format"] == "taleprism-paired-shot-worksheet"
+    assert sheet["version"] == 2
+    assert sheet["creator_final_art_review"] == "pending"
+    assert sheet["decision"] == sheet["pair_checks"][0]["decision"] == "not_checked"
+    assert sheet["shared_world_state"][0]["reference_ids"] == []
+    reference = sheet["shared_references"][0]
+    assert set(reference) == {
+        "reference_id", "asset_id", "path", "sha256", "role", "scope", "basis", "limits",
+    }
+    assert reference["asset_id"] is reference["path"] is reference["sha256"] is None
+    shot = sheet["shots"][0]
+    assert shot["result_status"] == "not_recorded"
+    assert shot["image_inspected"] is False
+    assert shot["provenance"] == {
+        "parent_result_id": None,
+        "parent_result_sha256": None,
+        "actual_prompt": None,
+        "actual_reference_order": [],
+        "generation_artifact": None,
+        "tool": None,
+        "model_version": None,
+        "seed": None,
+    }
+    assert "unresolved warning is not an overall passed result" in sheet["gate_rule"]
+
+
+def test_paired_worksheet_can_separate_candidate_palette_review_and_other_warning():
+    # Simulated inspected records test the data shape, not any real image or visual pass.
+    blank = read(WORKSHEET)
+    sheet = copy.deepcopy(blank)
+    reference = sheet["shared_references"][0]
+    reference.update(
+        reference_id="shared-pennants",
+        path="shared-pennants.png",
+        sha256="1" * 64,
+        role="palette_only",
+        scope="same fleet pennants, not boat geometry or lighting",
+        basis="explicit_artistic_choice",
+        limits="not a source-specified RGB or a historical color measurement",
+    )
+    sheet["shared_world_state"][0].update(
+        object_id="approaching-fleet",
+        must_match="same pennant hue before and after ignition",
+        reference_ids=["shared-pennants"],
+    )
+    sheet["shot_order"] = ["departure", "approach", "after-ignition"]
+    sheet["shots"] = []
+    for index, key in enumerate(sheet["shot_order"], start=2):
+        shot = copy.deepcopy(blank["shots"][0])
+        shot.update(
+            key=key,
+            asset_id=key + "-candidate",
+            sha256=str(index) * 64,
+            result_status="new_candidate",
+            actual_observation="Simulated inspected candidate; no actual image claim.",
+            image_inspected=True,
+        )
+        target = copy.deepcopy(blank["shared_references"][0])
+        target.update(
+            reference_id=key + "-target",
+            asset_id=key + "-original",
+            path=key + "-original.png",
+            sha256=str(index + 3) * 64,
+            role="edit_target",
+            scope="preserve everything except the permitted palette correction",
+        )
+        sheet["shared_references"].append(target)
+        shot["provenance"].update(
+            parent_result_id=key + "-original",
+            parent_result_sha256=str(index + 3) * 64,
+            actual_prompt="Synthetic example of an actual scoped edit request.",
+            actual_reference_order=[key + "-target", "shared-pennants"],
+            generation_artifact=key + "-result-record",
+            tool="synthetic-no-call",
+        )
+        sheet["shots"].append(shot)
+    sheet["pair_checks"] = []
+    for dimension, decision in [("flag", "passed"), ("time_light", "warning")]:
+        check = copy.deepcopy(blank["pair_checks"][0])
+        check.update(
+            **{"from": "approach", "to": "after-ignition"},
+            dimension=dimension,
+            decision=decision,
+            observation="Synthetic demonstration, not an inspection record.",
+        )
+        sheet["pair_checks"].append(check)
+    sheet["decision"] = "warning"
+    restored = json.loads(json.dumps(sheet))
+    catalog = {r["reference_id"]: r for r in restored["shared_references"]}
+    assert restored["shared_world_state"][0]["reference_ids"] == ["shared-pennants"]
+    for shot in restored["shots"]:
+        provenance = shot["provenance"]
+        assert shot["sha256"] != provenance["parent_result_sha256"]
+        assert provenance["parent_result_id"].endswith("-original")
+        assert provenance["actual_prompt"]
+        target, palette = [catalog[r] for r in provenance["actual_reference_order"]]
+        assert target["role"] == "edit_target"
+        assert target["asset_id"] == provenance["parent_result_id"]
+        assert target["sha256"] == provenance["parent_result_sha256"]
+        assert palette["role"] == "palette_only"
+        assert provenance["model_version"] is provenance["seed"] is None
+        assert shot["image_inspected"] is True
+    assert [p["decision"] for p in restored["pair_checks"]] == ["passed", "warning"]
+    assert restored["decision"] == "warning"
+    assert restored["creator_final_art_review"] == "pending"
+    # Filling the new copy never rewrites the uninspected template or historical gate.
+    assert read(WORKSHEET) == blank
+    assert read(GATE)["decision"] == "needs_revision"
 
 
 @pytest.fixture(scope="module")

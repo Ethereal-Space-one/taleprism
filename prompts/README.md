@@ -1,6 +1,6 @@
 # Taleprism 提示词工作流 / Prompt workflow
 
-保留原文，用有依据的角色表演与连续场景增强阅读。模板版本：0.2.0。
+保留原文，用有依据的角色表演与连续场景增强阅读。模板版本：0.2.1。
 
 **第一次使用：打开[《末班灯》教程](../examples/last-light/README.md) / [English walkthrough](../examples/last-light/README.en.md)。** 全部参考图在 `samples/last-light/`，无需先安装制作台。GitHub 网页查看文件即可；要在自己的图片工具中使用，请下载原始图片并实际上传，文件名本身不会传送图片。
 
@@ -17,6 +17,12 @@
 
 每份模板都有输入说明、可复制正文、完整填写示例、预期输出与失败恢复方法。把 `{{变量}}` 换成自己的资料；填写示例是参考，不能当作自己生成结果的验收记录。01—04 输出供人阅读的工作表，不是制作台导入文件。
 
+## 读者在此刻应该看到什么 / Reader intent
+
+03 选镜填写四项：读者问题、预期读法、可见线索、此刻不揭示。预算是上限；如果图没有新增理解、方向或有意的情绪节拍，可以不画。不要给题材套固定构图、用色或冲突模式。
+
+将可见动作／线索写进制作台现有的画面安排（`framing`），将不该提前出现的内容放进 `avoid`。完整四项可保留在人用工作表，从 03 传给 07 的 `expected.reader_intent`；不要把工作表原样导入制作台。05／06 能接受随手工简报附带的四项，但不会自动从 03 读取。07 区分单图、相邻镜头、正文位置／尺寸及真人首次阅读；缺哪份证据就只将对应范围标为未检查。程序不代替视觉判断。
+
 ## 使用方式与能力边界 / Capabilities
 
 | 环境 | 可做什么 | 验证范围 |
@@ -29,6 +35,17 @@
 工具包本身无需模型密钥。实际调用自己选择的 AI 服务可能需要账户并产生费用。模板没有后台自动请求、遥测或自带服务额度。
 
 **No installation required for this prompt route.** Copy a template, replace its variables, and attach real image files to your chosen tool. The bilingual shared rules and English instructions work with the supplied Chinese fictional source; ask for output in your preferred language. Model performance and cross-view consistency are not guaranteed. Review the images, not just the prompt text.
+
+## 相邻镜头与修图候选 / Paired-shot candidates
+
+[成对工作表](paired-shot-continuity-worksheet.json) v2 是人工记录，不是制作台导入协议，也没有自动校验或自动批准功能；它与八模板的版本独立。它只补充共享参考与新候选来源，不改变已有历史记录。
+
+1. 另存一份新工作表，保留旧图、旧提示词和旧检查。`shots` 的 `asset_id`、`sha256`、`actual_observation` 和 `image_inspected` 始终指向**本次实际检查的那张图**，不是计划中的修正。新图的 `result_status` 填 `new_candidate`；旧图可填 `historical`，未知保持 `not_recorded`。
+2. 在 `shared_references` 登记本次使用的参考文件、哈希、职责与限制，用 `reference_id` 标识。共享旗色或其他物件色板的 `role` 可填 `palette_only`，船只等物件参考可填 `object_identity`，编辑原图可填 `edit_target`。在 `shared_world_state.reference_ids` 关联约束同一物件的参考；`basis` 区分原文依据与明确的艺术选择，不把色板 RGB 当作原文或历史事实。
+3. 每幅候选在 `provenance` 记录原图编号／哈希、**实际提交**的提示词，以及按实际提交顺序排列的 `actual_reference_order`（引用同一参考表中的 ID）。只列实际上传的文件，不把拟用参考写成已经使用。保留工具返回的结果编号；未记录的模型、seed 或旧图哈希保持 `null`，不能倒填。根部 `new_edit_result_id`／`new_edit_result_sha256` 保留给旧版单一结果记录；多图以各 `shots` 的精确结果及来源为准。
+4. 实际并排看图后，逐项填写 `pair_checks`。旗色通过不代表光照、动作或空间同时通过；未解决的其他问题保留独立 `warning`，总结果不能写成 `passed`。未看图保持 `not_checked`，修复失败保持 `needs_revision`。助手检查不等于创作者最终批准。
+
+Use a new worksheet for each candidate set. Bind shared palettes and object references by ID and exact file hash, record the actual prompt and ordered attachments, then inspect those exact result images. Keep unrelated warnings separate from a successful scoped repair. This worksheet neither generates an image nor validates a claimed review; creator final art review remains independent.
 
 ## 可选声音 / Optional voice
 

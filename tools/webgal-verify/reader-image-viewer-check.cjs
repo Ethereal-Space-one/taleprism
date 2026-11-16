@@ -166,6 +166,82 @@ const server = http.createServer(async (req, res) => {
     await page.getByRole('button', { name: '关闭面板', exact: true }).click()
     await page.locator('.reader-gallery').waitFor()
     assert.equal(await page.locator('.reader-root').getAttribute('data-resume-byte'), resume, 'gallery navigation preserves reading position')
+    // The gallery entry is gated by the existing exact-edition resolver, not
+    // a filename/title guess. A split-view fixture isolates gallery requests
+    // from legitimate inline/stage loading.
+    const raw = fs.readFileSync(path.join(root, 'samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt'))
+    const text = raw.toString('utf8')
+    const chibiBlocks = Array.from(text.matchAll(/[^\r\n]+/g), (m, i) => {
+      const byte_start = Buffer.byteLength(text.slice(0, m.index))
+      return { id: `chibi-${i}`, text: m[0], byte_start, byte_end: byte_start + Buffer.byteLength(m[0]), heading: /^第.+回/.test(m[0]), audio: [], runs: [{ text: m[0], speaker_id: null, take_id: null }] }
+    })
+    fixture.project = { ...fixture.project, id: 'gallery-fixture', canonical_sha256: require('node:crypto').createHash('sha256').update(raw).digest('hex') }
+    fixture.blocks = chibiBlocks
+    fixture.config = {
+      ...fixture.config, reading_layout: 'split',
+      illustrations: [0, 1].map(i => ({ id: `gallery-${i}`, image_asset_id: `art-${i}`, title: i ? '后文火船样张' : '开卷样张', description: i ? '后文火船的描述' : '开卷的描述', after_byte: i ? chibiBlocks.at(-1).byte_end : chibiBlocks[0].byte_end })),
+    }
+    for (const asset of Object.values(fixture.media)) asset.url += '?gallery-fixture=1'
+    const galleryRequests = []
+    page.on('request', request => {
+      if (request.url().includes('/art/') && request.url().includes('gallery-fixture')) galleryRequests.push(request.url())
+    })
+    await page.goto(`http://127.0.0.1:${server.address().port}/`)
+    await page.getByRole('button', { name: /^开始阅读/ }).click()
+    await page.getByRole('button', { name: '设置', exact: true }).click()
+    const position = () => page.locator('.reader-root').evaluate(root => ({
+      view: root.dataset.viewByte, resume: root.dataset.resumeByte, visiting: root.dataset.visiting,
+      scroll: root.querySelector('.reader-scroll').scrollTop,
+      record: Object.entries(localStorage).filter(([key]) => key.includes('gallery-fixture')).map(([key, value]) => {
+        const { updated, ...record } = JSON.parse(value)
+        return [key, record]
+      }),
+    }))
+    // Initial persistence is asynchronous; wait for the fixture's first record.
+    await page.waitForFunction(() => Object.keys(localStorage).some(key => key.includes('gallery-fixture')))
+    const galleryPosition = await position()
+    const enterGallery = () => page.getByRole('button', { name: /^本章画卷/ }).click()
+    const warning = () => page.getByRole('heading', { name: '全章画卷含后文画面与标题', exact: true })
+    async function protectedGallery(label) {
+      await warning().waitFor()
+      assert.equal(await page.locator('.reader-gallery-item, .reader-gallery img').count(), 0, `${label}: no thumbnails exist before confirmation`)
+      assert.equal(await page.locator('dialog').getByText('后文火船样张', { exact: true }).count(), 0, `${label}: no future title`)
+      assert.equal(await page.locator('dialog').getByText('后文火船的描述', { exact: true }).count(), 0, `${label}: no future description`)
+      assert.deepEqual(await position(), galleryPosition, `${label}: progress, marks and scroll are unchanged`)
+    }
+    await enterGallery()
+    await protectedGallery('initial entry')
+    assert.deepEqual(galleryRequests, [], 'the warning starts no thumbnail network requests')
+    await page.screenshot({ path: path.join(shots, 'gallery-warning.png') })
+    await page.getByRole('button', { name: '取消', exact: true }).click()
+    await page.getByRole('heading', { name: '阅读设置', exact: true }).waitFor()
+    assert.deepEqual(await position(), galleryPosition, 'cancel returns to the original settings/reading position')
+    await enterGallery()
+    await protectedGallery('reentry after cancel')
+    await page.keyboard.press('Escape')
+    await page.getByRole('heading', { name: '阅读设置', exact: true }).waitFor()
+    await page.goForward()
+    await protectedGallery('browser Forward')
+    await page.goBack()
+    await page.getByRole('heading', { name: '阅读设置', exact: true }).waitFor()
+    await enterGallery()
+    await protectedGallery('repeat entry')
+    assert.deepEqual(galleryRequests, [], 'Cancel, Escape, Back and Forward never load the gallery')
+    await page.getByRole('button', { name: '查看全章画卷（含后文）', exact: true }).click()
+    assert.equal(await page.locator('.reader-gallery-item').count(), 2)
+    await page.locator('.reader-gallery-item').last().getByRole('button').first().click()
+    await page.locator('.reader-expanded-image').evaluate(img => img.decode())
+    assert.equal(await page.locator('.reader-gallery-controls > span').textContent(), '后文火船样张', 'intentional whole-gallery browsing still opens future art')
+    assert.equal(await page.getByRole('heading', { name: '后面的插图尚未读到', exact: true }).count(), 0, 'whole-gallery permission does not change contextual image gating')
+    assert.deepEqual(await position(), galleryPosition, 'full gallery and expanded art do not change reading state')
+    await page.getByRole('button', { name: '关闭面板', exact: true }).click()
+    await protectedGallery('return from expanded art')
+    await page.keyboard.press('Escape')
+    await page.getByRole('heading', { name: '阅读设置', exact: true }).waitFor()
+    await page.keyboard.press('Escape')
+    await page.locator('dialog[open]').waitFor({ state: 'hidden' })
+    assert.deepEqual(await position(), galleryPosition, 'final return preserves reading position and storage')
+    console.log('Chibi gallery: exact-edition entry warning, no title/description/thumbnail DOM or network before reveal, Cancel/Escape/Back/Forward/reentry, intentional full art and unchanged reading state passed.')
     assert.deepEqual(errors, [])
     console.log(`Reader image viewer: ${cases} aspect/viewport cases passed; default complete fit, no nested scroll/overflow, pinned controls, explicit 2x pan, new-plate reset, retry/loading/recovery, Escape/focus, Back/Forward, inline layout and gallery preserved.`)
     console.log(`1331x894 canvas: ${Math.round(desktop.viewport.width)}x${Math.round(desktop.viewport.height)}; screenshots: ${shots}`)

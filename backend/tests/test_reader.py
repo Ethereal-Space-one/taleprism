@@ -204,7 +204,8 @@ def test_opencc_notices_required_only_for_built_search_asset(setup, tmp_path, mo
     (assets / ("search-test.js" if with_search else "main-test.js")).write_text("// fixture")
     tools = fake_repo / "tools"
     tools.mkdir()
-    (tools / "verify_package.py").write_text((REPO / "tools/verify_package.py").read_text())
+    for name in ("verify_package.py", "reader_launcher.py", "reader_launcher.command"):
+        (tools / name).write_text((REPO / "tools" / name).read_text())
     monkeypatch.setattr(reader_export, "REPO", fake_repo)
     job = export(c, pid)
     if with_search:

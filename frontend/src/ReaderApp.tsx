@@ -46,6 +46,7 @@ import { followScroll, isReadingStep, type ScrollJourney } from './reader/readin
 import { imageRecoveryReducer, imageRetryUrl, MAX_IMAGE_RETRIES } from './reader/imageRecovery'
 import { ReaderImageRetry } from './reader/ReaderImageRetry'
 import { ReaderImageDisclosure } from './reader/ReaderImageDisclosure'
+import { ReaderGalleryDisclosure } from './reader/ReaderGalleryDisclosure'
 import {
   openImageVisit,
   requestImage,
@@ -1298,50 +1299,54 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           )}
           {panel === 'image' && !expandedImage && <p>这幅画面暂不可用，正文与续读位置已保留。</p>}
           {panel === 'gallery' && (
-            <div className="reader-gallery">
-              <p>全章插图，可自由回看；查看画面不会改变续读位置。</p>
-              <div>
-                {plates.map((p) => (
-                  <div className="reader-gallery-item" key={p.id}>
-                    <button
-                      onClick={() => openImage(p.image_asset_id, true)}
-                      aria-describedby={
-                        platePresentations.get(p.id)?.visualDescription
-                          ? `reader-gallery-description-${p.id}`
-                          : undefined
-                      }
-                    >
-                      {media(p.image_asset_id) ? (
-                        <img
-                          key={`${p.image_asset_id}:${imageRequests[p.image_asset_id]?.attempt || 0}`}
-                          src={imageSource(p.image_asset_id)?.url}
-                          alt=""
-                          loading="lazy"
-                          onLoad={() => loaded(p.image_asset_id)}
-                          onError={() => failed(p.image_asset_id)}
+            <ReaderGalleryDisclosure protectFuture={!!storyGraph} onCancel={close}>
+              {() => (
+                <div className="reader-gallery">
+                  <p>全章插图，可自由回看；查看画面不会改变续读位置。</p>
+                  <div>
+                    {plates.map((p) => (
+                      <div className="reader-gallery-item" key={p.id}>
+                        <button
+                          onClick={() => openImage(p.image_asset_id, true)}
+                          aria-describedby={
+                            platePresentations.get(p.id)?.visualDescription
+                              ? `reader-gallery-description-${p.id}`
+                              : undefined
+                          }
+                        >
+                          {media(p.image_asset_id) ? (
+                            <img
+                              key={`${p.image_asset_id}:${imageRequests[p.image_asset_id]?.attempt || 0}`}
+                              src={imageSource(p.image_asset_id)?.url}
+                              alt=""
+                              loading="lazy"
+                              onLoad={() => loaded(p.image_asset_id)}
+                              onError={() => failed(p.image_asset_id)}
+                            />
+                          ) : (
+                            <span className="reader-gallery-missing">画面暂不可用</span>
+                          )}
+                          <span>{p.title}</span>
+                        </button>
+                        {platePresentations.get(p.id)?.visualDescription && (
+                          <p
+                            id={`reader-gallery-description-${p.id}`}
+                            className="reader-visually-hidden"
+                          >
+                            {platePresentations.get(p.id)?.visualDescription}
+                          </p>
+                        )}
+                        <ReaderImageRetry
+                          request={imageRequests[p.image_asset_id]}
+                          label={`插图：${p.title}`}
+                          onRetry={() => retryImage(p.image_asset_id)}
                         />
-                      ) : (
-                        <span className="reader-gallery-missing">画面暂不可用</span>
-                      )}
-                      <span>{p.title}</span>
-                    </button>
-                    {platePresentations.get(p.id)?.visualDescription && (
-                      <p
-                        id={`reader-gallery-description-${p.id}`}
-                        className="reader-visually-hidden"
-                      >
-                        {platePresentations.get(p.id)?.visualDescription}
-                      </p>
-                    )}
-                    <ReaderImageRetry
-                      request={imageRequests[p.image_asset_id]}
-                      label={`插图：${p.title}`}
-                      onRetry={() => retryImage(p.image_asset_id)}
-                    />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              )}
+            </ReaderGalleryDisclosure>
           )}
           {panel === 'contents' && (
             <ReaderContents
