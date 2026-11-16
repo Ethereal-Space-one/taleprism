@@ -15,6 +15,8 @@ import json
 import os
 import secrets
 import signal
+import socket
+import socketserver
 import stat
 import subprocess
 import sys
@@ -173,6 +175,18 @@ def validate_package(root):
         ) from exc
 
 
+class ReaderServer(http.server.ThreadingHTTPServer):
+    """Numeric IPv4 reader service; startup never needs reverse DNS."""
+
+    address_family = socket.AF_INET
+
+    def server_bind(self):
+        # CPython HTTPServer adds getfqdn() after TCP bind. This loopback-only
+        # reader uses no hostname, so retain TCP binding and numeric metadata.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
+
 class ReaderHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         pass  # No personal reading paths or control credentials in the runtime log.
@@ -260,11 +274,11 @@ def serve(instance_id):
         # origin. If it is occupied, ask the OS for another free loopback port.
         port = previous["port"] if previous else 0
         try:
-            server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+            server = ReaderServer(("127.0.0.1", port), handler)
         except OSError:
             if not port:
                 raise
-            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            server = ReaderServer(("127.0.0.1", 0), handler)
         server.record = {
             "service": SERVICE,
             "package_id": package_id(ROOT),

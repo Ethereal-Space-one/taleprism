@@ -5,6 +5,7 @@ can run without installing a test runner: python3 backend/tests/test_reader_laun
 """
 
 import concurrent.futures
+import functools
 import hashlib
 import http.server
 import importlib.util
@@ -286,11 +287,50 @@ class ReaderLauncherTests(unittest.TestCase):
         server.__enter__ = Mock(return_value=server)
         server.__exit__ = Mock(return_value=False)
         with (
-            patch.object(launcher.http.server, "ThreadingHTTPServer", return_value=server) as make,
+            patch.object(launcher, "ReaderServer", return_value=server) as make,
             patch.object(launcher.signal, "signal"),
         ):
             launcher.serve("a" * 64)
         self.assertEqual(make.call_args.args[0], ("127.0.0.1", 0))
+
+    def test_real_numeric_listener_ready_and_owned_stop_without_getfqdn(self):
+        handler = functools.partial(launcher.ReaderHandler, directory=str(self.root.resolve()))
+        with (
+            patch.object(socket, "getfqdn", side_effect=AssertionError("DNS unavailable")) as dns,
+            patch.object(launcher, "ROOT", self.root.resolve()),
+            launcher.ReaderServer(("127.0.0.1", 0), handler) as server,
+        ):
+            # Negative control: the standard constructor still consults DNS.
+            with self.assertRaisesRegex(AssertionError, "DNS unavailable"):
+                http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            dns.assert_called_once_with("127.0.0.1")
+            dns.reset_mock()
+            self.assertEqual(server.socket.family, socket.AF_INET)
+            self.assertEqual(server.socket.getsockname(), server.server_address)
+            self.assertEqual(server.server_name, "127.0.0.1")
+            self.assertEqual(server.server_port, server.server_address[1])
+            self.assertGreater(server.server_port, 0)
+            server.record = {
+                "service": launcher.SERVICE,
+                "package_id": launcher.package_id(self.root),
+                "instance_id": "a" * 64,
+                "port": server.server_port,
+            }
+            worker = threading.Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                self.assertTrue(launcher.ready(server.record))
+                self.assertFalse(
+                    launcher.control({**server.record, "instance_id": "b" * 64}, "stop")
+                )
+                self.assertTrue(launcher.ready(server.record))
+                self.assertTrue(launcher.control(server.record, "stop"))
+                worker.join(timeout=2)
+                self.assertFalse(worker.is_alive())
+                dns.assert_not_called()
+            finally:
+                server.shutdown()
+                worker.join(timeout=2)
 
     def test_shell_path_error_and_missing_python_are_actionable(self):
         (self.root / "reader_launcher.py").unlink()
