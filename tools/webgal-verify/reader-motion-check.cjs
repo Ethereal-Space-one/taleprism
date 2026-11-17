@@ -53,12 +53,20 @@ try {
   relocated.media['new-import-id'] = { ...relocated.media[arrival.image_asset_id], id: 'new-import-id' }
   arrival.image_asset_id = 'new-import-id'
   assert.equal(resolveEnvironmentMotion(relocated, arrival), rain, 'generic rebuild UUIDs are allowed for exact arrival PNG')
-  const normalizedArrival = '7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f'
-  relocated.media[arrival.image_asset_id].sha256 = normalizedArrival
-  assert.equal(resolveEnvironmentMotion(relocated, arrival), rain, 'actual normalized Reader.upload/standalone PNG resolves')
-  relocated.media[arrival.image_asset_id].sha256 = 'f' + normalizedArrival.slice(1)
+  const normalizedArrivals = [
+    '7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f',
+    '2dc65d6e43f987fdb4b908e43fb34fb37f66aaf8c271d21f6b40ea5658c4ddec',
+  ]
+  assert.deepEqual(rain.normalizedImageHashes, normalizedArrivals, 'only the two exact known encoder outputs are allowed')
+  for (const normalizedArrival of normalizedArrivals) {
+    relocated.media[arrival.image_asset_id].sha256 = normalizedArrival
+    assert.equal(resolveEnvironmentMotion(relocated, arrival), rain, 'known Linux/macOS Reader.upload/standalone PNG resolves')
+  }
+  const unverifiedArrival = 'f' + normalizedArrivals[0].slice(1)
+  relocated.media[arrival.image_asset_id].sha256 = unverifiedArrival
   assert.equal(resolveEnvironmentMotion(relocated, arrival), null, 'unverified PNG encoding remains static')
   assert.equal(validMotionRecipe({ ...rain, normalizedImageHashes: ['invalid'] }), false)
+  assert.equal(validMotionRecipe({ ...rain, normalizedImageHashes: [...normalizedArrivals, unverifiedArrival] }), false, 'two-normalized-output cap remains enforced')
   const swapped = fixture(shore), river = swapped.config.illustrations[0]
   swapped.media.other = { ...swapped.media[river.image_asset_id], id: 'other' }; river.image_asset_id = 'other'
   assert.equal(resolveEnvironmentMotion(swapped, river), null, 'fixed Chibi identity remains exact')

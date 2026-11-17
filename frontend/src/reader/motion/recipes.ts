@@ -69,9 +69,12 @@ export const environmentMotionRecipes: readonly EnvironmentMotionRecipe[] = [
     // The generic pack builder assigns upload UUIDs afresh. Exact source,
     // applied plate ID and image SHA bind this recipe across valid imports.
     imageHash: '556de6cf96af3220dab851317af0bc2e6d290034d17b0a23ddc9575d45905145',
-    // Reader.upload re-encodes the exact same RGB pixels as PNG. Bind both
-    // audited byte identities, never arbitrary dimensions or filename.
-    normalizedImageHashes: ['7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f'],
+    // Reader.upload re-encodes RGB pixels as PNG. Bind only the exact known
+    // Linux/macOS encoder outputs, never arbitrary dimensions or filename.
+    normalizedImageHashes: [
+      '7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f',
+      '2dc65d6e43f987fdb4b908e43fb34fb37f66aaf8c271d21f6b40ea5658c4ddec',
+    ],
     width: 1672,
     height: 941,
     effect: 'rain-wet-ground',

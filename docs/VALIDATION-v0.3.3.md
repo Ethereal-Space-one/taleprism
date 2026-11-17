@@ -1,6 +1,6 @@
 # Taleprism v0.3.3 validation
 
-Local release-candidate checks based on `dead785875cea79d261d085c390b67d793143ab8`. All listed checks ran on Linux, Python 3.12.14 and Node 24.22.1, not the Ubuntu/macOS GitHub matrix.
+Original local release-candidate checks were based on `dead785875cea79d261d085c390b67d793143ab8` and ran on Linux, Python 3.12.14 and Node 24.22.1, not the Ubuntu/macOS GitHub matrix. The subsequent cross-platform finding is recorded separately below.
 
 ## Executed locally
 
@@ -15,6 +15,8 @@ Local release-candidate checks based on `dead785875cea79d261d085c390b67d793143ab
 - These results are software checks, not creator art approval or an external-user onboarding trial.
 
 ## Remaining release gates
+
+The `3c17b05` macOS CI run `133940796647` reported 600 passed, 10 deselected and one failure: the rain upload test asserted the Linux PNG hash before reaching RGB pixel equality. Its exact macOS encoded SHA-256 was `2dc65d6e43f987fdb4b908e43fb34fb37f66aaf8c271d21f6b40ea5658c4ddec`; Linux/Ubuntu used `7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f`. The bounded follow-up candidate retains the raw-image hash, admits only these two exact normalized hashes, preserves the two-output cap, and checks dimensions/RGB pixel equality before normalized-hash membership. Actual macOS pixel equality remains pending until the next CI run; hash acceptance alone does not establish it. Follow-up Linux checks passed: 153 backend tests with 5 optional skips, all nine reader-model stages, frontend build, lint and generated-source checks. Both example pairs were rebuilt offline with network sockets blocked; the refreshed fixed-pin/release/pixel aggregate passed 30 tests.
 
 Actual Ubuntu/macOS workflows for the final release commit; macOS Finder/Gatekeeper launcher acceptance; Safari and physical-phone/touch acceptance; creator final art review and external-user onboarding; actual attachment re-download/verification; and actual Pages deployment/rollback evidence are not established by the local checks recorded here. Chibi fire-ship flag-color paired-shot continuity remains `needs_revision` with no art correction applied.
 

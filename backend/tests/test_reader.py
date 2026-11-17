@@ -148,11 +148,14 @@ def test_last_light_uploaded_arrival_matches_motion_recipe_bytes(tmp_path):
     )
     assert uploaded.status_code == 201, uploaded.text
     asset = uploaded.json()
-    assert asset["sha256"] == "7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f"
     stored = client.app.state.reader.path(pid, asset["id"])
     with Image.open(io.BytesIO(raw)) as original, Image.open(stored) as normalized:
         assert original.size == normalized.size == (1672, 941)
         assert original.convert("RGB").tobytes() == normalized.convert("RGB").tobytes()
+    assert asset["sha256"] in {
+        "7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f",
+        "2dc65d6e43f987fdb4b908e43fb34fb37f66aaf8c271d21f6b40ea5658c4ddec",
+    }
 
 
 def test_standalone_reader_package_and_export_scoped_review(setup):
