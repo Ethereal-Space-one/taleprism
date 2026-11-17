@@ -47,6 +47,12 @@
 
 Use a new worksheet for each candidate set. Bind shared palettes and object references by ID and exact file hash, record the actual prompt and ordered attachments, then inspect those exact result images. Keep unrelated warnings separate from a successful scoped repair. This worksheet neither generates an image nor validates a claimed review; creator final art review remains independent.
 
+## 可选环境动效 / Optional ambient motion
+
+选中的当前瞬间确实需要环境动作时，再接[环境动效人工简报与示例](optional-ambient-motion.md)：03 绑定精确原文与批准瞬间，04 先构图、像素锚点与保护区，05／06 保留完整静态底图，07／08 按 `anticipation → contact → consequence → settle` 四拍对照与定点修复。附赤壁浪的推近→撞岸→水花→回流、《末班灯》檐外更明显雨势，以及不替换原定稿的贴水低机位实验。
+
+这是八模板之外的可选旁表，不是新增必填输入或 plan／manifest／runtime 字段；不批量给每镜头加效果。未启用仍照旧使用 03—08。关闭或减少动效优先原图，文字简报不代表已渲染，静图检查不代表循环已通过。
+
 ## 可选声音 / Optional voice
 
 先选对理解人物最有帮助的少量对白，分别记录说话人、面对谁、此刻所知、说话目的、语速与克制程度；逐句试听后接受。不要要求全篇使用同一种强烈情绪。公开示例无系统演示音频；macOS 用户可本地合成，也可使用制作台已有的声音能力。云端 OpenAI 配音尚未完成真实调用验证。

@@ -18,7 +18,7 @@ try {
   assert.equal(compile.status, 0, compile.stdout + compile.stderr)
   fs.symlinkSync(path.join(root, 'frontend/node_modules'), path.join(temp, 'node_modules'), 'dir')
   const {
-    openImageVisit, requestImage, confirmImageDisclosure, cancelImageDisclosure,
+    openImageVisit, requestImage, confirmImageDisclosure, cancelImageDisclosure, galleryAtPosition,
   } = require(path.join(temp, 'reader/imageBrowsing.js'))
   const { ReaderImageDisclosure } = require(path.join(temp, 'reader/ReaderImageDisclosure.js'))
   const React = require(path.join(temp, 'node_modules/react'))
@@ -104,19 +104,50 @@ try {
   const buttons = tree.props.children[2].props.children
   buttons.forEach((button) => button.props.onClick())
   assert.deepEqual(calls, ['return', 'stay', 'confirm'])
-  // The gallery must not even construct future media, labels or recovery controls
-  // until its own intentional reveal. No DOM, history or storage is available.
-  function mountGallery(protectFuture) {
+  // Gallery uses the same inclusive disclosure boundary, by plate identity,
+  // including relocated plates and different plates sharing one image asset.
+  const plates = Object.freeze([
+    Object.freeze({ id: 'later', image_asset_id: 'shared', after_byte: 2000 }),
+    Object.freeze({ id: 'first', image_asset_id: 'shared', after_byte: 500 }),
+    Object.freeze({ id: 'relocated', image_asset_id: 'moved', after_byte: 6014 }),
+    Object.freeze({ id: 'invalid', image_asset_id: 'invalid', after_byte: NaN }),
+  ])
+  const presentations = new Map([['relocated', { disclosureByte: 6136 }]])
+  const ids = byte => galleryAtPosition(plates, presentations, byte).map(p => p.id)
+  assert.deepEqual(ids(0), [], 'zero reached images is an intentional empty state')
+  assert.deepEqual(ids(499), [])
+  assert.deepEqual(ids(500), ['first'], 'inclusive boundary; shared asset never reveals later title')
+  assert.deepEqual(ids(2000), ['later', 'first'], 'original configured order is preserved')
+  assert.deepEqual(ids(6014), ['later', 'first'], 'source anchor alone cannot reveal a relocated plate')
+  assert.deepEqual(ids(6136), ['later', 'first', 'relocated'])
+  assert.deepEqual(ids(500), ['first'], 'moving backward uses current location, never high-water history')
+  for (const boundary of [NaN, Infinity, -1, 0.5]) assert.deepEqual(ids(boundary), [])
+  assert.equal(plates.length, 4, 'filtering never mutates the production array')
+
+  // Render only the safe subtree before an intentional whole-gallery reveal.
+  // No DOM, history, storage or network is needed for this focused model check.
+  function button(tree, label) {
+    if (!tree || typeof tree !== 'object') return null
+    if (tree.type === 'button' && tree.props.children === label) return tree
+    for (const child of React.Children.toArray(tree.props?.children)) {
+      const match = button(child, label)
+      if (match) return match
+    }
+    return null
+  }
+  function mountGallery(protectFuture, reachedCount = 1) {
     let revealed = false, tree
     const original = React.useState
     const props = {
-      protectFuture,
+      protectFuture, reachedCount,
       onCancel: () => calls.push('cancel-gallery'),
-      children: () => {
-        calls.push('render-gallery')
+      children: whole => {
+        calls.push(whole ? 'render-whole' : 'render-reached')
         return React.createElement('div', { className: 'reader-gallery' },
-          React.createElement('img', { src: '/future-fire.svg', alt: 'future-description' }),
-          React.createElement('button', { 'aria-label': '重试后文火船' }, '后文火船'))
+          (whole || reachedCount > 0) && React.createElement('img', { src: '/reached.svg', alt: 'reached-description' }),
+          whole && React.createElement('div', {},
+            React.createElement('img', { src: '/future-fire.svg', alt: 'future-description' }),
+            React.createElement('button', { 'aria-label': '重试后文火船' }, '后文火船')))
       },
     }
     function render() {
@@ -126,28 +157,33 @@ try {
     render()
     return {
       html: () => renderToStaticMarkup(tree),
-      cancel: () => { tree.props.children[2].props.children[0].props.onClick(); render() },
-      confirm: () => { tree.props.children[2].props.children[1].props.onClick(); render() },
+      cancel: () => { button(tree, '返回').props.onClick(); render() },
+      confirm: () => { button(tree, '查看全章画卷（含后文）').props.onClick(); render() },
     }
   }
   calls.length = 0
   const gallery = mountGallery(protectFuture)
-  for (const label of ['全章画卷含后文画面与标题', '尚未读到的场景', '取消', '查看全章画卷（含后文）']) {
+  for (const label of ['读到这里的画面', '1 幅', '全章画卷含后文画面与标题', '尚未读到的场景', '返回', '查看全章画卷（含后文）']) {
     assert.ok(gallery.html().includes(label))
   }
-  assert.ok(!/后文火船|future-fire|future-description|<img|<dialog/.test(gallery.html()))
-  assert.deepEqual(calls, [], 'opening the warning constructs no gallery subtree')
+  assert.ok(gallery.html().includes('/reached.svg'), 'reached images are available immediately')
+  assert.ok(!/后文火船|future-fire|future-description|<dialog/.test(gallery.html()))
+  assert.deepEqual(calls, ['render-reached'], 'only the bounded callback runs at entry')
   gallery.cancel()
-  assert.deepEqual(calls, ['cancel-gallery'], 'cancel uses only the existing return callback')
-  assert.ok(!gallery.html().includes('<img'), 'cancel does not reveal or preload thumbnails')
+  assert.deepEqual(calls, ['render-reached', 'cancel-gallery', 'render-reached'])
+  assert.ok(!gallery.html().includes('future-fire'), 'return never reveals or preloads future thumbnails')
   gallery.confirm()
   assert.ok(gallery.html().includes('后文火船'))
-  assert.ok(gallery.html().includes('<img'), 'deliberate confirmation retains the whole gallery')
-  assert.deepEqual(calls, ['cancel-gallery', 'render-gallery'])
+  assert.ok(gallery.html().includes('future-fire'), 'deliberate confirmation retains the whole gallery')
+  assert.deepEqual(calls, ['render-reached', 'cancel-gallery', 'render-reached', 'render-whole'])
   assert.ok(!mountGallery(true).html().includes('后文火船'), 'reentry and Back/Forward start protected')
   assert.ok(mountGallery(false).html().includes('后文火船'), 'unsupported texts keep free browsing')
-  assert.equal(JSON.stringify(record), before, 'gallery permission changes no progress or marks')
-  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, whole gallery, generic fallback, accessible neutral notice and gallery warning/cancel/reentry/no pre-reveal subtree passed.')
+  const empty = mountGallery(true, 0).html()
+  assert.ok(empty.includes('当前位置还没有可回看的插图'))
+  assert.ok(!empty.includes('<img'), 'zero reached images creates no media subtree')
+  assert.equal(JSON.stringify(record), before, 'gallery permission changes no progress, preferences or marks')
+  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, per-plate current-position gallery filtering, immediate safe subtree, zero-state, generic fallback and no pre-reveal future subtree passed.')
+
 } finally {
   fs.rmSync(temp, { force: true, recursive: true })
 }

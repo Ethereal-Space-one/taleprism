@@ -8,8 +8,8 @@ const {chromium} = require('playwright')
 const root = path.resolve(__dirname, '../..')
 if (!process.argv[2]) throw new Error('Pass the extracted prior live Chibi reader as the first argument.')
 const oldSite = path.resolve(process.argv[2])
-const target = process.argv[3] || path.join(root, '.release/v0.3.2/site-chibi')
-const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.3.2/browser/progress'))
+const target = process.argv[3] || path.join(root, '.release/v0.3.3/site-chibi')
+const out = path.resolve(process.argv[4] || path.join(root, '.release/v0.3.3/browser/progress'))
 
 async function serve(site) {
   const server = http.createServer((req, res) => {

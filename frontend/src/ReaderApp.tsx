@@ -42,6 +42,8 @@ import {
 import { useDialogueAudio, type AudioPoint } from './reader/useDialogueAudio'
 import { useStagePreload } from './reader/useStagePreload'
 import { ReaderPlate } from './reader/ReaderPlate'
+import { ReaderExpandedImage } from './reader/ReaderExpandedImage'
+import { resolveEnvironmentMotion } from './reader/motion/recipes'
 import { followScroll, isReadingStep, type ScrollJourney } from './reader/readingSession'
 import { imageRecoveryReducer, imageRetryUrl, MAX_IMAGE_RETRIES } from './reader/imageRecovery'
 import { ReaderImageRetry } from './reader/ReaderImageRetry'
@@ -49,6 +51,7 @@ import { ReaderImageDisclosure } from './reader/ReaderImageDisclosure'
 import { ReaderGalleryDisclosure } from './reader/ReaderGalleryDisclosure'
 import {
   openImageVisit,
+  galleryAtPosition,
   requestImage,
   confirmImageDisclosure,
   cancelImageDisclosure,
@@ -272,9 +275,14 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   const presentation = data.presentations.filter((p) => p.start_byte <= at).at(-1)
   const illustrated = preferences.layout === 'illustrated'
   const plates = data.config.illustrations || []
+  const reachedPlates =
+    panel === 'gallery'
+      ? galleryAtPosition(plates, platePresentations, imageBoundary(nav.view))
+      : []
   const expandedId = viewerAsset || presentation?.image_asset_id
   const expandedImage = media(expandedId)
   const expandedPlate = plates.find((p) => p.image_asset_id === expandedId)
+  const expandedMotion = resolveEnvironmentMotion(data, expandedPlate)
   const expandedVisualDescription = expandedPlate
     ? platePresentations.get(expandedPlate.id)?.visualDescription
     : null
@@ -431,10 +439,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       screen.current = s
       setStarted(s.started)
       setPanel(s.panel)
+      // Restoring an explicitly selected asset is safe; whole-view permission
+      // expires on leaving, including browser Back/Forward.
       setImageVisit(
-        s.panel === 'image'
-          ? openImageVisit(s.viewer?.asset || null, imageBoundary(s.view), s.viewer?.whole || false)
-          : null,
+        s.panel === 'image' ? openImageVisit(s.viewer?.asset || null, imageBoundary(s.view)) : null,
       )
       setViewerZoom(false)
       navigate({ type: 'restore', position: s.view, visits: s.visits })
@@ -1233,29 +1241,23 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           )}
           {panel === 'image' && expandedImage && (
             <>
-              <div
-                ref={imageViewport}
-                className={`reader-image-viewport ${viewerZoom ? 'is-zoomed' : ''}`}
-                tabIndex={0}
-                aria-label={viewerZoom ? '插图细节，可横向和纵向移动' : '完整插图'}
-                aria-describedby={
-                  expandedVisualDescription ? 'reader-expanded-description' : undefined
+              <ReaderExpandedImage
+                key={`${expandedImage.id}:${imageRequests[expandedImage.id]?.attempt || 0}`}
+                viewportRef={imageViewport}
+                src={expandedImage.url}
+                zoomed={viewerZoom}
+                pending={!!imageVisit?.pending}
+                recipe={expandedMotion}
+                describedBy={expandedVisualDescription ? 'reader-expanded-description' : undefined}
+                onLoad={() => loaded(expandedImage.id)}
+                onError={() => failed(expandedImage.id)}
+                alt={
+                  expandedVisualDescription ||
+                  expandedPlate?.description ||
+                  presentation?.place_label ||
+                  '当前画面'
                 }
-              >
-                <img
-                  className="reader-expanded-image"
-                  key={`${expandedImage.id}:${imageRequests[expandedImage.id]?.attempt || 0}`}
-                  src={expandedImage.url}
-                  onLoad={() => loaded(expandedImage.id)}
-                  onError={() => failed(expandedImage.id)}
-                  alt={
-                    expandedVisualDescription ||
-                    expandedPlate?.description ||
-                    presentation?.place_label ||
-                    '当前画面'
-                  }
-                />
-              </div>
+              />
               {expandedVisualDescription && (
                 <p id="reader-expanded-description" className="reader-visually-hidden">
                   {expandedVisualDescription}
@@ -1299,15 +1301,19 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           )}
           {panel === 'image' && !expandedImage && <p>这幅画面暂不可用，正文与续读位置已保留。</p>}
           {panel === 'gallery' && (
-            <ReaderGalleryDisclosure protectFuture={!!storyGraph} onCancel={close}>
-              {() => (
+            <ReaderGalleryDisclosure
+              protectFuture={!!storyGraph}
+              reachedCount={reachedPlates.length}
+              onCancel={close}
+            >
+              {(whole) => (
                 <div className="reader-gallery">
-                  <p>全章插图，可自由回看；查看画面不会改变续读位置。</p>
+                  {whole && <p>全章插图，可自由回看；查看画面不会改变续读位置。</p>}
                   <div>
-                    {plates.map((p) => (
+                    {(whole ? plates : reachedPlates).map((p) => (
                       <div className="reader-gallery-item" key={p.id}>
                         <button
-                          onClick={() => openImage(p.image_asset_id, true)}
+                          onClick={() => openImage(p.image_asset_id, whole)}
                           aria-describedby={
                             platePresentations.get(p.id)?.visualDescription
                               ? `reader-gallery-description-${p.id}`

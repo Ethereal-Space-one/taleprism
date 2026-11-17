@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3 — Public Preview
+
+- Review already reached chapter art without opening future plates or losing the current reading position.
+- Add opt-in, evidence-bound environmental motion with finite rendering, static fallbacks and lifecycle cleanup. Keep human Prompt handoff guidance separate from the hand-written renderer.
+- Bind Last Light rain to the audited normalized exported PNG; effects are visual overlays, not a per-drop physical simulation.
+- Preserve prompt-library 0.2.1, editable-project format v2, canonical source text, Chibi artwork and existing online reading identity.
+
 ## 0.3.2 — Public Preview
 
 - Add a one-click, loopback-only macOS launcher to standalone reader packages.

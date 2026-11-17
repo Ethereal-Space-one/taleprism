@@ -164,7 +164,7 @@
         "style": "Shared art direction / 全章风格",
         "characters": "Known identities / 已知角色"
       },
-      "instruction": "Treat the image budget as a ceiling, not a quota. Select only moments that earn their place: a new understanding, a useful reorientation, or a deliberate visual or emotional beat. For each shot record the insertion paragraph, exact source evidence, moment, present actors where relevant, framing and interpretation. Add reader_intent: question, expected_reading, visible_cue, withhold. The question must be answerable at the intended reading point from the image in context; the cue is observable, not an abstract mood label. A deliberately unresolved answer or felt quality is valid; do not force an event, conflict, identity reveal or new camera. Separate what this viewpoint knows from what the reader may know at placement. Keep unconfirmed narrator claims attributed and metaphors nonliteral unless intentionally flagged as symbolic. Mark montage as multiple times, not a simultaneous event. Carry forward only relevant established anchors; explain intentional changes with an event, time, viewpoint or artistic choice. For an unknown prior chapter, mark the missing baseline rather than inventing continuity. If nothing earns an image or safe placement is unavailable, defer, omit or leave the slot empty. 读者问题、预期读法、可见线索、此刻不揭示；有意留白，不强造冲突。",
+      "instruction": "Treat the image budget as a ceiling, not a quota. Select only moments that earn their place: a new understanding, a useful reorientation, or a deliberate visual or emotional beat. For each shot record the insertion paragraph, exact source evidence, moment, present actors where relevant, framing and interpretation. Add reader_intent: question, expected_reading, visible_cue, withhold. The question must be answerable at the intended reading point from the image in context; the cue is observable, not an abstract mood label. A deliberately unresolved answer or felt quality is valid; do not force an event, conflict, identity reveal or new camera. Separate what this viewpoint knows from what the reader may know at placement. Keep unconfirmed narrator claims attributed and metaphors nonliteral unless intentionally flagged as symbolic. Mark montage as multiple times, not a simultaneous event. Carry forward only relevant established anchors; explain intentional changes with an event, time, viewpoint or artistic choice. For an unknown prior chapter, mark the missing baseline rather than inventing continuity. If nothing earns an image or safe placement is unavailable, defer, omit or leave the slot empty. 读者问题、预期读法、可见线索、此刻不揭示；有意留白，不强造冲突。 Optional ambient motion is opt-in, never a quota or a requirement for every shot. Only when requested, carry a human ambient_effect brief alongside the selected shot: exact source location and quote, the approved moment and art choices, one environmental force/action, its visible consequence, protected story cues and a complete static fallback. Preserve the approved placement and original image; a low near-water camera insert is a separate experiment requiring later selection, not a replacement or a lower river level. Do not borrow a later wind, fire or weather event to justify this moment. This brief is not a plan, manifest or runtime schema extension. 可选环境动效先绑原文与批准瞬间；没有阅读价值就省略，未选择的实验不替换原定稿。",
       "output": "An ordered shot table with source anchors, acting, continuity and reader_intent. This human worksheet is not a workbench JSON import; do not add these fields to the persisted plan schema.",
       "example_inputs": {
         "source": [
@@ -279,7 +279,8 @@
         "Every image has a different narrative purpose.",
         "The budget is respected and the ending is not invented.",
         "Each selected image has a readable cue or a reason to leave the beat unillustrated.",
-        "Placement and viewpoint preserve intended uncertainty; exceptions are explicit and source-grounded."
+        "Placement and viewpoint preserve intended uncertainty; exceptions are explicit and source-grounded.",
+        "If optional ambient motion is requested, its source, approved beat and static fallback are explicit; experimental inserts do not displace approved shots."
       ],
       "recovery": "If two shots communicate the same thing, merge, reuse or omit them. If a reveal is early, move or simplify the illustration. Restore a spatial anchor only when orientation is needed; intentional ambiguity is not a failed match."
     },
@@ -292,7 +293,7 @@
         "scene": "Layout and existing master, if any / 布局及母版",
         "shots": "Planned sequence / 镜头顺序"
       },
-      "instruction": "Describe the fixed spatial anchors, camera, lighting and important movable props. Assign stable human-readable IDs. Fixed objects retain their home location. For each prop distinguish textual evidence from artistic design. Supply a state for every object in every shot, including offscreen and not-yet-arrived objects. Explain each state transition.",
+      "instruction": "Describe the fixed spatial anchors, camera, lighting and important movable props. Assign stable human-readable IDs. Fixed objects retain their home location. For each prop distinguish textual evidence from artistic design. Supply a state for every object in every shot, including offscreen and not-yet-arrived objects. Explain each state transition. When an optional ambient_effect brief is supplied, check composition before timing: identify the visual subject, force source, affected object, visible contact boundary, depth and space for motion while retaining the scene anchors. Observe the exact base image before marking source, motionRegion, collisionLine, protectedRegions and optional overshootRegion in normalized original-image coordinates; record image identity/hash, dimensions and crop mapping. Label geometry pixel_observed or pending_confirmation; do not invent measured coordinates from a filename or another shot. Write anticipation → contact → consequence → settle with start/end, direction, strength, decay and shared event/clock. A consequence cannot precede contact; layers caused by the same event share its trigger, secondary layers stay weaker, and cycles allow a pause. Supply design, reduced-motion and off states, preferring the unchanged original for the latter two. These are optional human worksheet notes, not saved runtime fields. 先构图再标定，再写四拍；保护人物与道具，不把示意遮罩当实测。",
       "output": "Scene layout, object register, per-shot state matrix and unresolved contradictions. Do not claim visual checking before images exist.",
       "example_inputs": {
         "source": [
@@ -773,7 +774,8 @@
       "checks": [
         "Every registered prop has a state in each shot.",
         "Fixed furniture does not move or change count.",
-        "Large architectural plan and small note sheet are distinct objects."
+        "Large architectural plan and small note sheet are distinct objects.",
+        "Optional motion geometry is bound to the exact observed base or marked pending; contact precedes its consequence and off/reduced-motion states preserve the static image."
       ],
       "recovery": "If object location is unknown, stop and choose a labelled artistic placement. Do not let the image model decide independently in every frame."
     },
@@ -787,7 +789,7 @@
         "references": "Ordered files and responsibilities / 参考图职责",
         "continuity": "Scene layout and object states / 连续性"
       },
-      "instruction": "Create one finished landscape 16:9 narrative illustration, no readable text, labels or watermark. Use the listed references for their stated purposes. Preserve identities but follow the shot’s acting and blocking. Establish the scene layout and current object states clearly. Do not include future arrivals. If a reference is missing, report that before trying to match an unseen identity. When a reader_intent is supplied in the worksheet brief, realise its visible cue and respect its withhold list without inventing a missing brief. Apply each actual reference only to its stated role: style, identity, layout or object state. Distinguish what is out of frame, occluded, not yet present or deliberately unrevealed; do not add an offscreen object just to make it clear.",
+      "instruction": "Create one finished landscape 16:9 narrative illustration, no readable text, labels or watermark. Use the listed references for their stated purposes. Preserve identities but follow the shot’s acting and blocking. Establish the scene layout and current object states clearly. Do not include future arrivals. If a reference is missing, report that before trying to match an unseen identity. When a reader_intent is supplied in the worksheet brief, realise its visible cue and respect its withhold list without inventing a missing brief. Apply each actual reference only to its stated role: style, identity, layout or object state. Distinguish what is out of frame, occluded, not yet present or deliberately unrevealed; do not add an offscreen object just to make it clear. When an optional ambient_effect brief is supplied, make a static base that remains complete with effects off: keep the subject first, show the actual force/contact boundary and affected surface with depth, leave motion room, and protect the approved identities, props and light sources. Use a neutral or settling moment; do not bake the peak action and all spray/trajectory/foam into the base. Do not add future weather, fire or arrivals. If the boundary cannot support the intended effect, propose the smallest local base edit before generation or leave the effect off; do not silently redesign the approved composition. This task generates a still, not rendered motion; omit motion preparation when no brief was requested. 可选动效底图仍是完整静态图，不以整图摇动、缩放或闪烁代替构图。",
       "output": "One illustration plus a short list of any unresolved visual compromises. Image quality and exact details still require inspection.",
       "example_inputs": {
         "style": "现代海边小站，细墨线与透明水彩，海青、石灰、旧木与暖灯色；自然比例、克制神情；保持人物身份与同一场所的空间连续。",
@@ -1099,7 +1101,8 @@
       "checks": [
         "Compare the face, age and costume with each identity reference.",
         "Count fixed lights and furniture.",
-        "Ensure later props and people have not appeared."
+        "Ensure later props and people have not appeared.",
+        "If an ambient brief is present, the still has a readable contact surface and static fallback; generating a base image is not evidence that motion was rendered."
       ],
       "recovery": "Inspect and repair the master before generating downstream frames. Do not build a sequence on an unreviewed master."
     },
@@ -1113,7 +1116,7 @@
         "references": "Ordered edit target, master, identities / 参考顺序",
         "continuity": "Master, previous checked frame, current states and changes / 状态与变化"
       },
-      "instruction": "Edit the first reference, the current target image. Use the environment master to verify fixed geometry; use the previous checked image for prop continuity. Keep the selected camera unless a new view is explicitly requested. Change only the permitted actions and props in the current state table. Do not resize or add furniture to make space. If the model cannot accept the needed references or localized edits, report this limitation; do not promise continuity from text alone. When a reader_intent is supplied in the worksheet brief, realise its visible cue and respect its withhold list without inventing a missing brief. Apply each actual reference only to its stated role: style, identity, layout or object state. Distinguish what is out of frame, occluded, not yet present or deliberately unrevealed; do not add an offscreen object just to make it clear.",
+      "instruction": "Edit the first reference, the current target image. Use the environment master to verify fixed geometry; use the previous checked image for prop continuity. Keep the selected camera unless a new view is explicitly requested. Change only the permitted actions and props in the current state table. Do not resize or add furniture to make space. If the model cannot accept the needed references or localized edits, report this limitation; do not promise continuity from text alone. When a reader_intent is supplied in the worksheet brief, realise its visible cue and respect its withhold list without inventing a missing brief. Apply each actual reference only to its stated role: style, identity, layout or object state. Distinguish what is out of frame, occluded, not yet present or deliberately unrevealed; do not add an offscreen object just to make it clear. When an optional ambient_effect brief is supplied, reuse the checked static base first and edit only a specifically approved composition defect. Preserve camera, character blocking, object states, stable light sources and protected regions; use a neutral/settling base rather than baking every motion phase into it. The force and strength must match the current source moment, not a later event or an earlier stronger-weather shot. Rebind image identity/hash and recheck pixel anchors after any base or crop change. Preserve the original and its review; a low near-water camera is a separately budgeted experimental candidate until later selected, not a replacement. Return a still and change log, not a claim of rendered motion. With no ambient brief, continue the normal image workflow unchanged. 可选动效不推进剧情，新机位不覆盖原定稿。",
       "output": "One edited illustration and a concise change log. Any new view is an unvalidated spatial change until inspected.",
       "example_inputs": {
         "style": "现代海边小站，细墨线与透明水彩，海青、石灰、旧木与暖灯色；自然比例、克制神情；保持人物身份与同一场所的空间连续。",
@@ -1513,7 +1516,8 @@
       "checks": [
         "Compare master, previous and current image side by side.",
         "Count and locate every prop, including the now-empty basket.",
-        "The cloth and bread wrapping remain distinguishable."
+        "The cloth and bread wrapping remain distinguishable.",
+        "Optional motion changes respect this moment’s weather, protected anchors and original candidate; changed bases/crops require new anchor checks."
       ],
       "recovery": "Repair one faulty element using stage 08 before generating the next image. If geometry keeps drifting, reuse the background or keep one illustration across adjacent text."
     },
@@ -1527,7 +1531,7 @@
         "expected": "Identity, acting, state and optional reader_intent from 03 / 预期（可附 03 的读者任务）",
         "reviewer": "Who inspected and how / 检查者与方式"
       },
-      "instruction": "Inspect the attached actual images. Check relevant source facts, identity, acting, spatial anchors and object states; give observed evidence and the smallest correction. If a reader_intent is supplied, reuse its question without supplying the intended answer to a first reader. Inspect the current frame for the visible cue; use adjacent frames for changes and the actual placement and size to check legibility and early disclosure, when each scope is relevant and available. For spoiler-sensitive images, also check covers, thumbnails and captions wherever they are exposed earlier. Do not demand that an illustration explain the story without its text. Document reviewer interpretation as distinct from observed first-reader evidence. Track separate statuses: passed, needs_revision, warning, not_checked, or not_applicable. Contradiction, unintended loss of a needed cue or premature reveal needs revision; ambiguous evidence stays warning. Deliberate ambiguity can pass only against its written intent, not as an excuse after viewing. If no image is attached, visual checks are not_checked; if comparison or reader context is missing, keep that scope unchecked. Missing reader_intent is not proof of reader understanding. An uninspected image cannot inherit an earlier pass. Assistant inspection is not creator approval. 先核事实，再核可读性；不把画风、标题或自己的推断当成读者实测。",
+      "instruction": "Inspect the attached actual images. Check relevant source facts, identity, acting, spatial anchors and object states; give observed evidence and the smallest correction. If a reader_intent is supplied, reuse its question without supplying the intended answer to a first reader. Inspect the current frame for the visible cue; use adjacent frames for changes and the actual placement and size to check legibility and early disclosure, when each scope is relevant and available. For spoiler-sensitive images, also check covers, thumbnails and captions wherever they are exposed earlier. Do not demand that an illustration explain the story without its text. Document reviewer interpretation as distinct from observed first-reader evidence. Track separate statuses: passed, needs_revision, warning, not_checked, or not_applicable. Contradiction, unintended loss of a needed cue or premature reveal needs revision; ambiguous evidence stays warning. Deliberate ambiguity can pass only against its written intent, not as an excuse after viewing. If no image is attached, visual checks are not_checked; if comparison or reader context is missing, keep that scope unchecked. Missing reader_intent is not proof of reader understanding. An uninspected image cannot inherit an earlier pass. Assistant inspection is not creator approval. 先核事实，再核可读性；不把画风、标题或自己的推断当成读者实测。 If an optional ambient_effect brief is supplied, review its static fallback separately from temporal behavior. Compare the exact base with anticipation, contact peak, consequence and settle frames, plus the full loop and actual narrow-screen crop; inspect reduced-motion and off evidence too. Verify protected people/props, real contact boundary, permitted overshoot, depth, no premature story reveal, and causal ordering before judging spectacle. No spray before a wave reaches shore; falling spray can end before foam briefly remains and flows back. Rain ripples must follow their own visible ground contacts rather than pulse in unison. Bind observations to actual image identity/hash and failed frame/time/location; missing phase, loop, reduced/off or crop evidence stays not_checked for that scope. A still cannot prove a rendered loop, and a written brief is not rendered evidence. Give a minimal recommendation: pass, repair mask/timing, or locally redraw the base, retaining unresolved statuses. For a paper-thin white line, inspect depth and water thickness before increasing density or brightness. 可选审片先看因果与保护区，不按热闹程度打分，不替旧图补写通过。",
       "output": "A review table with scope, observations, separate statuses, the reused reader question when supplied, and minimal next action. Label unavailable evidence and who checked it. This is not a reader experiment or creator sign-off.",
       "example_inputs": {
         "source": {
@@ -1647,7 +1651,8 @@
         "Uncertain details remain uncertain.",
         "Do not use these example results as approval of a newly generated image.",
         "A hue or state pass does not imply that the reader understood a relationship.",
-        "Do not infer a pass for layout or first readers from an isolated image."
+        "Do not infer a pass for layout or first readers from an isolated image.",
+        "Optional temporal review cites actual phase/loop evidence; static, crop and off/reduced-motion scopes do not inherit each other’s pass."
       ],
       "recovery": "If evidence is missing, retain not_checked for that scope. If the picture is accurate but the reader cue fails, change the staging, placement, slot or image choice before polishing. Do not fabricate a verdict."
     },
@@ -1661,8 +1666,8 @@
         "references": "Reference files with roles / 参考职责",
         "preserve": "Everything outside the correction / 保护范围"
       },
-      "instruction": "Edit only the specified defective region and strictly necessary surrounding pixels. Describe the exact replacement and the geometry it must respect. Keep identities, expressions, poses, camera, architecture, lighting and unrelated props unchanged. Return one corrected image. After editing, inspect the entire frame for regressions; a repair request alone is not proof of repair.",
-      "output": "A repaired image, a targeted before/after check, and a decision on whether downstream frames need review.",
+      "instruction": "Edit only the specified defective region and strictly necessary surrounding pixels. Describe the exact replacement and the geometry it must respect. Keep identities, expressions, poses, camera, architecture, lighting and unrelated props unchanged. Return one corrected image. After editing, inspect the entire frame for regressions; a repair request alone is not proof of repair. For an optional ambient_effect defect, first distinguish mask/timing failure from a base-composition failure. If only the mask or timing is wrong, keep the approved base unchanged and give the smallest bounded correction instead of regenerating the image; do not claim that this text edited or rendered motion. If a base edit is needed, constrain it to the observed contact/depth defect and preserve the original as a separate candidate. Protect faces, props, light sources and unrelated regions. Recheck changed anchors, all four causal phases, the full loop, narrow-screen crop and static/reduced/off behavior where affected; unavailable evidence remains not_checked. An experimental low-angle insert cannot replace an approved image without later selection. 可选动效先分清遮罩／节拍／底图问题，只修失败项，回查后才更新状态。",
+      "output": "A repaired image, or a bounded ambient mask/timing correction that leaves the base unchanged; a targeted before/after check and a decision on downstream review. A proposed correction is not proof that it was applied.",
       "example_inputs": {
         "target": "The recording candidate BEFORE the basket repair (use your own candidate file).",
         "defect": "The original story mentions a bicycle basket; the candidate omitted it.",
@@ -1682,7 +1687,8 @@
       "checks": [
         "The target defect is actually fixed.",
         "No unrelated prop, pose or identity changed.",
-        "Any dependent frame is reviewed again if its reference changed."
+        "Any dependent frame is reviewed again if its reference changed.",
+        "Ambient repairs preserve the approved base unless a local base edit was selected; temporal and fallback claims require new evidence for affected scopes."
       ],
       "recovery": "If repair changes unrelated areas, retry from the pre-repair image with a tighter edit scope. Do not accumulate uncontrolled changes by repeatedly editing a damaged result."
     }

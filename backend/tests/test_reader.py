@@ -128,6 +128,33 @@ def test_uploaded_scene_is_pending_and_cannot_override_another_version(setup):
     assert len(list((r.store.project_dir(pid) / "reader-assets").iterdir())) == 1
 
 
+def test_last_light_uploaded_arrival_matches_motion_recipe_bytes(tmp_path):
+    # The local upload normalizes PNG, while static export preserves the
+    # normalized storage bytes. Keep the reader motion allowlist honest.
+    client = TestClient(create_app(tmp_path))
+    sample = REPO / "samples/last-light"
+    project = client.post(
+        "/api/projects",
+        files={"file": ("last-light.txt", (sample / "source.txt").read_bytes())},
+        data={"rights_status": "owned"},
+    )
+    assert project.status_code == 201, project.text
+    pid = project.json()["id"]
+    raw = (sample / "arrival-v1.png").read_bytes()
+    uploaded = client.post(
+        f"/api/projects/{pid}/reader/assets",
+        files={"file": ("arrival.png", raw)},
+        data={"revision": 0, "kind": "scene", "license_text": "自有示例"},
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    asset = uploaded.json()
+    assert asset["sha256"] == "7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f"
+    stored = client.app.state.reader.path(pid, asset["id"])
+    with Image.open(io.BytesIO(raw)) as original, Image.open(stored) as normalized:
+        assert original.size == normalized.size == (1672, 941)
+        assert original.convert("RGB").tobytes() == normalized.convert("RGB").tobytes()
+
+
 def test_standalone_reader_package_and_export_scoped_review(setup):
     c, pid, r, raw = sample_ready(setup)
     job = export(c, pid)

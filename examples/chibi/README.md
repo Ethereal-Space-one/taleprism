@@ -1,6 +1,6 @@
 # 赤壁 · 可复制的在线主体验
 
-[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [v0.3.2 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.2) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.2/taleprism-v0.3.2-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.2/taleprism-v0.3.2-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
+[直接阅读](https://ethereal-space-one.github.io/taleprism/) · [v0.3.3 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/taleprism-v0.3.3-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/taleprism-v0.3.3-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
 
 《三国演义》第四十九、五十回的视觉小说体验：12 幅情境插图、8 位主要角色、9 张立绘、55 段画面编排，以及夹江对峙、火攻推进、战后撤军三个地图阶段。另有封面和5张环境背景，共27张图片。正文逐字保留，默认连续插图阅读，也可在设置中切换分栏。
 
@@ -26,15 +26,15 @@ npm --prefix frontend ci
 npm --prefix frontend run build
 uv run --project backend python tools/build_chibi_demo.py \
   --source /path/to/taleprism-v0.1.0-chibi-reader.zip \
-  --output .release/v0.3.2-chibi
+  --output .release/v0.3.3-chibi
 ```
 
 脚本不联网、不生成图片、不调用配音服务。它在临时工作台中恢复公开内容，确认方案并重放已经完成的助手制作检查，然后在另一个空工作台中导入工程、再次导出阅读包。不会读取本机私有历史工程或修改用户 `data`。
 
 输出：
 
-- `taleprism-v0.3.2-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
-- `taleprism-v0.3.2-chibi-reader.zip`：可离线阅读或自主托管。macOS 已安装 Python 3 时，解压后双击 `打开阅读器.command`；读完双击 `停止阅读器.command`。其他平台见包内说明。
+- `taleprism-v0.3.3-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
+- `taleprism-v0.3.3-chibi-reader.zip`：可离线阅读或自主托管。macOS 已安装 Python 3 时，解压后双击 `打开阅读器.command`；读完双击 `停止阅读器.command`。其他平台见包内说明。
 - `chibi-demo-manifest.json`：两个附件的大小与校验值、输入来源、配方和检查记录校验值、重建结果。
 
 原文、图片、角色 ID、正文锚点、55 段编排和地图保持一致。新生成的本地工程 ID、制作检查写入时间及导出 ID 可因运行而异，因此复建不承诺 ZIP 逐字节相同。比较复建结果应使用 manifest 和内容检查；发布附件自身各有固定 SHA-256。

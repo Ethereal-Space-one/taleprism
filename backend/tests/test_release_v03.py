@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 def test_application_version_matches_frontend_locks_and_health(tmp_path):
     version = tomllib.loads((ROOT / "backend/pyproject.toml").read_text())["project"]["version"]
-    assert version == "0.3.2"
+    assert version == "0.3.3"
     lock = tomllib.loads((ROOT / "backend/uv.lock").read_text())
     assert next(p for p in lock["package"] if p["name"] == "storygal")["version"] == version
     for folder in ("frontend", "tools/webgal-verify"):
@@ -37,7 +37,7 @@ def test_reviewed_chibi_recipe_version_is_independent_of_application(
 ):
     import build_chibi_demo as builder
 
-    monkeypatch.setattr(builder, "VERSION", "0.3.2")
+    monkeypatch.setattr(builder, "VERSION", "0.3.3")
     monkeypatch.setattr(
         builder, "preflight", lambda *_: ({"release_version": recipe_version}, {}, {}, {}, b"", b"")
     )
