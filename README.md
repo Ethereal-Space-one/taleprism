@@ -2,7 +2,7 @@
 
 **保留小说的每一个字，让读者在读到时看清局势、听见街声。** Taleprism 是一座本地制作台，也是一种不必安装的读本。图、声、动效都有原文里的落点；段落不需要它们时，页面就只有文字。
 
-**[从《赤壁》开始读](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [再听《留门》里的雨](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 公开预览与全部下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [English](README.en.md)
+**[在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载《赤壁》离线读本](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [下载《留门》，听街上的雨](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 公开预览与全部下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [English](README.en.md)
 
 ## 古典主展：《赤壁》把战局留在读者读到的那一刻
 
@@ -24,7 +24,7 @@
 2. 选「开始阅读」，已经采用的声景读到时响一次，图在作者选定的位置出现；只有另行复核的局部动效才动。若浏览器拦住第一次声音，点阅读器内的提示即可，不必放宽系统权限。
 3. 选「安静阅读」就改为手动体验。正文可暂停自动演绎；「静音」关整部作品的声音，但保留画与折页。系统开启「减少动态效果」时，图保持静止。段落朗读仍需点听，人物对白另有设置。
 
-**线上和下载不是同一版。** [在线《赤壁》](https://ethereal-space-one.github.io/taleprism/)是此前部署的 **0.3.2**；**0.3.3** 是此前的 GitHub 公开预览，不是当前 Pages 版本。本次 **0.9.0** 读本从上方 Release 下载，不会替换网页或你手上的旧 ZIP。
+**在线与离线，读的是同一本。** 在线《赤壁》现与 **0.9.0** Release 里的《赤壁》读本一致。在线入口无需下载；想断网阅读，就把上面的离线包完整解压后打开。以前下载的 ZIP 不会自动更新。《留门》和《留白处》仍为离线读本。
 
 ## 做自己的读本：先选原句，再决定做不做
 

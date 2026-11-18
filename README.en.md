@@ -2,7 +2,7 @@
 
 **Keep every word of the story. Let a map explain a battle or a passing car break the quiet at the moment the text calls for it.** Taleprism is a local authoring workbench and a standalone reader. A passage that needs no sound or picture stays on the page as prose.
 
-**[Start with Chibi (Red Cliffs)](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [Hear the rain in The Door Left Open](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 public preview and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [中文](README.md)
+**[Read Chibi (Red Cliffs) online](https://ethereal-space-one.github.io/taleprism/) · [Download Chibi for offline reading](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [Download The Door Left Open and hear the rain](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 public preview and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [中文](README.md)
 
 ## The classical showcase: Chibi, a battle map that doesn't give away the ending
 
@@ -24,7 +24,7 @@ A cobbler has lowered the shutter halfway. A pair of small yellow boots sits on 
 2. The cover stays silent. Choose **开始阅读** (Start reading): an adopted soundscape can play once at its passage, and a picture appears where the author placed it. Only separately reviewed motion can animate. If your browser blocks the first sound, use the prompt inside the reader; don't change browser permissions.
 3. **安静阅读** (Quiet reading) leaves the cues for you to try manually. Pause automatic cues while reading, or choose **静音** (Mute) to silence the book without hiding art or folds. System reduced motion keeps illustrations still. Passage narration is click-to-play; character dialogue retains its own settings. Nothing turns the page for you.
 
-**Web and download are different editions.** The [online Chibi showcase](https://ethereal-space-one.github.io/taleprism/) is the deployed **0.3.2** reader. **0.3.3** was an earlier GitHub preview, not the Pages deployment. For **0.9.0**, use the release downloads above. Neither the website nor an old ZIP is upgraded by downloading the new edition.
+**The same Chibi, online and off.** The web edition now uses the **0.9.0** Chibi reader from the release. Open the online link to start reading, or extract the download to read without a connection. Older ZIPs do not update themselves. The Door Left Open and The Margin remain offline downloads.
 
 ## Make an edition: choose the passage before the effect
 

@@ -2,7 +2,7 @@
 
 ## Current public preview: 0.9.0
 
-Reader ZIPs are offline publications with their own player. Editable ZIPs are a different format and may include internal working material. Two current public projects, Chibi and Last Light, retain their public work IDs and original source/media in their reissued readers; the separate reader-only demonstrations are not importable projects. See [release](RELEASE-v0.9.0.md) and [engineering history](ITERATION-HISTORY.md). Previously deployed Pages and old downloaded editions are unchanged.
+Reader ZIPs are offline publications with their own player. Editable ZIPs are a different format and may include internal working material. Two current public projects, Chibi and Last Light, retain their public work IDs and original source/media in their reissued readers; the separate reader-only demonstrations are not importable projects. See [release](RELEASE-v0.9.0.md) and [engineering history](ITERATION-HISTORY.md). The online Chibi showcase uses the published 0.9.0 reader. Old downloaded ZIPs keep their bundled reader; updating the site does not modify them.
 
 ## Historical 0.3.x formats
 

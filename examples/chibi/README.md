@@ -1,6 +1,6 @@
 # 赤壁 · 可复制的在线主体验
 
-[此前的在线示例（未随 0.9 更新）](https://ethereal-space-one.github.io/taleprism/) · [v0.9.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
+[在线读《赤壁》· 0.9.0](https://ethereal-space-one.github.io/taleprism/) · [v0.9.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
 
 《三国演义》第四十九、五十回的视觉小说体验：12 幅情境插图、8 位主要角色、9 张立绘、55 段画面编排，以及夹江对峙、火攻推进、战后撤军三个地图阶段。另有封面和5张环境背景，共27张图片。正文逐字保留，默认连续插图阅读，也可在设置中切换分栏。
 
