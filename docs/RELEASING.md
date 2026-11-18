@@ -24,7 +24,7 @@ uv run --project backend python tools/finalize_release.py --output "$OUT"
 
 Set `OUT` to the candidate asset directory. The gate compares four readers to the edition contract, then imports the two editable backups into fresh stores and checks their normal, unpatched reader exports. Browser checks and file checks answer different questions: a digest identifies bytes; it cannot tell you that a particular quote has the intended audible cue or that a prose description and reveal survived restoration. A static-only run is not a browser pass. Keep acceptance reports as build evidence, not as story assets. See [per-book criteria](VALIDATION-v0.9.1.md).
 
-The existing Pages site and v0.9.0 downloads remain separate from this local build. A future Pages change would be a separate, explicitly authorized operation: stage the selected Chibi reader, verify the candidate's per-book contract and every served file, retain the exact previously deployed archive for rollback, and compare live bytes after the approved switch. Do not treat passing local tests, a tag, or a Release as deployment authorization.
+The live site was separately updated to the published 0.9.1 Chibi reader; a local rebuild never changes the site or existing release downloads. A future Pages change would be a separate, explicitly authorized operation: stage the selected Chibi reader, verify the candidate's per-book contract and every served file, retain the exact previously deployed archive for rollback, and compare live bytes after the approved switch. Do not treat passing local tests, a tag, or a Release as deployment authorization.
 
 ## Rebuild v0.9.0
 

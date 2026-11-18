@@ -1,16 +1,18 @@
 # 赤壁 · 可复制的在线主体验
 
-[在线读《赤壁》· 0.9.0](https://ethereal-space-one.github.io/taleprism/) · [v0.9.0 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
+[在线读《赤壁》· 0.9.1](https://ethereal-space-one.github.io/taleprism/) · [v0.9.1 发布页](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.1) · [独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-chibi-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-chibi-project.zip) · [短篇制作教程《末班灯》](../last-light/README.md)
 
 《三国演义》第四十九、五十回的视觉小说体验：12 幅情境插图、8 位主要角色、9 张立绘、55 段画面编排，以及夹江对峙、火攻推进、战后撤军三个地图阶段。另有封面和5张环境背景，共27张图片。正文逐字保留，默认连续插图阅读，也可在设置中切换分栏。
 
 0.2 新增可编辑公开工程、12 个有原文依据及人物表演设计的镜头、9 个场景的物件状态和带素材哈希的制作检查。此前公开的工程与读本（至 0.9.0）均不含系统演示语音、声音文件、音色配置或密钥。下载包以正式发布页实际列出的附件为准。
 
-**分清版本。** 上述已公开的 0.9.0 工程与阅读包都无音轨，但江岸首幅原有波浪可动。0.9.1 **本地候选**只在第 12 段加入十二秒风声，无配音、无全章背景音乐。要定位：在候选读本搜索 `旗旛轉動`，点结果后在该段末点「听此处声景 · 风声」。搜索跳转不会自动补播。此版还修复了作者从工程导入后重导出时，十二条画面描述和两处诗后延迟显示丢失的问题。不改变已公开的入口或旧下载。[候选说明](../../docs/RELEASE-v0.9.1.md)
+**0.9.1 只给第 12 段加风声。** 在线或离线读本都能试听：搜 `旗旛轉動`，点结果后到段末点「听此处声景 · 风声」。这是十二秒的合成风声，无人声、无全章背景乐；搜索跳转不会自动补播。首幅江岸的波浪原来就有。0.9.1 还修复了作者导入工程并重导出后丢失十二条画面描述和两处诗后延迟显示的问题。[版本说明](../../docs/RELEASE-v0.9.1.md)
 
 0.3 增加随阅读进度揭示的阵营关系、阶段与因果脉络；证据绑定本版原文，回读会隐藏后文结果。旧版配方、原文和图片不因此改号。
 
 ## 从公开材料复建
+
+重建完整 0.9.1 发布读本（包括旗动处的风声）请按[当前打包说明](../../docs/RELEASING.md)。下面保留的是历史画面和制作方案的复建流程，不是给旧包加声景的步骤。
 
 复建输入是已发布的 [v0.1.0 赤壁独立阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.1.0/taleprism-v0.1.0-chibi-reader.zip)。制作方案和检查记录随源码提供。
 
@@ -35,8 +37,8 @@ uv run --project backend python tools/build_chibi_demo.py \
 
 输出：
 
-- `taleprism-v0.9.0-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
-- `taleprism-v0.9.0-chibi-reader.zip`：可离线阅读或自主托管。macOS 已安装 Python 3 时，解压后双击 `打开阅读器.command`；读完双击 `停止阅读器.command`。其他平台见包内说明。
+- `taleprism-v0.9.1-chibi-project.zip`：可在制作台“导入工程”继续编辑；导入后获得独立的本地工程 ID。
+- `taleprism-v0.9.1-chibi-reader.zip`：可离线阅读或自主托管。macOS 已安装 Python 3 时，解压后双击 `打开阅读器.command`；读完双击 `停止阅读器.command`。其他平台见包内说明。
 - `chibi-demo-manifest.json`：两个附件的大小与校验值、输入来源、配方和检查记录校验值、重建结果。
 
 原文、图片、角色 ID、正文锚点、55 段编排和地图保持一致。新生成的本地工程 ID、制作检查写入时间及导出 ID 可因运行而异，因此复建不承诺 ZIP 逐字节相同。比较复建结果应使用 manifest 和内容检查；发布附件自身各有固定 SHA-256。

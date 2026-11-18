@@ -1,6 +1,6 @@
-# 0.9.1 local candidate: acceptance is by book, not just by ZIP
+# 0.9.1: acceptance is by book, not just by ZIP
 
-This is the acceptance specification for the local candidate. The currently published [0.9.0 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) and [Chibi reading room](https://ethereal-space-one.github.io/taleprism/) remain separate. A matching checksum proves the file you have is the file the packager produced; it does not prove that sound survived import, or that an illustration still appears after the verse it belongs with.
+This record describes the checks on the 0.9.1 release build. The [GitHub release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.1) supplies the four readers; the [reading room](https://ethereal-space-one.github.io/taleprism/) serves the Chibi reader from that release. A matching checksum proves the file you have is the file the packager produced; it does not prove that sound survived import, or that an illustration still appears after the verse it belongs with.
 
 ## Book contracts
 
@@ -22,6 +22,10 @@ For the editable examples, import each released-format project into a new empty 
 ## Observed reader-discovery check
 
 On 2026-11-18 the two rebuilt candidate reader ZIPs were extracted and opened using `file://` in Linux Chromium. With fresh 390- and 1180-pixel viewports, **Quiet reading → Search → select the one matching passage → the paragraph’s sound button** worked in all four cases. Searching `旗旛轉動` returned one hit and the sound button identified paragraph 12; searching `傍晚的雨` returned one hit and identified paragraph 2. The audio element stayed paused after the search jump, advanced beyond 0.5 seconds after the explicit click, and made no HTTP requests. This verifies the written shortcut, not a physical-phone listening test or the full edition gate.
+
+## Hosted edition
+
+The Chibi reading room was verified separately at the existing `/taleprism/` address against the published 0.9.1 Chibi reader. This hosted check is distinct from building the ZIPs or promoting a GitHub release. Old downloaded readers remain unchanged.
 
 ## Reproduce
 

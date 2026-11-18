@@ -2,15 +2,15 @@
 
 目标：理解一篇小说如何经过人物表演、场景设定、逐图检查，成为可连续阅读的作品。无须安装制作台即可使用本教程。[English](README.en.md)
 
-[离线阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-last-light-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-last-light-project.zip) · [模板起步包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-prompt-starter.zip) · [八个模板 0.2.1](../../prompts/README.md)
+[离线阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-project.zip) · [模板起步包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-prompt-starter.zip) · [八个模板 0.2.1](../../prompts/README.md)
 
-上面是已发布的 0.9.0，没有段落声音，第一幅《檐下初见》已有局部雨效。**0.9.1 本地候选**另给第 2 段「傍晚的雨斜着落进站台」配一处十二秒合成细雨，不加车辆或人声。打开候选读本，搜索 `傍晚的雨`，点结果后到该段末点「听此处声景 · 细雨」；不用从头等，也不用期待其他八段都有声音。三幅图和原文不变。阅读包不能导回制作台；要继续制作，请用同版工程包。[版本说明](../../docs/RELEASE-v0.9.1.md)。
+**0.9.1 第二段有雨声。** 搜 `傍晚的雨`，点结果后到该段末点「听此处声景 · 细雨」。这是十二秒合成细雨，不加车辆或人声。第一幅《檐下初见》原有的局部雨效和三幅图都保留。旧 0.9.0 ZIP 只有画面雨效，没有段落声音。[版本说明](../../docs/RELEASE-v0.9.1.md)。
 
 《末班灯》是项目原创虚构短篇：改建项目成员林遥、退休值班员陈伯与骑车女孩小满，在海边旧站讨论一盏仍在使用的灯。没有当场批准改建方案，也没有承诺旧灯永久保留。正文以[原文件](../../samples/last-light/source.txt)为准。
 
 ## 先准备这些文件
 
-下载源码或 `taleprism-v0.9.0-prompt-starter.zip` 后，保持目录结构。
+下载源码或 `taleprism-v0.9.1-prompt-starter.zip` 后，保持目录结构。
 
 | 文件，均位于 `samples/last-light/` | 用途 |
 | --- | --- |

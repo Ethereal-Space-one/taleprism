@@ -1,8 +1,8 @@
 # Taleprism compatibility
 
-## Current public preview: 0.9.0
+## Current public version: 0.9.1
 
-Reader ZIPs are offline publications with their own player. Editable ZIPs are a different format and may include internal working material. Two current public projects, Chibi and Last Light, retain their public work IDs and original source/media in their reissued readers; the separate reader-only demonstrations are not importable projects. See [release](RELEASE-v0.9.0.md) and [engineering history](ITERATION-HISTORY.md). The online Chibi showcase uses the published 0.9.0 reader. Old downloaded ZIPs keep their bundled reader; updating the site does not modify them.
+Reader ZIPs are offline publications with their own player. Editable ZIPs are a different format and may include internal working material. Two current public projects, Chibi and Last Light, retain their public work IDs and original source/media in their reissued readers; the separate reader-only demonstrations are not importable projects. See [release](RELEASE-v0.9.1.md) and [engineering history](ITERATION-HISTORY.md). The online Chibi showcase uses the published 0.9.1 reader. Old downloaded ZIPs keep their bundled reader; updating the site does not modify them.
 
 ## Historical 0.3.x formats
 
@@ -73,8 +73,8 @@ New reading JSON may contain a verified original whitespace gap before each bloc
 ## Private 0.7.0: finite local soundscapes
 Only reader payloads with an accepted paragraph soundscape move to v5; other editions do not acquire a synthetic track. Editable projects with actual soundscape history use v6, retain private evidence, decisions, audio and timeline choices, and restore their exact WAVs. The book needs no synthesizer at runtime. Independent narration, dialogue and reviewed picture motion continue to work. WebGAL warns that paragraph soundscapes are omitted. Previous readers remain intact; use the current workbench to edit the new project ZIPs.
 
-## 0.9.1 local candidate: source-bound edition decisions
+## 0.9.1: source-bound edition decisions
 
-The 0.9.0 Chibi reader correctly presented the curated illustration descriptions and two poem-safe reveal points. Importing its editable example created a new project ID as intended, but the ordinary reader export from that copy did not reproduce all twelve image descriptions or the two later reveal points. These decisions are not equivalent to changing the image file or its original source attachment. The candidate preserves the decisions across the import/export path without giving a new editable project the public reader’s identity.
+The 0.9.0 Chibi reader correctly presented the curated illustration descriptions and two poem-safe reveal points. Importing its editable example created a new project ID as intended, but the ordinary reader export from that copy did not reproduce all twelve image descriptions or the two later reveal points. These decisions are not equivalent to changing the image file or its original source attachment. The release preserves the decisions across the import/export path without giving a new editable project the public reader’s identity.
 
-The candidate Chibi and Last Light pairs carry one accepted, finite paragraph soundscape apiece, using the existing editable v6 / reading-data v5 support. No automatic retrofit is performed on an old reader ZIP. The Door Left Open and The Margin continue as reader-only works. [Candidate comparison](RELEASE-v0.9.1.md).
+The 0.9.1 Chibi and Last Light pairs carry one accepted, finite paragraph soundscape apiece, using the existing editable v6 / reading-data v5 support. No automatic retrofit is performed on an old reader ZIP. The Door Left Open and The Margin continue as reader-only works. [Release comparison](RELEASE-v0.9.1.md).
