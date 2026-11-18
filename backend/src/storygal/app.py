@@ -13,6 +13,7 @@ from .bundles import mount_bundles
 from .delivery import Delivery
 from .exporter import REPO, export_project
 from .guided_sample import mount_guided_sample
+from .plate_screening_api import mount_screening
 from .production import mount_production
 from .reader_api import mount_reader
 from .review import ConflictError
@@ -92,7 +93,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.9.1", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.9.2", lifespan=lifespan)
     instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)
@@ -104,11 +105,13 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     mount_guided_sample(app)
     delivery = Delivery(store, review, speech, visual, reader)
     app.state.delivery = delivery
+    delivery.screening = mount_screening(app, reader)
 
     class DeliveryReview(BaseModel):
         model_config = ConfigDict(extra="forbid")
         checks: dict[str, bool]
         notes: str = Field(default="", max_length=2000)
+        screening_revision: int | None = Field(default=None, ge=0)
 
     @app.get("/api/projects/{pid}/delivery")
     def delivery_state(pid: str):
@@ -116,7 +119,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
 
     @app.post("/api/projects/{pid}/exports/{eid}/review")
     def delivery_review(pid: str, eid: str, body: DeliveryReview):
-        return delivery.accept(pid, eid, body.checks, body.notes)
+        return delivery.accept(pid, eid, body.checks, body.notes, body.screening_revision)
 
     @app.exception_handler(ValueError)
     async def invalid(_request, exc):
@@ -130,7 +133,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def health():
         return {
             "status": "ok",
-            "version": "0.9.1",
+            "version": "0.9.2",
             "service": "taleprism",
             "workspace_id": sha256(str(REPO.resolve()).encode()),
             "data_id": sha256(str(store.root).encode()),

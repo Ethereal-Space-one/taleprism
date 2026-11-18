@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 
 from build_release import starter_entries
+from check_plate_studies import validate_report as validate_plates
 from release_files import ROOT, source_files, tracked_inventory
 from release_version import PREFIX, VERSION
 
@@ -118,7 +119,15 @@ def finalize(output):
             "example": None,
         }
     )
-    require_editions(output, commit, {a["file"]: a["sha256"] for a in records})
+    hashes = {a["file"]: a["sha256"] for a in records}
+    require_editions(output, commit, hashes)
+    plate_receipt = (output / "plate-screening-acceptance.json").read_bytes()
+    validate_plates(json.loads(plate_receipt), hashes, commit)
+    manifest["checks"]["plate_screening"] = {
+        "status": "passed",
+        "scope": "per-plate editorial decisions plus normal/reduced frame evidence in four final readers and explicit worksheet transfer in both final editable restores; not an aesthetic mask approval",
+        "receipt_sha256": digest(plate_receipt),
+    }
     manifest["checks"]["edition_semantics"] = {
         "status": "passed",
         "scope": "four delivered readers and two ordinary editable imports/re-exports",

@@ -9,7 +9,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
-from release_version import PREFIX, ROOT, VERSION
+from release_version import BOOK_EDITION, PREFIX, ROOT
 from storygal.portable_reader import TEMPLATE, embed_story
 from storygal.reader_export import read_runtime
 from storygal.soundscape_audio import render_soundscape
@@ -100,7 +100,7 @@ def build(out):
         )
         files["README.txt"] = (
             title
-            + f" · Taleprism v{VERSION} public preview\n"
+            + f" · Taleprism v{BOOK_EDITION} public preview\n"
             + description
             + "\n完整解压并打开 index.html。已采用的演绎随阅读自动出现，封面可选「安静阅读」。若浏览器拦下声音，点击「开启声音」。\nExtract fully and open index.html in your browser. Offline, no API key or application required. Quiet reading, pause, mute and reduced motion are respected.\n"
         ).encode()

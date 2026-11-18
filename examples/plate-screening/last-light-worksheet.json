@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "work_id": "2a036de9-32f1-4ad5-b9bd-f6f4d8d570ae",
+  "source_sha256": "1b2e65bfef863fa666d525aae620793d72038e0442ae4bb5a88f2e12ddbd5880",
+  "plates": [
+    {
+      "plate_id": "plan-arrival",
+      "decision": "motion",
+      "evidence": "傍晚的雨斜着落进站台，",
+      "observation": "门边的人抱着测绘筒，中央偏右的老人俯身擦长凳；檐柱外有斜雨，右侧湿站台映着天光，墙边的旧灯发暖光。",
+      "action": "保留檐外分区落雨及右侧露天湿地上的少量触地水圈，不给人物加雨幕。",
+      "protect": "林遥的脸和测绘筒、陈伯擦水的手、凳面、门窗和灯；不把整片地板都当水面。",
+      "reason": "这幅先让读者走进旧站；斜雨在原句、檐外空间和湿地三处都能找到依据。",
+      "verification": "正常阅读时可见既有局部雨效，减少动态时保持静止。此项只记录播放，不代表每条边缘、所有屏宽或真机都已通过美术验收。",
+      "image_asset_id": "185a9c02-1b8f-4e16-8928-15af186e5dc2",
+      "image_sha256": "7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f",
+      "width": 1672,
+      "height": 941,
+      "after_byte": 526,
+      "paragraph_start": 22
+    },
+    {
+      "plate_id": "plan-negotiation",
+      "decision": "still",
+      "evidence": "林遥指着图纸的手停住了。",
+      "observation": "同一长凳上铺着图纸，林遥坐在左端看向老人；老人扶住凳背，另一手拿布。右侧远景依然画着雨，灯还亮着。",
+      "action": "让读者在图纸与两人停下来的手之间来回看；不承接首幅的循环雨。",
+      "protect": "图纸边缘、两人的手、神情、凳背和右侧远景的低对比度。",
+      "reason": "画中下雨不等于每幅都要动。陈伯问谁来开灯，林遥第一次停住；重复外面的天气会抢去这次停顿。",
+      "verification": "",
+      "image_asset_id": "22f42c77-8671-413e-8d22-052e16764555",
+      "image_sha256": "0022e65f8db155e965a01160247dd1a1baad1ee806e5c5fb3dd9d1fae080e2b3",
+      "width": 1670,
+      "height": 941,
+      "after_byte": 1524,
+      "paragraph_start": 987
+    },
+    {
+      "plate_id": "plan-recording",
+      "decision": "still",
+      "evidence": "陈伯这才坐下来，拿起铅笔。",
+      "observation": "陈伯低头在膝上写，林遥坐在他身边；右侧女孩扶着带篮的自行车，布包和面包已在凳面。旧灯持续亮着。",
+      "action": "让读者自己发现大图纸已经卷起，纸、笔和手接过叙事；不重播雨，也不代人物写字。",
+      "protect": "铅笔尖、膝上的纸、两人的手、面包和车篮，以及旧灯的稳定亮度。",
+      "reason": "前文已写雨渐小。此处是把日常记下来的开始，不是一次决定永久保留的庆祝；让画面安定比添天气或灯效准确。",
+      "verification": "",
+      "image_asset_id": "6860e3c0-848f-44c1-a1df-069ff4bde662",
+      "image_sha256": "c731b90647a1812a59dfae6ded0078a21ea745c6af93fbc1ce884ba8f10ec524",
+      "width": 1672,
+      "height": 941,
+      "after_byte": 3024,
+      "paragraph_start": 2481
+    }
+  ]
+}

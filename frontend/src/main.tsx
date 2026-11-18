@@ -59,7 +59,7 @@ function App() {
   function keepCurrentWork() { navigationVersion.current += 1 }
   function mayLeaveReader(){
     if(readerGuard.current.writing){window.alert('正在保存阅读器，请等待完成后再切换。');return false}
-    return !readerGuard.current.dirty || window.confirm('离开将放弃本页未保存的阅读器修改。继续离开吗？')
+    return !readerGuard.current.dirty || window.confirm('离开将放弃本页未保存的修改。继续离开吗？')
   }
   function navigateMode(next: typeof mode) { if(next!==mode && !mayLeaveReader())return false; keepCurrentWork(); setMode(next);return true }
   function openImportDialog() { if(importLock.current)return;keepCurrentWork(); upload.reset(); dialog.current?.querySelector('form')?.reset();dialog.current?.showModal() }
@@ -180,7 +180,7 @@ function App() {
           <nav className="workspace-tabs" aria-label="工作台视图"><button aria-pressed={mode === 'production'} onClick={() => navigateMode('production')}>章节制作方案</button><button aria-pressed={mode === 'text'} onClick={() => navigateMode('text')}>原文与预览</button><button aria-pressed={mode === 'review'} onClick={() => navigateMode('review')}>人物与审校{review.data ? ` · ${review.data.pending_count} 待审` : ''}</button><button aria-pressed={mode === 'speech'} onClick={() => navigateMode('speech')}>对白配音</button><button aria-pressed={mode === 'visual'} onClick={() => navigateMode('visual')}>视觉与图解</button><button aria-pressed={mode === 'reader'} onClick={() => navigateMode('reader')}>独立阅读器</button><button aria-pressed={mode === 'delivery'} onClick={() => navigateMode('delivery')}>交付检查</button></nav>
           {mode === 'production' && <ProductionPanel key={project.id} projectId={project.id} />}
           {mode === 'reader' && <ReaderPanel key={project.id} projectId={project.id} review={review.data} onGuardChange={onReaderGuard} />}
-          {mode === 'delivery' && <DeliveryPanel key={project.id} projectId={project.id} onLocate={navigateMode} onExport={() => { keepCurrentWork(); setWebgalOpen(true) }} busy={busy} />}
+          {mode === 'delivery' && <DeliveryPanel key={project.id} projectId={project.id} onGuardChange={onReaderGuard} onLocate={navigateMode} onExport={() => { keepCurrentWork(); setWebgalOpen(true) }} busy={busy} />}
           {mode === 'visual' && data.data && <VisualPanel key={project.id} projectId={project.id} spans={data.data.spans} units={data.data.units} />}
           {mode === 'speech' && <SpeechPanel key={project.id} projectId={project.id} />}
           {mode === 'review' && <ReviewPanel key={project.id} projectId={project.id} onLocate={(start, end) => {
@@ -210,7 +210,7 @@ function App() {
             </aside>
           </div>}
         </>}
-        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.9.1 / 公开预览版</span></footer>
+        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.9.2 / 公开预览版</span></footer>
       </main>
     </div>
     {webgalOpen && project && <WebgalExportDialog key={project.id} projectId={project.id} busy={busy} onClose={() => setWebgalOpen(false)} onReader={() => { setWebgalOpen(false); navigateMode('reader') }} />}

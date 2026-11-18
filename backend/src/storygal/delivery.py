@@ -16,6 +16,7 @@ class Delivery:
     def __init__(self, store, review, speech, visual, reader=None):
         self.store, self.review, self.speech, self.visual = store, review, speech, visual
         self.reader = reader
+        self.screening = None
         with store.db() as db:
             db.execute("""CREATE TABLE IF NOT EXISTS delivery_reviews(
                 project_id TEXT, export_id TEXT, data TEXT NOT NULL,
@@ -209,20 +210,46 @@ class Delivery:
                     (pid,),
                 )
             ]
+            row = (
+                db.execute(
+                    "SELECT revision FROM private_plate_screenings WHERE project_id=?", (pid,)
+                ).fetchone()
+                if self.screening
+                else None
+            )
+            sheet_revision = row[0] if row else 0
+        ready = all(c["passed"] for c in checks)
+        stale = bool(latest and any(latest["result"].get(k, 0) != v for k, v in versions.items()))
+        # A technical preflight or a historical review predating the worksheet
+        # is not a current sign-off. Preserve old records; do not upgrade them.
+        record = next((r for r in records if latest and r["export_id"] == latest["id"]), None)
+        current_signoff = record if ready and not stale and record else None
+        if (
+            current_signoff
+            and self.reader
+            and record.get("editorial_revision") != editorial["revision"]
+        ):
+            current_signoff = None
+        if (
+            current_signoff
+            and reader_export
+            and record.get("plate_screening_revision") != sheet_revision
+        ):
+            current_signoff = None
         return {
-            "ready": all(c["passed"] for c in checks),
+            "ready": ready,  # Legacy key: technical export readiness only.
+            "ready_for_export": ready,
+            "current_signoff": current_signoff,
             "checks": checks,
             "warnings": warnings,
             "versions": versions,
             "latest": latest,
-            "stale": bool(
-                latest and any(latest["result"].get(k, 0) != v for k, v in versions.items())
-            ),
+            "stale": stale,
             "records": records,
             "tasks": jobs[:12],
         }
 
-    def accept(self, pid, eid, checks, notes):
+    def accept(self, pid, eid, checks, notes, screening_revision=None):
         if set(checks) != REVIEW_CHECKS or not all(v is True for v in checks.values()):
             raise ValueError("请明确完成全部五项复核；没有使用的音频或图页也应核实为无。")
         job = self.completed(pid, eid)
@@ -249,6 +276,19 @@ class Delivery:
             raise ValueError(
                 "请先处理制作意见、记录延期理由，并核对内容更新后的意见，再完成最终复核。"
             )
+        # Per-actual-plate screening lives outside reader/editorial revisions.
+        # It gates only signing a reader edition, never draft export/backup. WebGAL
+        # compatibility exports explicitly omit these reader-only plates.
+        screening = (
+            self.screening.state(pid) if self.screening and job["kind"] == "reader_export" else None
+        )
+        if screening:
+            if screening_revision is not None and screening["revision"] != screening_revision:
+                raise ConflictError("审图单已更新，请重新读取后再签核。")
+            if not screening["report"]["ok"]:
+                raise ValueError(
+                    "逐幅动静审图尚未完成或有冲突；先核对实图和原文。普通试读、导出不受影响。"
+                )
         record = {
             "editorial_revision": editorial["revision"],
             "export_id": eid,
@@ -259,8 +299,14 @@ class Delivery:
             "versions": versions,
             "archive_sha256": archive_hash,
         }
+        if screening:
+            record["plate_screening_revision"] = screening["revision"]
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            if screening:
+                self.screening.check_versions(
+                    db, pid, screening["revision"], screening["reader_revision"]
+                )
             row = db.execute(
                 "SELECT revision FROM reader_editorial WHERE project_id=?", (pid,)
             ).fetchone()

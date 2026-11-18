@@ -11,6 +11,32 @@ from test_reliability_integration import export, request
 from storygal.delivery import REVIEW_CHECKS
 
 
+@pytest.fixture(autouse=True)
+def separately_screen_synthetic_plates(compiled):
+    # This fixture deliberately approved the known flat-color synthetic pixels;
+    # a passed continuity check or the absence of motion is not a still decision.
+    client, prefix, _, _ = compiled
+    url = prefix + "/plate-screening"
+    data = client.get(url).json()
+    for r in data["worksheet"]["plates"]:
+        response = client.put(
+            url + "/plate",
+            json={
+                "revision": data["revision"],
+                "reader_revision": data["reader_revision"],
+                "plate_id": r["plate_id"],
+                "decision": "still",
+                "evidence": data["display"][r["plate_id"]]["paragraph"],
+                "observation": "整张合成测试底图为纯棕色。",
+                "action": "全幅不动。",
+                "protect": "整幅纯色范围。",
+                "reason": "这是事务测试，没有可依据的环境运动。",
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+
+
 def review_records(client, pid):
     with client.app.state.store.db() as db:
         records = [

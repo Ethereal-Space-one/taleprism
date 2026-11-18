@@ -2,12 +2,12 @@
 
 A GitHub prerelease is not a stable release or a Pages rollout. Use an ordinary review branch from the verified public main; never import an unrelated private Git history or replace an existing tag. The [iteration history](ITERATION-HISTORY.md) is the public record of the intervening work.
 
-## 0.9.1 local build: validate what the books actually do
+## 0.9.2 local build: review every plate without changing the books
 
 Use a clean output directory, install the locked dependencies and rebuild the reader; do not replace any 0.9.0 file. Download the four original v0.3.3 Chibi/Last Light project/reader ZIPs from the [historical public release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3). The exact two accepted sounds regenerate locally; private projects or audio downloads are not inputs.
 
 ```sh
-OUT="$PWD/.release/v0.9.1"
+OUT="$PWD/.release/v0.9.2"
 uv sync --project backend --frozen
 npm --prefix frontend ci && npm --prefix frontend run build
 npm --prefix tools/webgal-verify ci --omit=dev
@@ -19,10 +19,16 @@ On the reviewed commit, run the book-specific gate **before** finalizing checksu
 ```sh
 uv run --project backend python tools/check_edition_semantics.py --output "$OUT" --chromium /path/to/chromium --report "$OUT/edition-acceptance.json"
 uv run --project backend python tools/check_reading_upgrade.py --output "$OUT" --previous /path/to/v0.9.0-readers --chromium /path/to/chromium
+TALEPRISM_CHROMIUM=/path/to/chromium node tools/webgal-verify/plate-screening-workbench.cjs
+uv run --project backend python tools/check_plate_studies.py --output "$OUT" --chromium /path/to/chromium --report "$OUT/plate-screening-acceptance.json"
 uv run --project backend python tools/finalize_release.py --output "$OUT"
 ```
 
-Set `OUT` to the candidate asset directory. The gate compares four readers to the edition contract, then imports the two editable backups into fresh stores and checks their normal, unpatched reader exports. Browser checks and file checks answer different questions: a digest identifies bytes; it cannot tell you that a particular quote has the intended audible cue or that a prose description and reveal survived restoration. A static-only run is not a browser pass. Keep acceptance reports as build evidence, not as story assets. See [per-book criteria](VALIDATION-v0.9.1.md).
+For 0.9.2 the finalizer also requires the current catalog, every current worksheet, and the separate fresh-browser plate-screening receipt for the actual four reader ZIPs. Recheck this when an edition, image or anchor changes. This adds a build rule, not a replacement of a previously published tag.
+
+Set `OUT` to the candidate asset directory. The gate compares four readers to the edition contract, then imports the two editable backups into fresh stores and checks their normal, unpatched reader exports. Browser checks and file checks answer different questions: a digest identifies bytes; it cannot tell you that a particular quote has the intended audible cue or that a prose description and reveal survived restoration. A static-only run is not a browser pass. Keep acceptance reports as build evidence, not as story assets. Review [0.9.2 checks and limits](VALIDATION-v0.9.2.md) and the [unchanged per-book criteria](VALIDATION-v0.9.1.md).
+
+0.9.2 keeps the internal book edition at 0.9.1. All six book ZIP hashes must match the public 0.9.1 release; the name in the new download URL is not an edition migration. Source and prompt starter are new. Upload the eight frozen ZIPs plus the finalized manifest and SHA256SUMS, not the build receipts. Use the receipts from CI for the exact reviewed commit.
 
 The live site was separately updated to the published 0.9.1 Chibi reader; a local rebuild never changes the site or existing release downloads. A future Pages change would be a separate, explicitly authorized operation: stage the selected Chibi reader, verify the candidate's per-book contract and every served file, retain the exact previously deployed archive for rollback, and compare live bytes after the approved switch. Do not treat passing local tests, a tag, or a Release as deployment authorization.
 

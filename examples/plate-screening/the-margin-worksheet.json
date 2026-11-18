@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "work_id": "4e7a7e2d-17e9-5930-93f7-45ccf1bd5e0a",
+  "source_sha256": "6aab83ff58fde9b69aebd054de1155ddd4968d42eaf29adc5f020166f4f9bc16",
+  "plates": [
+    {
+      "plate_id": "studio-first-illustration",
+      "decision": "still",
+      "evidence": "那张小桌摆在厨房里，少一条腿，底下垫着两册旧历书。",
+      "observation": "矮桌右前角压着两册颜色不同的旧书，上册略向里缩；桌面只有几处墨痕。后墙窗格的斜影和地板接缝都很清楚。",
+      "action": "让目光沿桌面落到缺腿处，在两层书脊和不齐的页口停留。不推镜，不翻页，也不让窗影游动。",
+      "protect": "两册书与桌沿的接触点、倾斜的光影边线、空桌面。",
+      "reason": "桌子能站稳，正因为垫在下面的日子没有再往前翻。移动的窗影会把定格变成时间流逝，桌上添写字动作则会提前占用后文那处空白。",
+      "verification": "",
+      "image_asset_id": "d945f94e-f701-5505-bda5-57ce75d9020f",
+      "image_sha256": "e6631fde837dd200d737e78fc4185055911c044b2382b91a38557698069c64f1",
+      "width": 1440,
+      "height": 900,
+      "after_byte": 304,
+      "paragraph_start": 208
+    }
+  ]
+}

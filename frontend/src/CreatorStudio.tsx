@@ -353,7 +353,9 @@ function ArtStep({
     <section className="studio-card" aria-labelledby="studio-art-title">
       <p className="guided-kicker">02 / 底图与落点</p>
       <h2 id="studio-art-title">把插图放进原文</h2>
-      <p>先上传候选图。看过实际底图、接受它并选定段落后，才把它作为静图放入阅读器。</p>
+      <p>
+        先上传候选图，看过实图、接受并选定段落后再放置。下一页先逐幅审图：留静、可支持的动效或延期。导演动效不是必选。
+      </p>
       {alreadyPlaced && !busy && (
         <p role="status">
           此插图已在另一个页面放置，本页输入未丢弃。

@@ -1,0 +1,29 @@
+{
+  "edition": "v0.9.2",
+  "books": [
+    {
+      "slug": "chibi",
+      "reader": "taleprism-v0.9.2-chibi-reader.zip",
+      "sha256": "9a539fd9c444772a20417c0c5c4de2e591785db16ed1a7de036035c46f52d891",
+      "worksheet": "chibi-worksheet.json"
+    },
+    {
+      "slug": "last-light",
+      "reader": "taleprism-v0.9.2-last-light-reader.zip",
+      "sha256": "4c885d469f3163d3d1e064b7e024875b51d5fb7764cefda2e049238e09e736dc",
+      "worksheet": "last-light-worksheet.json"
+    },
+    {
+      "slug": "the-door-left-open",
+      "reader": "taleprism-v0.9.2-the-door-left-open-reader.zip",
+      "sha256": "309afb04922a79b16ac096d72bec1d8143fa0d587395df37c954a35a76eb45b2",
+      "worksheet": "the-door-left-open-worksheet.json"
+    },
+    {
+      "slug": "the-margin",
+      "reader": "taleprism-v0.9.2-the-margin-reader.zip",
+      "sha256": "463fd9cd892afdd80895eb6f145077c1789b909177e444387c4affe43dab0b63",
+      "worksheet": "the-margin-worksheet.json"
+    }
+  ]
+}

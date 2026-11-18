@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.2 · An editorial decision for every placed illustration
+
+- The workbench pairs each actual illustration with the text available at its place in the story. Formal sign-off requires a reasoned decision: keep still, propose supported motion, or defer an effect the tools cannot make. Draft exports remain available; a proposal never turns on animation.
+- The four public books account for 17 plates: 12 deliberately still, two deferred and three already animated. Rebuilding all four reader ZIPs and both editable ZIPs preserves the bytes of 0.9.1. The authoring source and prompt starter change, not the books, their graphs, artwork or playback.
+- For the editable books, an author can import the matching worksheet into an exact restoration with explicit consent. Private author notes are separate from reader and project exports. [Release notes / 中文说明](docs/RELEASE-v0.9.2.md) · [Checks and limits](docs/VALIDATION-v0.9.2.md).
+
 ## 0.9.1 · Published on GitHub
 
 - Restore one source-bound, 12-second wind soundscape to Chibi (paragraph 12) and one 12-second rain soundscape to Last Light (paragraph 2). No dialogue, narration, score or changes to the other paragraphs. Existing shore and station picture motion are not new effects.

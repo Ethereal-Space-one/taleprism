@@ -30,6 +30,7 @@ jobs:
           tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py
           tools/build_chibi_demo.py tools/chibi_source.py tools/chibi_provenance.py tools/update_release_catalog.py
           tools/release_version.py tools/finalize_release.py tools/open_workbench.py
+          tools/screen_plates.py tools/check_plate_studies.py tools/check_example_screening_transfer.py
           tools/check_edition_semantics.py tools/check_reading_upgrade.py tools/classic_example_sound.py tools/build_public_example_pairs.py
       - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
       - run: python3 tools/release_files.py --check
@@ -84,6 +85,8 @@ jobs:
         run: |
           uv run --project backend --frozen python tools/check_edition_semantics.py --output .release/ci --report .release/ci/edition-acceptance.json
           uv run --project backend --frozen python tools/check_reading_upgrade.py --output .release/ci --fetch-previous
+          TALEPRISM_CHROMIUM="$(command -v google-chrome || command -v chromium)" node tools/webgal-verify/plate-screening-workbench.cjs
+          uv run --project backend --frozen python tools/check_plate_studies.py --output .release/ci --report .release/ci/plate-screening-acceptance.json
           uv run --project backend --frozen python tools/finalize_release.py --output .release/ci
       - name: Record exact hosted release bytes and acceptance receipt
         if: runner.os == 'Linux'
@@ -92,8 +95,8 @@ jobs:
           sha256sum -c SHA256SUMS
           printf 'HOSTED_COMMIT=%s\n' "$GITHUB_SHA"
           cat SHA256SUMS
-          sha256sum SHA256SUMS edition-acceptance.json
-          for file in SHA256SUMS release-manifest.json edition-acceptance.json; do
+          sha256sum SHA256SUMS edition-acceptance.json plate-screening-acceptance.json
+          for file in SHA256SUMS release-manifest.json edition-acceptance.json plate-screening-acceptance.json; do
             printf 'TALEPRISM_HOSTED_%s_BASE64=' "$file"
             base64 -w0 "$file"
             printf '\n'

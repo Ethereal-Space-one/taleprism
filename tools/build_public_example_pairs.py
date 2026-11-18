@@ -21,7 +21,7 @@ from unittest.mock import patch
 from build_chibi_demo import pack, sync_reader_data
 from chibi_source import digest, encoded, read_zip, verify_inventory
 from classic_example_sound import SOUNDS
-from release_version import PREFIX, VERSION
+from release_version import BOOK_EDITION, PREFIX, VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 # The two pairs and the additional provenance below are from the published 0.3.3
@@ -124,7 +124,7 @@ def project_archive(example, files, mit, material):
     # records and art; add one bound sound record/WAV and keep provenance in README.
     files["README.txt"] = (
         (
-            f"Taleprism v{VERSION} · 公开可编辑示例 / Public editable example\n"
+            f"Taleprism v{BOOK_EDITION} · 公开可编辑示例 / Public editable example\n"
             + SOURCE_NOTE[example]
             + "\n从制作台导入此 ZIP，不是读者版。\n"
             + RIGHTS
@@ -333,11 +333,11 @@ def seal_reader(example, raw, previous, mit, material):
                 "不含系统语音及任何音频配置",
                 "本版仅在第十二段保留一次程序合成的风声；无系统配音",
             )
-            .replace("Taleprism v0.3.3 ", f"Taleprism v{VERSION} ", 1)
+            .replace("Taleprism v0.3.3 ", f"Taleprism v{BOOK_EDITION} ", 1)
             .encode()
         )
     files["README.txt"] = (
-        "Taleprism v" + VERSION + " · " + SOURCE_NOTE[example] + "\n\n"
+        "Taleprism v" + BOOK_EDITION + " · " + SOURCE_NOTE[example] + "\n\n"
     ).encode() + files["README.txt"]
     # The database can enumerate image/character IDs in a different order for
     # each imported project. Do not reorder arrays (their order is narrative).
@@ -354,7 +354,7 @@ def seal_reader(example, raw, previous, mit, material):
     inv["export_id"] = str(
         uuid.uuid5(
             uuid.NAMESPACE_URL,
-            "taleprism:v" + VERSION + ":" + digest(encoded(inv["files"])),
+            "taleprism:v" + BOOK_EDITION + ":" + digest(encoded(inv["files"])),
         )
     )
     require(inv["export_id"] != inv_old["export_id"], "Old export ID reused")
@@ -366,7 +366,7 @@ def seal_reader(example, raw, previous, mit, material):
 
 
 def build(inputs, out):
-    require(VERSION == "0.9.1", "This frozen migration is for v0.9.1 only.")
+    require(VERSION == "0.9.2" and BOOK_EDITION == "0.9.1", "Unreviewed release or book edition.")
     targets = [
         out / f"{PREFIX}-{e}-{k}.zip" for e in PINS for k in ("reader", "project")
     ]

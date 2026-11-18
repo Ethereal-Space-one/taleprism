@@ -21,6 +21,12 @@ def starter_entries():
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
         "docs/快速上手.md",
+        "docs/PLATE-SCREENING.md",
+        "docs/场景动效导演.md",
+        "docs/ITERATION-HISTORY.md",
+        "docs/RELEASING.md",
+        "docs/VALIDATION-v0.9.1.md",
+        "docs/VALIDATION-v0.9.2.md",
         f"docs/RELEASE-v{VERSION}.md",
     }
     prefixes = (
@@ -30,6 +36,7 @@ def starter_entries():
         "examples/chibi/",
         "samples/last-light/",
         "examples/reading-lab/",
+        "examples/plate-screening/",
     )
     files = {
         "taleprism/" + n: p.read_bytes()
@@ -38,9 +45,10 @@ def starter_entries():
     }
     files["taleprism/README.md"] = (
         f"""# Taleprism {VERSION} · Prompt starter
-从 [八套提示模板](prompts/README.md)、[三镜头教程](examples/last-light/README.md) 或 [创意实验](examples/reading-lab/README.md) 开始。无需安装软件即可阅读这些文本。
+从 [八套提示模板](prompts/README.md)、[三镜头教程](examples/last-light/README.md)、[创意实验](examples/reading-lab/README.md) 或 [逐幅动静审图](docs/PLATE-SCREENING.md) 开始。无需安装软件即可阅读这些文本。
 模板中的文字只是制作示例。作者决定是否采用；独立阅读器不收录工作备份。软件与素材许可分别见 LICENSE、THIRD_PARTY_NOTICES.md 与各示例的来源说明。
-This starter contains templates, schemas and public tutorial material. Download the source to run the workbench, or a reader ZIP to read offline. No accounts or model service are required for reading.
+源代码、测试与可执行工具不在此入门包内；如需打开教程里的源码链接，请使用同版本[完整源码](https://github.com/Ethereal-Space-one/taleprism/tree/v{VERSION})。
+This starter contains templates, schemas and public tutorial material. For code and test links, open the matching full source. Download the source to run the workbench, or a reader ZIP to read offline. No accounts or model service are required for reading.
 """
     ).encode()
     return files

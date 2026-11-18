@@ -1,10 +1,18 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Job } from './api'
+import { PlateScreening, usePlateScreening } from './PlateScreening'
 
 type Mode = 'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader' | 'production'
-type Record = { export_id: string; reviewed_at: string; notes: string; archive_sha256: string }
+type Record = {
+  plate_screening_revision?: number
+  export_id: string
+  reviewed_at: string
+  notes: string
+  archive_sha256: string
+}
 type Delivery = {
+  current_signoff: Record | null
   ready: boolean
   stale: boolean
   checks: { id: string; label: string; target: Mode; passed: boolean; detail: string }[]
@@ -32,12 +40,22 @@ export function DeliveryPanel({
   onLocate,
   onExport,
   busy,
+  onGuardChange,
 }: {
   projectId: string
   onLocate: (mode: Mode) => void
   onExport: () => void
   busy: boolean
+  onGuardChange?: (g: { dirty: boolean; writing: boolean }) => void
 }) {
+  const [editing, setEditing] = useState(false)
+  const screeningGuard = useCallback(
+    (dirty: boolean, writing: boolean) => {
+      setEditing(dirty || writing)
+      onGuardChange?.({ dirty, writing })
+    },
+    [onGuardChange],
+  )
   const [approval, setApproval] = useState<{ exportId: string | null; keys: string[] }>({
     exportId: null,
     keys: [],
@@ -49,15 +67,24 @@ export function DeliveryPanel({
   })
   const data = state.data
   const job = data?.latest
+  const forReader = !job || job.kind === 'reader_export'
+  const screening = usePlateScreening(projectId, forReader)
+  const currentScreened =
+    !forReader || (!!screening.data?.report.ok && !screening.isError && !editing)
   const result = job?.result
-  const selected = approval.exportId === job?.id ? approval.keys : []
+  const approvalKey = job ? job.id + ':' + (forReader ? screening.data?.revision : 'webgal') : null
+  const selected = approval.exportId === approvalKey ? approval.keys : []
   const record = data?.records.find((r) => r.export_id === job?.id)
   const save = useMutation({
     mutationFn: (notes: string) =>
       api(`/api/projects/${projectId}/exports/${job!.id}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checks: Object.fromEntries(selected.map((k) => [k, true])), notes }),
+        body: JSON.stringify({
+          ...(forReader ? { screening_revision: screening.data?.revision } : {}),
+          checks: Object.fromEntries(selected.map((k) => [k, true])),
+          notes,
+        }),
       }),
     onSuccess: () => {
       setApproval({ exportId: null, keys: [] })
@@ -68,7 +95,13 @@ export function DeliveryPanel({
     <section className="delivery-panel" aria-label="交付检查">
       <div className="panel-head">
         <h2>交付检查</h2>
-        <button disabled={state.isFetching} onClick={() => state.refetch()}>
+        <button
+          disabled={state.isFetching}
+          onClick={() => {
+            void state.refetch()
+            if (forReader) void screening.refetch()
+          }}
+        >
           {state.isFetching ? '正在检查…' : '重新检查'}
         </button>
       </div>
@@ -84,8 +117,11 @@ export function DeliveryPanel({
       {data && (
         <>
           <p className={data.ready ? 'saved-note' : 'error'} role="status">
-            {data.ready ? '✓ 自动检查通过。' : '请先修复以下问题，再导出当前版本。'}
+            {data.ready
+              ? '✓ 导出前自动检查通过（不等于正式签核）。'
+              : '请先修复以下问题，再导出当前版本。'}
           </p>
+          {forReader && <PlateScreening projectId={projectId} onGuard={screeningGuard} />}
           <p className="asset-helper">
             以下检查针对{job?.kind === 'export' ? '最近的 WebGAL 兼容交付' : '独立阅读器交付'}。
           </p>
@@ -135,7 +171,7 @@ export function DeliveryPanel({
           {result && (
             <div className="delivery-output">
               <h3>
-                {data.stale ? '之前的成品 · 制作状态已变化' : '当前成品'} ·{' '}
+                {data.stale ? '之前的导出版 · 制作状态已变化' : '当前导出版'} ·{' '}
                 {job?.kind === 'export' ? 'WebGAL 兼容版' : '独立阅读器'}
               </h3>
               <p>
@@ -158,13 +194,22 @@ export function DeliveryPanel({
                   <p>用于核对下载内容，不能代替事实或权利审核。</p>
                 </details>
               )}
-              {record && (
-                <p className="saved-note">
-                  ✓ 此导出版本已有人工复核记录 ·{' '}
-                  {new Date(record.reviewed_at).toLocaleString('zh-CN')}
-                  {record.notes && ` · ${record.notes}`}
-                </p>
-              )}
+              {record &&
+                data.current_signoff &&
+                currentScreened &&
+                (!forReader || record.plate_screening_revision === screening.data?.revision) && (
+                  <p className="saved-note">
+                    ✓ 此导出版本已有人工复核记录 ·{' '}
+                    {new Date(record.reviewed_at).toLocaleString('zh-CN')}
+                    {record.notes && ` · ${record.notes}`}
+                  </p>
+                )}
+              {record &&
+                !data.stale &&
+                (!data.current_signoff ||
+                  (forReader && record.plate_screening_revision !== screening.data?.revision)) && (
+                  <p>此导出有历史人工记录，但未签核当前制作状态与审图单。</p>
+                )}
               <form
                 className="delivery-review"
                 key={job!.id}
@@ -175,7 +220,7 @@ export function DeliveryPanel({
               >
                 <h3>记录本版本人工复核</h3>
                 <p className="asset-helper">
-                  完成实际播放后再勾选。记录绑定本次成品，修改后需重新导出并复核。
+                  完成实际播放后再勾选。改动作品须重新导出；只改审图判断无需重新打包，但要重新签核。
                 </p>
                 {checks.map(([key, label]) => (
                   <label className="inline-check" key={key}>
@@ -184,7 +229,7 @@ export function DeliveryPanel({
                       checked={selected.includes(key)}
                       onChange={(e) =>
                         setApproval({
-                          exportId: job!.id,
+                          exportId: approvalKey,
                           keys: e.target.checked
                             ? [...selected, key]
                             : selected.filter((k) => k !== key),
@@ -205,11 +250,18 @@ export function DeliveryPanel({
                 </label>
                 <button
                   disabled={
-                    selected.length !== checks.length || data.stale || save.isPending || busy
+                    selected.length !== checks.length ||
+                    !currentScreened ||
+                    data.stale ||
+                    save.isPending ||
+                    busy
                   }
                 >
                   {save.isPending ? '正在记录…' : '保存人工复核记录'}
                 </button>
+                {forReader && !currentScreened && (
+                  <p>本版尚不能正式签核：请完成上方逐幅动静审图并处理冲突。</p>
+                )}
                 {data.stale && <p className="error">制作状态已变，请先导出当前版本。</p>}
               </form>
             </div>

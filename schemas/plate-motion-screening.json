@@ -1,0 +1,157 @@
+{
+  "$defs": {
+    "Plate": {
+      "additionalProperties": false,
+      "properties": {
+        "plate_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Plate Id",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "unassessed",
+            "still",
+            "deferred",
+            "motion"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 300,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "observation": {
+          "maxLength": 1000,
+          "title": "Observation",
+          "type": "string"
+        },
+        "action": {
+          "maxLength": 1000,
+          "title": "Action",
+          "type": "string"
+        },
+        "protect": {
+          "maxLength": 1000,
+          "title": "Protect",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 1000,
+          "title": "Reason",
+          "type": "string"
+        },
+        "proposed_effect": {
+          "anyOf": [
+            {
+              "enum": [
+                "rain-wet-ground",
+                "wave-impact-backwash"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposed Effect"
+        },
+        "verification": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Verification",
+          "type": "string"
+        },
+        "image_asset_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Image Asset Id",
+          "type": "string"
+        },
+        "image_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Image Sha256",
+          "type": "string"
+        },
+        "width": {
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        },
+        "after_byte": {
+          "minimum": 1,
+          "title": "After Byte",
+          "type": "integer"
+        },
+        "paragraph_start": {
+          "minimum": 0,
+          "title": "Paragraph Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "plate_id",
+        "decision",
+        "evidence",
+        "observation",
+        "action",
+        "protect",
+        "reason",
+        "image_asset_id",
+        "image_sha256",
+        "width",
+        "height",
+        "after_byte",
+        "paragraph_start"
+      ],
+      "title": "Plate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "work_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Work Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "plates": {
+      "items": {
+        "$ref": "#/$defs/Plate"
+      },
+      "maxItems": 64,
+      "title": "Plates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "work_id",
+    "source_sha256",
+    "plates"
+  ],
+  "title": "Worksheet",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Private sidecar. Binding fields are generated from the current source and actual illustration bytes. For a finished judgment all five editorial text fields must be nonblank. An unassessed row cannot pass the final screen. verification is a personal note, never proof."
+}

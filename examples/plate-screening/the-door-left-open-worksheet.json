@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "work_id": "93ea530c-d6a9-5ed8-8ffd-d40aa4742176",
+  "source_sha256": "8f65e32a101d626f7959b98a03ffed8ea3e349f3da827fc4da36aaf8f8ffc0f4",
+  "plates": [
+    {
+      "plate_id": "studio-first-illustration",
+      "decision": "motion",
+      "evidence": "一辆车从巷口驶过，沙的一声，把雨点之间的空隙都填满了。",
+      "observation": "画面左边半截卷门垂在暗店口上，两只黄靴背向放在门槛；右边的青灰路面有一根很长、贴地的浅色反光。没有画出汽车本身。",
+      "action": "只在右侧湿路生短雨线，让少数落点消散。反光保留为一条静线，不再替过车画出移动的车身或扫墙的亮斑。",
+      "protect": "黄靴鞋尖、门槛台阶、店内长凳、卷门下沿和立面窗格保持静止。",
+      "reason": "这段先让人听见车经过。路面轻动能把那一声落在实处；把车灯扫上墙或转动靴子，会抢先说出下一段才发生的事。",
+      "verification": "正常阅读时可见既有局部雨效，减少动态时保持静止。此项只记录播放，不代表每条边缘、所有屏宽或真机都已通过美术验收。",
+      "image_asset_id": "d51f7f92-2432-5176-9dea-7371e59c5577",
+      "image_sha256": "b9376efa6522951961c3d9b95e2feb02e9a511b3dca4d04733ce4724b8bcb6d1",
+      "width": 1440,
+      "height": 900,
+      "after_byte": 236,
+      "paragraph_start": 104
+    }
+  ]
+}

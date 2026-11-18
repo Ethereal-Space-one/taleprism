@@ -6,6 +6,7 @@ import { CreativeDesk } from './studio/CreativeDesk'
 import { PassageSoundscape } from './studio/PassageSoundscape'
 import { PassageVoice } from './studio/PassageVoice'
 import { BundleBackup } from './BundleBackup'
+import { PlateScreening } from './PlateScreening'
 import { ArrangementEditor } from './reader/ArrangementEditor'
 import type { ReaderConfig, ReaderContent, ReaderState } from './reader-types'
 
@@ -295,6 +296,12 @@ export function ReaderPanel({
   onVoiceWriting?: (v: boolean) => void
   onGuardChange?: (guard: { dirty: boolean; writing: boolean }) => void
 }) {
+  const [screenDirty, setScreenDirty] = useState(false),
+    [screenWriting, setScreenWriting] = useState(false)
+  const screenGuard = useCallback((dirty: boolean, writing: boolean) => {
+    setScreenDirty(dirty)
+    setScreenWriting(writing)
+  }, [])
   const [creativeWriting, setCreativeWriting] = useState(false)
   const [creativeSoundTarget, setCreativeSoundTarget] = useState<{ anchor: number; seq: number }>()
   const [voiceAnchor, setVoiceAnchor] = useState<number>()
@@ -376,13 +383,21 @@ export function ReaderPanel({
   const latest = jobs.data?.find((j) => j.kind === 'reader_export')
   const exported = jobs.data?.find((j) => j.kind === 'reader_export' && j.state === 'completed')
   const writing =
-    creativeWriting || soundWriting || voiceWriting || arrangementWriting || change.isPending
-  const dirty = soundDirty || arrangementDirty || sceneDirty || voiceDirty
+    screenWriting ||
+    creativeWriting ||
+    soundWriting ||
+    voiceWriting ||
+    arrangementWriting ||
+    change.isPending
+  const dirty = screenDirty || soundDirty || arrangementDirty || sceneDirty || voiceDirty
   const busy = dirty || writing || latest?.state === 'running'
   useUnsavedWarning(dirty || writing)
   useLayoutEffect(
-    () => onVoiceWriting?.(voiceWriting || soundWriting || creativeWriting),
-    [voiceWriting, soundWriting, creativeWriting, onVoiceWriting],
+    () =>
+      onVoiceWriting?.(
+        voiceWriting || soundWriting || creativeWriting || screenWriting || screenDirty,
+      ),
+    [voiceWriting, soundWriting, creativeWriting, screenWriting, screenDirty, onVoiceWriting],
   )
   useLayoutEffect(() => {
     onGuardChange?.({ dirty, writing })
@@ -418,6 +433,21 @@ export function ReaderPanel({
         })
       }}
     >
+      {data && (
+        <PlateScreening
+          projectId={projectId}
+          readerRevision={data.revision}
+          onGuard={screenGuard}
+          locked={
+            soundDirty ||
+            arrangementDirty ||
+            sceneDirty ||
+            voiceDirty ||
+            (writing && !screenWriting) ||
+            latest?.state === 'running'
+          }
+        />
+      )}
       {studioPlateId && data && content.data && (
         <fieldset disabled={soundWriting || soundDirty || voiceWriting || voiceDirty}>
           <ArrangementEditor
@@ -500,13 +530,15 @@ export function ReaderPanel({
       {dirty && (
         <p className="notice" role="status">
           有未保存的
-          {soundDirty
-            ? '声景设置'
-            : sceneDirty
-              ? '章节设置'
-              : arrangementDirty
-                ? '章节编排、动效或位置意见'
-                : '本机录音输入'}
+          {screenDirty
+            ? '逐幅审图输入'
+            : soundDirty
+              ? '声景设置'
+              : sceneDirty
+                ? '章节设置'
+                : arrangementDirty
+                  ? '章节编排、动效或位置意见'
+                  : '本机录音输入'}
           。预览只反映已保存版本；请先保存或明确放弃，再导出或切换。
         </p>
       )}
@@ -598,7 +630,7 @@ export function ReaderPanel({
               </span>
               <div>
                 <a href={exported.result.play_url} target="_blank" rel="noreferrer">
-                  打开成品 ↗
+                  打开导出版 ↗
                 </a>
                 <a href={exported.result.download_url}>下载阅读器 ↓</a>
               </div>

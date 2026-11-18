@@ -3,26 +3,26 @@
     "id": "last-light",
     "title": "末班灯 · 现代原创短篇",
     "description": "三镜头短篇教程。开场檐下见面时，站台有十二秒细雨；其余段落不铺声。无系统配音。",
-    "file": "taleprism-v0.9.1-last-light-project.zip",
+    "file": "taleprism-v0.9.2-last-light-project.zip",
     "sha256": "64fdc898fd955c27f1ab1f602f63b773f1300c98c148bebb87330428f914f882",
-    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-project.zip",
+    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-last-light-project.zip",
     "reader": {
-      "file": "taleprism-v0.9.1-last-light-reader.zip",
+      "file": "taleprism-v0.9.2-last-light-reader.zip",
       "sha256": "4c885d469f3163d3d1e064b7e024875b51d5fb7764cefda2e049238e09e736dc",
-      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-reader.zip"
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-last-light-reader.zip"
     }
   },
   {
     "id": "chibi",
     "title": "赤壁 · 可编辑主示例",
     "description": "12 幅情境图、8 位角色、9 张立绘、3 阶段地图。江岸首图微动，只在第十二段有十二秒风声。无系统配音。",
-    "file": "taleprism-v0.9.1-chibi-project.zip",
+    "file": "taleprism-v0.9.2-chibi-project.zip",
     "sha256": "49514698704b2785edf51169080195c5d658bad60065abe9e7353e78a48186ca",
-    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-chibi-project.zip",
+    "download_url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-project.zip",
     "reader": {
-      "file": "taleprism-v0.9.1-chibi-reader.zip",
+      "file": "taleprism-v0.9.2-chibi-reader.zip",
       "sha256": "9a539fd9c444772a20417c0c5c4de2e591785db16ed1a7de036035c46f52d891",
-      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-chibi-reader.zip"
+      "url": "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-reader.zip"
     }
   }
 ]

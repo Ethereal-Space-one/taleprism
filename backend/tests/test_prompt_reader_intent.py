@@ -116,7 +116,7 @@ def test_reader_intent_flows_from_numbered_source_to_manual_review(
 
 
 def test_prompt_version_is_independent_of_workspace_schema():
-    assert prompts.metadata()["version"] == "0.2.1"
+    assert prompts.metadata()["version"] == "0.2.2"
     assert "reader_intent" not in Shot.model_fields
     assert Plan(budget=0).shots == []
     assert [s["id"] for s in prompts.library()["stages"]] == [

@@ -1,6 +1,8 @@
 # Taleprism 提示词工作流 / Prompt workflow
 
-保留原文，用有依据的角色表演与连续场景增强阅读。模板版本：0.2.1。
+保留原文，用有依据的角色表演与连续场景增强阅读。模板版本：0.2.2。
+
+**成图后逐张必审，不是每张都动。** 给每张实际入书插图做[动效判读](../docs/PLATE-SCREENING.md)：原句、所见、读者收益、保护区与静止/候选/待支持结论。看不见图就记未审；判读不等于播放已验证。
 
 **第一次使用：打开[《末班灯》教程](../examples/last-light/README.md) / [English walkthrough](../examples/last-light/README.en.md)。** 全部参考图在 `samples/last-light/`，无需先安装制作台。GitHub 网页查看文件即可；要在自己的图片工具中使用，请下载原始图片并实际上传，文件名本身不会传送图片。
 
