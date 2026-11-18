@@ -18,6 +18,11 @@ BUNDLE_HASH = "356f7184c80af8da4dd782e25c5b3fb89f55f1e8b9e9e18be6f50035763dc6b6"
 SIGNATURE = "function Na(e,t,r,n=!0){"
 
 
+def published_fields(record, keys):
+    """Playback metadata is an allowlist, never a serialized workbench record."""
+    return {key: record[key] for key in keys.split() if key in record}
+
+
 def encode_literal(text: str) -> str:
     return "SGTEXT_" + "".join(f"{ord(c):06x}" for c in text)
 
@@ -26,6 +31,19 @@ def copy_verified(source: Path, target: Path, expected: str):
     shutil.copy2(source, target)
     if sha256(target.read_bytes()) != expected:
         raise ValueError("素材在打包期间发生变化，请检查后重新导出。")
+
+
+def include_project_license(repo: Path, staging: Path):
+    """The MIT notice covers Taleprism code, not all content or bundled dependencies."""
+    try:
+        notice = (repo / "LICENSE").read_bytes()
+    except OSError as exc:
+        raise ValueError("缺少 Taleprism 软件许可证 LICENSE，不能导出。") from exc
+    if not notice.strip():
+        raise ValueError("Taleprism 软件许可证 LICENSE 为空，不能导出。")
+    target = staging / "licenses" / "Taleprism-MIT.txt"
+    target.parent.mkdir(exist_ok=True)
+    target.write_bytes(notice)
 
 
 def assert_versions(db, pid, expected):
@@ -176,6 +194,7 @@ def export_project(
         source_dir.mkdir()
         shutil.copy2(REPO / "tools/webgal-verify/literal-patch.js", source_dir)
         shutil.copy2(REPO / "tools/webgal-verify/verify.cjs", source_dir)
+        include_project_license(REPO, staging)
         license_path = REPO / "engine/LICENSE-MPL-2.0.txt"
         if not license_path.exists():
             raise ValueError("缺少引擎许可证 engine/LICENSE-MPL-2.0.txt。")
@@ -193,18 +212,47 @@ def export_project(
         shutil.copy2(
             store.project_dir(project_id) / "source.utf8.txt", source_dir / "source.utf8.txt"
         )
+        # This is a player handoff, not a restorable editing snapshot. Select
+        # only records already attached to the program, then project fields.
+        # In particular, even accepted audio does not publish acting directions.
+        used_visual_ids = {event["asset_id"] for event in visual_events}
+        used_visual = {
+            item["asset"]["id"]: item["asset"]
+            for item in visual_state["items"]
+            if item.get("asset") and item["asset"]["id"] in used_visual_ids
+        }
+        used_audio = {take["id"]: take for take in audio.values()}
         manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
             "engine": "4.6.5",
             "literal_extension": 1,
-            "project": metadata,
+            "project": published_fields(
+                metadata, "filename encoding rights_status sha256 canonical_sha256"
+            ),
             "checks": checks,
-            "units": units,
-            "spans": store.parts(project_id, "spans"),
-            "review": review_state,
-            "figure_assets": [selected_assets[a] for a in used_assets],
-            "speech": speech_state,
-            "visual": visual_state,
+            "units": [
+                published_fields(
+                    u,
+                    "id byte_start byte_end text speaker_id speaker_name figure_asset_id vocal_id",
+                )
+                for u in units
+            ],
+            "spans": [
+                published_fields(s, "id byte_start byte_end kind text")
+                for s in store.parts(project_id, "spans")
+            ],
+            "figure_assets": [
+                published_fields(selected_assets[a], "id sha256 width height origin license")
+                for a in used_assets
+            ],
+            "visual_assets": [
+                published_fields(a, "id sha256 svg_sha256 origin license")
+                for a in used_visual.values()
+            ],
+            "vocal_assets": [
+                published_fields(a, "id sha256 duration provider model")
+                for a in used_audio.values()
+            ],
             "visual_events": visual_events,
         }
         if compatibility is not None:
@@ -235,6 +283,7 @@ def export_project(
             "Taleprism 本地试读工程\n\n请通过本地 HTTP 服务打开 index.html（浏览器不支持直接双击播放）。\n"
             "可在本目录运行：python3 -m http.server 8080 --bind 127.0.0.1\n"
             "然后打开 http://127.0.0.1:8080\n\n"
+            "此包给读者播放，不是可编辑工程。只附实际使用的画面、对白配音及其公开来源；候选、制作意见、配音说明与未启用图页不随包分享。\n"
             "正文只隐藏换行、初始 BOM 和行首尾空白。原文件、偏移、来源及校验记录见清单。\n"
             "本工程附带 SGTEXT_ 正文扩展，需使用随包提供的 WebGAL 引擎。\n"
             "自动导出包含字节和解析校验；逐框播放复核需单独执行。\n"
@@ -242,6 +291,7 @@ def export_project(
             "图页出现后点击继续；声音可在引擎选项中调整。\n"
             "复核原文、角色归属、声音和图页，读到末尾后在制作台记录本版本复核。\n"
             "仅本地测试的作品请先核实分享范围；原文权利与素材来源见 RIGHTS.txt。\n"
+            "Taleprism 自有工具的软件许可见 licenses/Taleprism-MIT.txt，不为小说或媒体另行授权。\n"
             "移动完整目录即可播放；重新制作需要原制作台的完整 data 目录。\n",
             encoding="utf-8",
         )
@@ -259,7 +309,8 @@ def export_project(
             "原文文件：" + metadata["filename"] + "\n"
             "原文 SHA-256：" + metadata["sha256"] + "\n\n"
             "原文和素材的使用范围须由制作人核实；工程导出不授予额外权利。\n"
-            "每项图像及图解的来源／许可、语音后端与参数见 storygal-manifest.json。\n"
+            "实际使用图像及图解的来源／许可、对白配音的后端与模型见 storygal-manifest.json。\n"
+            "Taleprism 自有工具：licenses/Taleprism-MIT.txt。\n"
             "WebGAL 引擎许可证和修改说明见 LICENSE-WebGAL-MPL-2.0.txt 与 NOTICE.txt。\n"
             "哈希清单用于检查文件完整性，不是来源真实性或权利状态的认证。\n",
             encoding="utf-8",

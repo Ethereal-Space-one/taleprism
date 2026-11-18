@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type ReviewState } from '../api'
 import type {
@@ -9,6 +9,8 @@ import type {
   ReaderState,
 } from '../reader-types'
 import { byteLength } from './model'
+import { MotionDirector } from './MotionDirector'
+import { useUnsavedWarning } from '../studio/leave'
 import { IllustrationEditor } from './IllustrationEditor'
 
 type Issue = {
@@ -26,7 +28,11 @@ export function ArrangementEditor({
   state,
   review,
   content,
+  studioPlateId,
+  onDraftState,
 }: {
+  studioPlateId?: string
+  onDraftState?: (dirty: boolean, writing: boolean) => void
   projectId: string
   state: ReaderState
   review?: ReviewState
@@ -43,6 +49,16 @@ export function ArrangementEditor({
   }))
   const [baseRevision, setBaseRevision] = useState(state.revision),
     [dirty, setDirty] = useState(false)
+  const [pendingMotion, setPendingMotion] = useState<Record<string, boolean>>({}),
+    [editorEpoch, setEditorEpoch] = useState(0)
+  const pendingMotionRef = useRef<Record<string, boolean>>({})
+  const onPendingMotion = useCallback((id: string, pending: boolean) => {
+    pendingMotionRef.current = { ...pendingMotionRef.current, [id]: pending }
+    setPendingMotion((v) => (v[id] === pending ? v : { ...v, [id]: pending }))
+  }, [])
+  const unappliedMotion = Object.values(pendingMotion).some(Boolean)
+  const editGeneration = useRef(0)
+  const sampleGeneration = useRef(0)
   const [paragraphIndex, setParagraphIndex] = useState(0),
     [anchor, setAnchor] = useState(state.paragraphs[0].byte_start)
   const [category, setCategory] = useState<Issue['category']>('visual'),
@@ -51,7 +67,7 @@ export function ArrangementEditor({
     [phase, setPhase] = useState('opposition'),
     [place, setPlace] = useState('chibi')
   useEffect(() => {
-    if (!dirty && state.revision !== baseRevision) {
+    if (!dirty && !unappliedMotion && state.revision > baseRevision) {
       setDraft({
         ...state.config,
         presentations: state.config.presentations?.length
@@ -60,31 +76,43 @@ export function ArrangementEditor({
         map_entries: state.config.map_entries || [],
       })
       setBaseRevision(state.revision)
+      // A narration save bumps the reader revision without touching the plate.
+      // Preserve the real director, including an in-progress audition of an
+      // existing draft. Reinitialize only if the direction itself changed.
+      if (
+        studioPlateId &&
+        JSON.stringify(state.config.illustrations?.find((p) => p.id === studioPlateId)?.motion) !==
+          JSON.stringify(draft.illustrations?.find((p) => p.id === studioPlateId)?.motion)
+      ) {
+        setEditorEpoch((v) => v + 1)
+      }
     }
-  }, [state, content, dirty, baseRevision])
+  }, [state, content, dirty, baseRevision, unappliedMotion, studioPlateId, draft.illustrations])
   const [issueReasons, setIssueReasons] = useState<Record<string, string>>({})
   const editorial = useQuery({
     queryKey: ['editorial', projectId],
     queryFn: () => api<Editorial>(prefix + '/editorial'),
+    enabled: !studioPlateId,
   })
   async function refresh() {
     await Promise.all(
-      ['reader', 'reader-content', 'delivery', 'editorial'].map((k) =>
+      ['reader', 'reader-content', 'delivery', 'editorial', 'narrations', 'soundscapes'].map((k) =>
         cache.invalidateQueries({ queryKey: [k, projectId] }),
       ),
     )
   }
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (snapshot: { config: ReaderConfig; revision: number; generation: number }) =>
       api(prefix, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ revision: baseRevision, ...draft }),
+        body: JSON.stringify({ revision: snapshot.revision, ...snapshot.config }),
       }),
-    onSuccess: async () => {
+    onSuccess: async (_result, snapshot) => {
       await refresh()
-      setBaseRevision(baseRevision + 1)
-      setDirty(false)
+      setBaseRevision(snapshot.revision + 1)
+      // A slow response acknowledges only the submitted snapshot, never newer edits.
+      if (editGeneration.current === snapshot.generation) setDirty(false)
     },
     onError: refresh,
   })
@@ -95,15 +123,23 @@ export function ArrangementEditor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ revision: editorial.data?.revision || 0, ...issue }),
       }),
-    onSuccess: async () => {
-      setNote('')
+    onSuccess: async (_result, submitted) => {
+      if (!submitted.id) setNote((v) => (v === submitted.note ? '' : v))
+      if (submitted.id && submitted.state === 'deferred')
+        setIssueReasons((v) => {
+          if (v[submitted.id!] !== submitted.reason) return v
+          const next = { ...v }
+          delete next[submitted.id!]
+          return next
+        })
       await refresh()
     },
     onError: refresh,
   })
   const sample = useMutation({
-    mutationFn: (expanded: boolean | 'second' | 'narrative' | 'import') =>
-      api<ReaderState>(
+    mutationFn: (expanded: boolean | 'second' | 'narrative' | 'import') => {
+      sampleGeneration.current = editGeneration.current
+      return api<ReaderState>(
         prefix +
           (expanded === 'import'
             ? '/narrative/sample'
@@ -119,11 +155,17 @@ export function ArrangementEditor({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ revision: baseRevision }),
         },
-      ),
+      )
+    },
     onSuccess: async (next) => {
-      setDraft(next.config)
+      if (
+        editGeneration.current === sampleGeneration.current &&
+        !Object.values(pendingMotionRef.current).some(Boolean)
+      ) {
+        setDraft(next.config)
+        setDirty(false)
+      } else setDirty(true)
       setBaseRevision(next.revision)
-      setDirty(false)
       await refresh()
     },
   })
@@ -140,6 +182,7 @@ export function ArrangementEditor({
   const source =
     state.paragraphs.find((p) => p.byte_start <= anchor && p.byte_end > anchor)?.text || ''
   function update(next: Partial<ReaderConfig>) {
+    editGeneration.current++
     setDraft((v) => ({ ...v, ...next }))
     setDirty(true)
   }
@@ -168,6 +211,116 @@ export function ArrangementEditor({
     update({ presentations: [...existing, next].sort((a, b) => a.start_byte - b.start_byte) })
   }
   const error = save.error || issueSave.error || sample.error || editorial.error
+  const studioDirty = dirty || unappliedMotion || save.isPending
+  const opinionDirty = !!note.trim() || Object.values(issueReasons).some((v) => v.trim())
+  useUnsavedWarning(studioDirty || opinionDirty)
+  useEffect(() => {
+    onDraftState?.(
+      dirty || unappliedMotion || opinionDirty,
+      save.isPending || sample.isPending || issueSave.isPending,
+    )
+  }, [
+    dirty,
+    unappliedMotion,
+    opinionDirty,
+    save.isPending,
+    sample.isPending,
+    issueSave.isPending,
+    onDraftState,
+  ])
+
+  if (studioPlateId) {
+    const plate = draft.illustrations?.find((p) => p.id === studioPlateId)
+    const asset = state.assets.find((a) => a.id === plate?.image_asset_id)
+    const conflict = state.revision > baseRevision
+    if (!plate || !asset || !content)
+      return <p role="alert">找不到此插图。请回完整工作台检查当前编排。</p>
+    return (
+      <section className="studio-motion" aria-label="单幅插图导演">
+        <p className="guided-kicker">03 / 导演这一幅</p>
+        <h2>{plate.title}</h2>
+        <p>
+          第 {state.paragraphs.findIndex((p) => p.byte_end === plate.after_byte) + 1} 段之后 ·{' '}
+          {asset.width} × {asset.height}。
+          {asset.status === 'accepted'
+            ? '不需要动效时，这张静图已经可以试读和导出。'
+            : '这张底图已不再是接受状态。请先回完整工作台审查素材，不能继续复核或交付。'}
+        </p>
+        <fieldset disabled={save.isPending || asset.status !== 'accepted'}>
+          <MotionDirector
+            key={`${editorEpoch}:${plate.id}:${plate.after_byte}:${asset.id}:${asset.sha256}:${asset.status}`}
+            initiallyOpen
+            plate={plate}
+            asset={asset}
+            state={state}
+            content={content}
+            onChange={(motion) =>
+              update({
+                illustrations: draft.illustrations!.map((p) =>
+                  p.id === plate.id ? { ...p, motion } : p,
+                ),
+              })
+            }
+            onPendingChange={onPendingMotion}
+          />
+        </fieldset>
+        <div className="studio-save">
+          {error && (
+            <p role="alert" className="error">
+              {error.message} 当前修改仍在。
+            </p>
+          )}
+          {conflict && !save.isPending && (
+            <p role="alert">
+              此项目已在别处修改，不能覆盖。保留需要的记录后，
+              <button
+                type="button"
+                onClick={() => {
+                  if (!studioDirty || window.confirm('放弃本页未保存的修改并载入当前项目？')) {
+                    setDraft(state.config)
+                    setBaseRevision(state.revision)
+                    setDirty(false)
+                    setPendingMotion({})
+                    pendingMotionRef.current = {}
+                    setEditorEpoch((v) => v + 1)
+                    editGeneration.current++
+                  }
+                }}
+              >
+                重新载入此项目
+              </button>
+            </p>
+          )}
+          <p role="status">
+            {unappliedMotion
+              ? '动效修改还未纳入草稿。'
+              : dirty
+                ? '草稿已就绪，还未保存到项目。'
+                : save.isPending
+                  ? '正在保存…'
+                  : '当前插图编排已保存。'}
+          </p>
+          <button
+            type="button"
+            className="primary"
+            disabled={
+              save.isPending || !dirty || unappliedMotion || conflict || asset.status !== 'accepted'
+            }
+            onClick={() =>
+              save.mutate({
+                config: draft,
+                revision: baseRevision,
+                generation: editGeneration.current,
+              })
+            }
+          >
+            保存章节编排
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="reader-arrangement" aria-label="章节编排与意见">
       <h3>章节编排与位置意见</h3>
@@ -177,17 +330,32 @@ export function ArrangementEditor({
           {error.message} 草稿仍在。
         </p>
       )}
-      {state.revision !== baseRevision && (
+      {state.revision > baseRevision && (
         <p role="status">
           制作配置已有更新。当前草稿保留，请先复制需要保留的修改，再载入最新版本。
         </p>
       )}
       <div className="reader-arrangement-tools">
-        <button disabled={save.isPending || !dirty} onClick={() => save.mutate()}>
+        <button
+          disabled={save.isPending || !dirty || unappliedMotion || state.revision > baseRevision}
+          onClick={() =>
+            save.mutate({
+              config: draft,
+              revision: baseRevision,
+              generation: editGeneration.current,
+            })
+          }
+        >
           保存章节编排
         </button>
         <button
+          disabled={save.isPending}
           onClick={() => {
+            if (
+              (dirty || unappliedMotion) &&
+              !window.confirm('放弃本页尚未保存的章节编排或动效修改，载入已保存版本？')
+            )
+              return
             setDraft({
               ...state.config,
               presentations: state.config.presentations?.length
@@ -196,13 +364,22 @@ export function ArrangementEditor({
             })
             setBaseRevision(state.revision)
             setDirty(false)
+            editGeneration.current++
+            setEditorEpoch((v) => v + 1)
+            setPendingMotion({})
+            pendingMotionRef.current = {}
           }}
         >
           载入最新配置
         </button>
         <button
           disabled={
-            !state.chibi_sample || dirty || sample.isPending || state.revision !== baseRevision
+            !state.chibi_sample ||
+            dirty ||
+            unappliedMotion ||
+            save.isPending ||
+            sample.isPending ||
+            state.revision > baseRevision
           }
           onClick={() => sample.mutate(false)}
         >
@@ -210,7 +387,12 @@ export function ArrangementEditor({
         </button>
         <button
           disabled={
-            !state.chibi_sample || dirty || sample.isPending || state.revision !== baseRevision
+            !state.chibi_sample ||
+            dirty ||
+            unappliedMotion ||
+            save.isPending ||
+            sample.isPending ||
+            state.revision > baseRevision
           }
           onClick={() => sample.mutate(true)}
         >
@@ -218,7 +400,12 @@ export function ArrangementEditor({
         </button>
         <button
           disabled={
-            !state.chibi_sample || dirty || sample.isPending || state.revision !== baseRevision
+            !state.chibi_sample ||
+            dirty ||
+            unappliedMotion ||
+            save.isPending ||
+            sample.isPending ||
+            state.revision > baseRevision
           }
           onClick={() => sample.mutate('second')}
         >
@@ -226,7 +413,12 @@ export function ArrangementEditor({
         </button>
         <button
           disabled={
-            !state.chibi_sample || dirty || sample.isPending || state.revision !== baseRevision
+            !state.chibi_sample ||
+            dirty ||
+            unappliedMotion ||
+            save.isPending ||
+            sample.isPending ||
+            state.revision > baseRevision
           }
           onClick={() => sample.mutate('import')}
         >
@@ -234,13 +426,21 @@ export function ArrangementEditor({
         </button>
         <button
           disabled={
-            !state.chibi_sample || dirty || sample.isPending || state.revision !== baseRevision
+            !state.chibi_sample ||
+            dirty ||
+            unappliedMotion ||
+            save.isPending ||
+            sample.isPending ||
+            state.revision > baseRevision
           }
           onClick={() => sample.mutate('narrative')}
         >
           应用章节画卷编排
         </button>
       </div>
+      {unappliedMotion && (
+        <p role="status">有动效面板修改尚未纳入章节草稿，请先纳入或放弃，再保存章节编排。</p>
+      )}
       <label>
         选择原文段落
         <select
@@ -294,7 +494,15 @@ export function ArrangementEditor({
       <button disabled={!draft.scenes.length} onClick={add}>
         从这里变化
       </button>
-      <IllustrationEditor draft={draft} state={state} anchor={anchor} update={update} />
+      <IllustrationEditor
+        key={editorEpoch}
+        draft={draft}
+        state={state}
+        anchor={anchor}
+        update={update}
+        content={content}
+        onPendingChange={onPendingMotion}
+      />
       {(draft.presentations || []).map((p) => (
         <div className="reader-arrangement-row" key={p.id}>
           <p>

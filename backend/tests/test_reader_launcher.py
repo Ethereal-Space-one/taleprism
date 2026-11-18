@@ -409,6 +409,9 @@ class ReaderLauncherPackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="reader-export-test-") as temporary:
             root = Path(temporary)
             repo = root / "source"
+            from reader_build_fixture import fake_reader_build
+
+            fake_reader_build(repo)
             (repo / "frontend/dist/assets").mkdir(parents=True)
             (repo / "frontend/dist/index.html").write_text(
                 '<head></head><script src="/assets/app.js"></script>'
@@ -446,7 +449,10 @@ class ReaderLauncherPackagingTests(unittest.TestCase):
                     info = archive.getinfo(name)
                     self.assertEqual(info.create_system, 3)
                     self.assertEqual((info.external_attr >> 16) & 0o777, 0o755)
-                self.assertIn("完整解压", archive.read("README.txt").decode())
+                instructions = archive.read("README.txt").decode()
+                for action in ("完整解压", "安静阅读", "暂停自动演绎", "「静音」", "开启声音", "减少动态效果", "主动点播"):
+                    self.assertIn(action, instructions)
+                self.assertNotIn("插图默认静止", instructions)
                 unpacked = root / "unpacked"
                 archive.extractall(unpacked)
             checked = subprocess.run(

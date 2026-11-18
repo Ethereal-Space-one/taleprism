@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type Job, type Project, type TextData, type ReviewState } from './api'
@@ -11,6 +11,7 @@ import { ReaderPanel } from './ReaderPanel'
 import { ProductionPanel } from './ProductionPanel'
 import { ProjectExchange } from './ProjectExchange'
 import { GuidedSampleIntro, GuidedSampleSteps, type GuidedProject } from './GuidedSample'
+import { CreatorStudio, StudioIntro, studioUrl } from './CreatorStudio'
 import './style.css'
 
 const rights: Record<string, string> = { owned: '自有作品', authorized: '已获授权', public_domain: '公有领域', local_test: '仅本地测试' }
@@ -18,12 +19,15 @@ const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }
 
 function App() {
   const cache = useQueryClient()
-  const [selected, setSelected] = useState<string | null>(localStorage.getItem('storygal-project'))
+  const [selected, setSelected] = useState<string | null>(() => {
+    const id = new URLSearchParams(location.search).get('project')
+    return id && /^[a-f0-9-]{36}$/.test(id) ? id : localStorage.getItem('storygal-project')
+  })
   const [guidedProject, setGuidedProject] = useState<GuidedProject | null>(() => {
     try {
       const value = JSON.parse(localStorage.getItem('taleprism-guided-last-light') || 'null')
       return value && typeof value.projectId === 'string' && typeof value.shotId === 'string'
-        ? { ...value, restoreIssues: Array.isArray(value.restoreIssues) && value.restoreIssues.every((item: unknown) => typeof item === 'string') ? value.restoreIssues : [] }
+        ? { ...value, restoreNotices:Array.isArray(value.restoreNotices) && value.restoreNotices.every((n:unknown)=>typeof n==='string')?value.restoreNotices:[], restoreIssues: Array.isArray(value.restoreIssues) && value.restoreIssues.every((item: unknown) => typeof item === 'string') ? value.restoreIssues : [] }
         : null
     } catch {
       return null
@@ -37,6 +41,10 @@ function App() {
   const [marks, setMarks] = useState(true)
   const [check, setCheck] = useState(false)
   const [mode, setMode] = useState<'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader' | 'production'>('text')
+  const readerGuard=useRef({dirty:false,writing:false})
+  const onReaderGuard=useCallback((value:{dirty:boolean;writing:boolean})=>{readerGuard.current=value},[])
+  const [backgroundProject,setBackgroundProject]=useState<Project|null>(null)
+  const importLock=useRef(false)
   const dialog = useRef<HTMLDialogElement>(null)
   const [webgalOpen, setWebgalOpen] = useState(false)
   const projects = useQuery({ queryKey: ['projects'], queryFn: () => api<Project[]>('/api/projects') })
@@ -49,24 +57,33 @@ function App() {
   const unit = data.data?.units[page]
 
   function keepCurrentWork() { navigationVersion.current += 1 }
-  function navigateMode(next: typeof mode) { keepCurrentWork(); setMode(next) }
-  function openImportDialog() { keepCurrentWork(); upload.reset(); dialog.current?.showModal() }
+  function mayLeaveReader(){
+    if(readerGuard.current.writing){window.alert('正在保存阅读器，请等待完成后再切换。');return false}
+    return !readerGuard.current.dirty || window.confirm('离开将放弃本页未保存的阅读器修改。继续离开吗？')
+  }
+  function navigateMode(next: typeof mode) { if(next!==mode && !mayLeaveReader())return false; keepCurrentWork(); setMode(next);return true }
+  function openImportDialog() { if(importLock.current)return;keepCurrentWork(); upload.reset(); dialog.current?.querySelector('form')?.reset();dialog.current?.showModal() }
   function choose(id: string) {
+    if(!mayLeaveReader())return false
     navigationVersion.current += 1
-    setSelected(id); localStorage.setItem('storygal-project', id); setPage(0); setCheck(false); setWebgalOpen(false); setFocusShot(null); setMode('text')
+    if (new URLSearchParams(location.search).has('project')) history.replaceState(null, '', '/')
+    setSelected(id); localStorage.setItem('storygal-project', id); setPage(0); setCheck(false); setWebgalOpen(false); setFocusShot(null); setMode('text');return true
   }
   function created(p: Project) {
-    cache.invalidateQueries({ queryKey: ['projects'] }); choose(p.id); dialog.current?.close()
+    cache.invalidateQueries({ queryKey: ['projects'] }); dialog.current?.close()
+    // A background creation never navigates over live reader input.
+    if(readerGuard.current.dirty || readerGuard.current.writing){setBackgroundProject(p);return false}
+    return choose(p.id)
   }
   const guided = useMutation({
     mutationFn: (_request: { navigation: number }) =>
-      api<Project & { guided_shot_id: string; restore_issues?: string[] }>('/api/samples/last-light/guided', {
+      api<Project & { guided_shot_id: string; restore_issues?: string[]; restore_notices?: string[] }>('/api/samples/last-light/guided', {
         method: 'POST',
       }),
     onSuccess: (p, request) => {
-      const guide = { projectId: p.id, shotId: p.guided_shot_id, restoreIssues: p.restore_issues }
+      const guide = { projectId: p.id, shotId: p.guided_shot_id, restoreIssues: p.restore_issues, restoreNotices:p.restore_notices }
       cache.invalidateQueries({ queryKey: ['projects'] })
-      if (request.navigation === navigationVersion.current) {
+      if (request.navigation === navigationVersion.current && !readerGuard.current.dirty && !readerGuard.current.writing) {
         setGuidedProject(guide)
         localStorage.setItem('taleprism-guided-last-light', JSON.stringify(guide))
         created(p)
@@ -90,8 +107,7 @@ function App() {
     },
   }
   function editGuidedShot(id: string) {
-    navigateMode('production')
-    setFocusShot(id)
+    if(navigateMode('production')) setFocusShot(id)
   }
   useEffect(() => {
     if (mode !== 'production' || !focusShot) return
@@ -111,7 +127,7 @@ function App() {
     return () => observer.disconnect()
   }, [mode, focusShot])
   const sample = useMutation({ mutationFn: () => api<Project>('/api/samples/last-light', { method: 'POST' }), onSuccess: created })
-  const upload = useMutation({ mutationFn: (form: FormData) => api<Project>('/api/projects', { method: 'POST', body: form }), onSuccess: created })
+  const upload = useMutation({ mutationFn: (form: FormData) => api<Project>('/api/projects', { method: 'POST', body: form }), onSuccess: created, onSettled:()=>{importLock.current=false} })
   const verify = useMutation({ mutationFn: () => api(`/api/projects/${selected}/verify`, { method: 'POST' }), onSuccess: () => setCheck(true) })
   const busy = latest?.state === 'running'
   const error = projects.error || data.error || jobs.error || sample.error || verify.error
@@ -141,25 +157,29 @@ function App() {
           </button>)}
           {projects.data?.length === 0 && <p className="sidebar-empty">还没有项目。<br />导入一章，开始制作。</p>}
         </div>
-        <ProjectExchange onCreated={(p) => { created(p); setMode('production') }} guidedStart={guidedStart} onNavigate={keepCurrentWork} rawSample={{ pending: sample.isPending, start: () => { keepCurrentWork(); sample.mutate() } }} />
+        <a className="studio-sidebar-link" href={studioUrl('new')} target="_blank" rel="noreferrer" onClick={keepCurrentWork}>＋ 用自己的图文开始</a>
+        <ProjectExchange onCreated={(p) => { if(created(p))setMode('production') }} guidedStart={guidedStart} onNavigate={keepCurrentWork} rawSample={{ pending: sample.isPending, start: () => { keepCurrentWork(); sample.mutate() } }} />
         <div className="sidebar-foot"><span>文本 → 标注 → 试读</span><p>项目与产物保存在这台电脑。</p></div>
       </aside>
       <main onInputCapture={() => { if (guidedOpening.current) keepCurrentWork() }}>
         {error && <p className="error" role="alert">{error.message}</p>}
-        {guidedReady && <div className="notice" role="status"><p>完整样例已另存为新项目。你切换后的当前项目未改动。</p><button onClick={() => { choose(guidedReady.projectId); setGuidedProject(guidedReady); localStorage.setItem('taleprism-guided-last-light', JSON.stringify(guidedReady)); setGuidedReady(null); setMode('production'); setFocusShot(guidedReady.shotId) }}>打开刚准备的《末班灯》副本 →</button></div>}
+        {backgroundProject && <div className="notice" role="status">已另存新工程，当前草稿未被覆盖。 <button onClick={()=>{if(choose(backgroundProject.id))setBackgroundProject(null)}}>打开 {backgroundProject.filename}</button></div>}
+        {guidedReady && <div className="notice" role="status"><p>完整样例已另存为新项目。你切换后的当前项目未改动。</p><button onClick={() => { if(!choose(guidedReady.projectId))return; setGuidedProject(guidedReady); localStorage.setItem('taleprism-guided-last-light', JSON.stringify(guidedReady)); setGuidedReady(null); setMode('production'); setFocusShot(guidedReady.shotId) }}>打开刚准备的《末班灯》副本 →</button></div>}
         {!project ? <>
+          <StudioIntro />
           <GuidedSampleIntro start={guidedStart} />
           <div className="guided-manual-intro"><button onClick={openImportDialog}>导入自己的 TXT ↗</button><p>已有原文？从空白项目开始。完整示例与工程 ZIP 导入在左侧「手动导入与原文练习」。</p></div>
         </> : <>
           <div className="project-heading"><div><p className="eyebrow">文本工作台 <span>／</span> {rights[project.rights_status]}</p><h1>{project.filename.replace(/\.txt$/i, '')}</h1><p className="project-meta">{project.character_count.toLocaleString()} 字 <span>·</span> {data.data?.units.length || project.unit_count} 个显示框 <span>·</span> {project.encoding.toUpperCase()}</p></div>
           <div className="heading-actions"><button disabled={verify.isPending} onClick={() => { keepCurrentWork(); verify.mutate() }}>{verify.isPending ? '正在校验…' : check ? '✓ 原文校验通过' : '校验原文'}</button><a href={`/read/${project.id}`} onClick={keepCurrentWork} target="_blank" rel="noreferrer">阅读预览 ↗</a><button className="primary" onClick={() => navigateMode('reader')}>独立阅读器与导出 <span>→</span></button></div></div>
+          {project.single_plate_studio && <p className="studio-resume"><a href={studioUrl(project.id)} target="_blank" rel="noreferrer">继续单幅图文制作 ↗</a> · 原文、候选插图和已保存的导演设置保存在此项目中。</p>}
           {guidedProject?.projectId === project.id && <GuidedSampleSteps guide={guidedProject} mode={mode} onEdit={editGuidedShot} onPreview={() => navigateMode('reader')} onNavigate={keepCurrentWork} onLeave={() => { keepCurrentWork(); setGuidedProject(null); localStorage.removeItem('taleprism-guided-last-light') }} />}
           {latest?.state === 'failed' && <p className="error" role="alert">导出未完成：{latest.error} 可重新导出。</p>}
           {busy && <p className="notice" role="status">正在打包 WebGAL 兼容版本，完成后请到交付检查查看。</p>}
 
           <nav className="workspace-tabs" aria-label="工作台视图"><button aria-pressed={mode === 'production'} onClick={() => navigateMode('production')}>章节制作方案</button><button aria-pressed={mode === 'text'} onClick={() => navigateMode('text')}>原文与预览</button><button aria-pressed={mode === 'review'} onClick={() => navigateMode('review')}>人物与审校{review.data ? ` · ${review.data.pending_count} 待审` : ''}</button><button aria-pressed={mode === 'speech'} onClick={() => navigateMode('speech')}>对白配音</button><button aria-pressed={mode === 'visual'} onClick={() => navigateMode('visual')}>视觉与图解</button><button aria-pressed={mode === 'reader'} onClick={() => navigateMode('reader')}>独立阅读器</button><button aria-pressed={mode === 'delivery'} onClick={() => navigateMode('delivery')}>交付检查</button></nav>
           {mode === 'production' && <ProductionPanel key={project.id} projectId={project.id} />}
-          {mode === 'reader' && <ReaderPanel key={project.id} projectId={project.id} review={review.data} />}
+          {mode === 'reader' && <ReaderPanel key={project.id} projectId={project.id} review={review.data} onGuardChange={onReaderGuard} />}
           {mode === 'delivery' && <DeliveryPanel key={project.id} projectId={project.id} onLocate={navigateMode} onExport={() => { keepCurrentWork(); setWebgalOpen(true) }} busy={busy} />}
           {mode === 'visual' && data.data && <VisualPanel key={project.id} projectId={project.id} spans={data.data.spans} units={data.data.units} />}
           {mode === 'speech' && <SpeechPanel key={project.id} projectId={project.id} />}
@@ -190,14 +210,14 @@ function App() {
             </aside>
           </div>}
         </>}
-        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.3.3 / 公开试用版</span></footer>
+        <footer className="colophon"><span>Taleprism · 忠于原文的制作工具</span><span>v0.9.0 / 公开预览版</span></footer>
       </main>
     </div>
     {webgalOpen && project && <WebgalExportDialog key={project.id} projectId={project.id} busy={busy} onClose={() => setWebgalOpen(false)} onReader={() => { setWebgalOpen(false); navigateMode('reader') }} />}
-    <dialog ref={dialog} className="import-dialog"><form onSubmit={e => { e.preventDefault(); upload.mutate(new FormData(e.currentTarget)) }}>
-      <div className="dialog-head"><h2>导入一章文本</h2><button type="button" aria-label="关闭导入" onClick={() => dialog.current?.close()}>×</button></div>
+    <dialog ref={dialog} className="import-dialog" onCancel={e=>{if(upload.isPending)e.preventDefault()}}><form onSubmit={e => { e.preventDefault(); if(importLock.current)return;importLock.current=true; upload.mutate(new FormData(e.currentTarget)) }}>
+      <div className="dialog-head"><h2>导入一章文本</h2><button type="button" aria-label="关闭导入" disabled={upload.isPending} onClick={() => dialog.current?.close()}>×</button></div>
       <p>建议 5,000–15,000 字，最多 30,000 字。</p>
-      <label>TXT 文件<input name="file" type="file" accept=".txt,text/plain" required /></label>
+      <label>TXT 文件<input name="file" type="file" disabled={upload.isPending} onChange={e=>{const choice=e.currentTarget.form?.elements.namedItem('rights_status');if(choice instanceof HTMLSelectElement)choice.value=''}} accept=".txt,text/plain" required /></label>
       <label>文本权利状态<select name="rights_status" required defaultValue=""><option value="" disabled>请选择</option>{Object.entries(rights).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       <label>文件编码<select name="encoding" defaultValue="auto"><option value="auto">自动识别（优先 UTF-8）</option><option value="utf-8">UTF-8</option><option value="gb18030">GB18030 / GBK</option></select></label>
       {upload.error && <p className="error" role="alert">{upload.error.message}</p>}
@@ -366,4 +386,5 @@ function WebgalExportDialog({
 
 const readerProject = /^\/read\/([0-9a-f-]{36})\/?$/.exec(location.pathname)?.[1]
 const readerExport = document.querySelector<HTMLMetaElement>('meta[name="storygal-reader-export"]')?.content
-createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={client}>{readerProject || readerExport ? <ReaderApp projectId={readerProject} exportUrl={readerExport} /> : <App />}</QueryClientProvider></React.StrictMode>)
+const studio = new URLSearchParams(location.search).get('studio')
+createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={client}>{readerProject || readerExport ? <ReaderApp projectId={readerProject} exportUrl={readerExport} /> : studio !== null ? <CreatorStudio initialId={studio} /> : <App />}</QueryClientProvider></React.StrictMode>)

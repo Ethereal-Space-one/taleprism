@@ -315,3 +315,5 @@ kbd { font-family: var(--font-code); font-size: 11px; color: var(--color-muted);
 .export-dialog-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
 .export-dialog-actions button { white-space: normal; }
 @media (max-width: 500px) { .export-dialog-actions { align-items: stretch; flex-direction: column; } }
+
+.reader-form-guard{min-inline-size:0;margin:0;padding:0;border:0;}

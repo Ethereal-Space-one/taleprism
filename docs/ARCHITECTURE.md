@@ -64,10 +64,24 @@ The public checkout includes canonical Last Light references, but excludes packe
 
 ## 原文搜索的简繁边界
 
-阅读器默认「简繁通搜」，首次打开搜索才加载本地 `opencc-js/t2cn` 字典与匹配代码，加载中不把尚未完成的搜索报告为零匹配。失败时可改用「精确匹配」或重新载入。该开关随当前阅读器会话保留，不改写工程、正文或个人书签。
+阅读器默认「简繁通搜」，制作台预览首次打开搜索才加载本地 `opencc-js/t2cn` 字典与匹配代码；可双击的离线版已将字典打进本地脚本，首次打开搜索时才准备转换器，加载中不把尚未完成的搜索报告为零匹配。失败时可改用「精确匹配」或重新载入。该开关随当前阅读器会话保留，不改写工程、正文或个人书签。
 
 匹配使用固定 `opencc-js` 1.4.2 的 generic `t2s`，仅转换搜索索引和查询中的连续 Han 字符；不转换地区词汇、不猜测语义，不删除空格或标点，不折合大小写、拉丁字母重音、全角字母、非汉字兼容字符。它不是日文转换器，也不声称识别任意导入文本的语言。简体同形可能合并多种原字（例如发／發／髮）；「精确匹配」完全绕过折合，恢复原来的逐字短语匹配。少数罕见字不在上游浏览器字典内。
 
 按 Unicode scalar 一一记录折合边界，映射回原文 UTF-16 索引后才计算 UTF-8 跳转锚点，不能直接拿折合字符串的长度定位。固定版 generic `t2s` 的 4,991 个字典条目全部经过 scalar 数量相等检查；未来若某段发生扩缩，运行时该段退回原样而不猜位置。保留直接逐字命中，避免词组语境让原字子串失踪（如「乾坤」中的「乾」）。搜索与正文高亮共用同一匹配器，跨对白 run 只切显示范围并保留原字符、说话人与音频锚点。测试在 `tools/webgal-verify/reader-search-check.cjs`，随 `npm --prefix frontend run test:reader` 执行。
 
 维护依据：[固定版官方用法与能力边界](https://github.com/nk2028/opencc-js/blob/v1.4.2/README.md)、[固定版字典许可](https://github.com/nk2028/opencc-js/blob/v1.4.2/THIRD_PARTY_LICENSES.md)。独立阅读导出必须同时带 MIT 代码许可、Apache-2.0 字典许可与第三方说明，不能只复制一个 LICENSE。
+
+## Scene direction candidate (0.4.0)
+
+`reader_motion.py` validates declarative rain/shore parameters, finite simple masks and immutable source/image/position bindings. `motion:null` is deliberately static; absent data keeps legacy exact-image recipes. `MotionDirector.tsx` stages geometry, evidence and observations separately from the outer reader draft. Applying transfers a valid direction to that draft; saving retains optimistic revision checks and the exact submitted edit generation. A response cannot mark newer edits clean.
+
+The preview and reader share `motion/runtime.ts` and `motion/render.ts`, not a separate approximation. Runtime reports eight seconds of active rendering only to the creator preview. This enables a human attestation, not an automatic art-quality approval. Rain ripples require explicitly marked wet ground and reuse the corresponding falling drop's endpoint and phase. All shore passes, including splash, remain inside permitted regions; banks outside those regions are not snapped to another surface. Mask winding is normalized for union clipping, without changing authored coordinates. No scene is inferred from title, filename or prose, and unsupported treatments remain static.
+
+## 接收者的离线入口（本地 0.5 候选）
+
+新导出的 ZIP 仍是阅读快照，不是可编辑工程。完整解压后直接打开 `index.html`；与托管或备用回环服务使用同一入口。页面包含转义的惰性 JSON，和 `reader.json` 同源，不通过 fetch 读取相邻文件。前端构建另输出 classic script + CSS，复用同一个 ReaderView（含简繁搜索、书签、对白、展开图与减少动态效果），不用模块跨域权限、CDN 或浏览器开关。程序和原图／WAV 相对路径加载，二进制只打包一份，不编码成巨型 HTML；分享、移动或托管时要保留整个目录。启动阅读不会主动发起 HTTP、统计或制作台 API 请求。完整性清单覆盖 HTML、运行资源、JSON、素材与许可；独立校验脚本可选，不把离线阅读本身说成真实性或完整性证明。
+
+`npm --prefix frontend run build` 一次构建制作台和离线运行时，旧制作台构建不能伪装成新阅读包。专门验收：安装项目与测试依赖后运行 `node tools/webgal-verify/portable-reader-check.cjs`；可用 `CHROMIUM_PATH` 指定现有 Chromium。测试经正常创作导出及 ZIP 下载取得实物，在断网的 file:// 页面使用生成的图和测试音频，不依赖私人作品或付费服务。
+
+单幅入口的可编辑备份使用工程 v3，项目元数据必须带严格布尔值 `single_plate_studio: true`。导入仍新建项目；只恢复入口，不新增美术或动效复核。普通工程继续导出 v2，历史 v1/v2 不接受这一新字段，不会按作品名称或插图 ID 推断入口。

@@ -1,0 +1,189 @@
+{
+  "schema_version": 6,
+  "project": {
+    "id": "4e7a7e2d-17e9-5930-93f7-45ccf1bd5e0a",
+    "filename": "留白处.txt",
+    "sha256": "6aab83ff58fde9b69aebd054de1155ddd4968d42eaf29adc5f020166f4f9bc16",
+    "canonical_sha256": "6aab83ff58fde9b69aebd054de1155ddd4968d42eaf29adc5f020166f4f9bc16",
+    "rights_status": "owned",
+    "character_count": 197
+  },
+  "versions": {
+    "reader_revision": 0,
+    "review_revision": 0,
+    "speech_revision": 0,
+    "production_revision": 0
+  },
+  "config": {
+    "title": "留白处",
+    "subtitle": "",
+    "cover_asset_id": null,
+    "scenes": [],
+    "map_profile": null,
+    "presentations": [],
+    "map_entries": [],
+    "reading_layout": "illustrated",
+    "illustrations": [
+      {
+        "id": "studio-first-illustration",
+        "after_byte": 304,
+        "image_asset_id": "d945f94e-f701-5505-bda5-57ce75d9020f",
+        "title": "冬日的小桌",
+        "description": "斜光映在浅色墙上。矮木桌的桌面空着，角上有几滴旧墨；右前角没有桌腿，一蓝绿一赭红两册厚旧历书错开叠着，正好托住它。",
+        "motion": null
+      }
+    ],
+    "echo_fold": {
+      "earlier": {
+        "paragraph": 2,
+        "quote": "你自己添个字"
+      },
+      "later": {
+        "paragraph": 5,
+        "quote": "轻轻推还给她"
+      }
+    }
+  },
+  "blocks": [
+    {
+      "id": "p-0",
+      "byte_start": 0,
+      "byte_end": 99,
+      "text": "春汛一过，渡口就摆起一张小桌。有人拎着鸡蛋来，有人带一把刚掐的葱。",
+      "heading": false,
+      "source_gap_before": "",
+      "runs": [
+        {
+          "byte_start": 0,
+          "byte_end": 99,
+          "text": "春汛一过，渡口就摆起一张小桌。有人拎着鸡蛋来，有人带一把刚掐的葱。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-101",
+      "byte_start": 101,
+      "byte_end": 206,
+      "text": "她替人写信，从不把最后一行写满。“你自己添个字，”她说，“歪也认得。”",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 101,
+          "byte_end": 206,
+          "text": "她替人写信，从不把最后一行写满。“你自己添个字，”她说，“歪也认得。”",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-208",
+      "byte_start": 208,
+      "byte_end": 304,
+      "text": "入冬她收了摊。那张小桌摆在厨房里，少一条腿，底下垫着两册旧历书。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 208,
+          "byte_end": 304,
+          "text": "入冬她收了摊。那张小桌摆在厨房里，少一条腿，底下垫着两册旧历书。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-306",
+      "byte_start": 306,
+      "byte_end": 426,
+      "text": "第二年开春，邮差送来一张明信片。正面是一座她没见过的桥，背面只写着：这回轮到我。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 306,
+          "byte_end": 426,
+          "text": "第二年开春，邮差送来一张明信片。正面是一座她没见过的桥，背面只写着：这回轮到我。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-428",
+      "byte_start": 428,
+      "byte_end": 527,
+      "text": "她把铅笔削好，递给坐在对面的人。那人把明信片翻回来，轻轻推还给她。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 428,
+          "byte_end": 527,
+          "text": "她把铅笔削好，递给坐在对面的人。那人把明信片翻回来，轻轻推还给她。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-529",
+      "byte_start": 529,
+      "byte_end": 568,
+      "text": "她在空着的地方画了一根葱。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 529,
+          "byte_end": 568,
+          "text": "她在空着的地方画了一根葱。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": [],
+      "soundscape": {
+        "id": "0ea67632-cb23-5b25-91f1-87b58875c28e",
+        "duration": 12.0,
+        "label": "段落声景",
+        "description": "铅笔在纸上划过，随后静默"
+      }
+    }
+  ],
+  "characters": {},
+  "media": {
+    "d945f94e-f701-5505-bda5-57ce75d9020f": {
+      "id": "d945f94e-f701-5505-bda5-57ce75d9020f",
+      "type": "image",
+      "sha256": "e6631fde837dd200d737e78fc4185055911c044b2382b91a38557698069c64f1",
+      "width": 1440,
+      "height": 900,
+      "origin": "user_upload",
+      "license": "《冬日的小桌》为本版 AI 协作原创程序插画，未使用外部图像、纹理或字体。允许按本项目的 MIT 许可复制、修改和再分发。",
+      "url": "./media/d945f94e-f701-5505-bda5-57ce75d9020f.png"
+    },
+    "0ea67632-cb23-5b25-91f1-87b58875c28e": {
+      "id": "0ea67632-cb23-5b25-91f1-87b58875c28e",
+      "type": "audio",
+      "sha256": "8bd5e0bc72ccf01e543bfa0a0318c97cb7e9ca4dfebb7f586e2cd7d27eee0f50",
+      "duration": 12.0,
+      "origin": "paragraph_soundscape",
+      "url": "./media/0ea67632-cb23-5b25-91f1-87b58875c28e.wav"
+    }
+  },
+  "map": null,
+  "preview": false,
+  "issues": [],
+  "presentations": [],
+  "map_entries": []
+}

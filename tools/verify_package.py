@@ -22,8 +22,12 @@ def verify(root: Path) -> dict:
         relative = PurePosixPath(name)
         if relative.is_absolute() or ".." in relative.parts or "\\" in name:
             raise ValueError("清单路径无效。")
-        content = (root / name).read_bytes()
-        if len(content) != entry["bytes"] or hashlib.sha256(content).hexdigest() != entry["sha256"]:
+        file = root / name
+        digest = hashlib.sha256()
+        with file.open("rb") as content:
+            for chunk in iter(lambda: content.read(1024 * 1024), b""):
+                digest.update(chunk)
+        if file.stat().st_size != entry["bytes"] or digest.hexdigest() != entry["sha256"]:
             raise ValueError("文件校验失败：" + name)
     return {"passed": True, "files": len(expected), "export_id": inventory["export_id"]}
 

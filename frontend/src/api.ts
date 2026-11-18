@@ -1,4 +1,5 @@
 export type Project = {
+  single_plate_studio?: boolean
   id: string
   filename: string
   encoding: string

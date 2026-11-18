@@ -208,14 +208,18 @@ def test_reader_change_during_packaging_never_publishes(setup, monkeypatch):
     assert list((r.store.project_dir(pid) / "exports").iterdir()) == []
 
 
-def test_text_only_export_keeps_search_chunk_and_opencc_notices(setup):
+def test_text_only_export_keeps_classic_bundle_and_opencc_notices(setup):
     c, pid, r, raw = setup
     job = export(c, pid)
     assert job["state"] == "completed", job
     archive = r.store.project_dir(pid) / "exports" / (job["id"] + ".zip")
     with zipfile.ZipFile(archive) as z:
         names = z.namelist()
-        assert any(name.startswith("assets/search-") and name.endswith(".js") for name in names)
+        assert "assets/reader.js" in names and "assets/reader.css" in names
+        assert 'type="module"' not in z.read("index.html").decode()
+        assert z.read("licenses/Taleprism-MIT.txt") == (REPO / "LICENSE").read_bytes()
+        assert b"licenses/Taleprism-MIT.txt" in z.read("README.txt")
+        assert b"licenses/Taleprism-MIT.txt" in z.read("RIGHTS.txt")
         assert "licenses/opencc-js.txt" in names
         assert "Apache License" in z.read("licenses/opencc-js-Apache-2.0.txt").decode()
         assert "opencc-data" in z.read("licenses/opencc-js-THIRD_PARTY_LICENSES.md").decode()
@@ -224,23 +228,26 @@ def test_text_only_export_keeps_search_chunk_and_opencc_notices(setup):
         assert set(names) == set(inventory["files"]) | {"storygal-delivery.json"}
 
 
-@pytest.mark.parametrize("with_search", [False, True])
-def test_opencc_notices_required_only_for_built_search_asset(setup, tmp_path, monkeypatch, with_search):
+@pytest.mark.parametrize("missing", ["bundle", "dictionary-license", "project-license", "empty-license"])
+def test_outdated_build_or_missing_notices_never_yield_a_partial_export(
+    setup, tmp_path, monkeypatch, missing
+):
+    from reader_build_fixture import fake_reader_build
+
     c, pid, r, _ = setup
     fake_repo = tmp_path / "prebuilt"
-    assets = fake_repo / "frontend/dist/assets"
-    assets.mkdir(parents=True)
-    (assets.parent / "index.html").write_text("<head></head><body>legacy</body>")
-    (assets / ("search-test.js" if with_search else "main-test.js")).write_text("// fixture")
-    tools = fake_repo / "tools"
-    tools.mkdir()
-    for name in ("verify_package.py", "reader_launcher.py", "reader_launcher.command"):
-        (tools / name).write_text((REPO / "tools" / name).read_text())
+    fake_reader_build(fake_repo)
+    if missing == "bundle":
+        (fake_repo / "frontend/dist/reader/reader.js").unlink()
+    elif missing == "dictionary-license":
+        (fake_repo / "frontend/node_modules/opencc-js/LICENSES/Apache-2.0.txt").unlink()
+    elif missing == "project-license":
+        (fake_repo / "LICENSE").unlink()
+    else:
+        (fake_repo / "LICENSE").write_bytes(b"")
     monkeypatch.setattr(reader_export, "REPO", fake_repo)
     job = export(c, pid)
-    if with_search:
-        assert job["state"] == "failed", "new search builds may not omit dependency licenses"
-        assert "opencc-js" in job["error"]
-        assert list((r.store.project_dir(pid) / "exports").iterdir()) == []
-    else:
-        assert job["state"] == "completed", job
+    assert job["state"] == "failed", job
+    assert {"bundle": "构建", "dictionary-license": "opencc-js"}.get(missing, "Taleprism 软件许可") in job["error"]
+    parent = r.store.project_dir(pid) / "exports"
+    assert not parent.exists() or list(parent.iterdir()) == []

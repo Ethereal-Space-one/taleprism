@@ -657,3 +657,246 @@ def test_isolated_image_audio_edit_and_second_restore_remain_lossless(
     ).read_bytes() == original_image
     take = second.app.state.speech.state(final)["lines"][0]["segments"][0]["accepted"]
     assert second.get(take["url"]).content == audio
+
+
+def test_player_packages_never_publish_authoring_records_even_for_accepted_audio(
+    project, monkeypatch
+):
+    c, pid, char, _scene, figure, _raw = project
+    base = f"/api/projects/{pid}"
+    review = c.app.state.review
+    rejected = review.character(
+        pid, review.state(pid)["revision"], "旧候选", [], "PRIVATE_REJECTED"
+    )
+    review.character(
+        pid,
+        review.state(pid)["revision"],
+        "旧候选",
+        [],
+        "PRIVATE_REJECTED",
+        rejected["id"],
+        "rejected",
+    )
+    expected = cloud_take(project, monkeypatch)
+    accepted = c.app.state.speech.state(pid)["lines"][0]["segments"][0]["accepted"]
+    secrets = [b"PRIVATE_REJECTED", *[s.encode() for s in ("沉" * 1000, "慢" * 1000)]]
+    editable = c.get(base + "/bundle")
+    with zipfile.ZipFile(io.BytesIO(editable.content)) as z:
+        assert all(x in z.read("project.json") for x in secrets)
+    for standalone in (True, False):
+        params = (
+            {}
+            if standalone
+            else {
+                "simplified": "true",
+                "reader_revision": c.get(base + "/exports/compatibility").json()["reader_revision"],
+            }
+        )
+        job_id = c.post(
+            base + ("/reader/exports" if standalone else "/exports"), params=params
+        ).json()["job_id"]
+        job = next(j for j in c.get(base + "/jobs").json() if j["id"] == job_id)
+        assert job["state"] == "completed", job["error"]
+        with zipfile.ZipFile(io.BytesIO(c.get(job["result"]["download_url"]).content)) as z:
+            assert not any(x in z.read(n) for n in z.namelist() for x in secrets)
+            if standalone:
+                public = json.loads(z.read("reader.json"))
+                assert "profile" not in public["media"][accepted["id"]]
+                assert z.read(f"media/{accepted['id']}.wav") == expected
+            else:
+                public = json.loads(z.read("storygal-manifest.json"))
+                assert public["checks"]["parser"]["passed"]
+                assert not ({"speech", "review", "visual"} & public.keys())
+                assert public["vocal_assets"] == [
+                    {k: accepted[k] for k in ("id", "sha256", "duration", "provider", "model")}
+                ]
+                assert public["figure_assets"][0]["id"] == figure["id"]
+                assert public["figure_assets"][0]["license"] == "synthetic fixture"
+                assert z.read(f"game/vocal/{accepted['id']}.wav") == expected
+                assert any(u.get("speaker_name") == char["display_name"] for u in public["units"])
+    # A candidate can keep private pronunciation and performance directions
+    # even if it previously had an accepted take. No revision publishes them.
+    speech = c.app.state.speech
+    line = speech.state(pid)["lines"][0]
+    speech.line(
+        pid,
+        speech.load(pid)[0],
+        line["id"],
+        False,
+        {line["segments"][0]["key"]: "PRIVATE_SPOKEN"},
+        "PRIVATE_LINE_DIRECTION",
+    )
+    report = c.get(base + "/exports/compatibility").json()
+    job_id = c.post(
+        base + "/exports",
+        params={"simplified": "true", "reader_revision": report["reader_revision"]},
+    ).json()["job_id"]
+    job = next(j for j in c.get(base + "/jobs").json() if j["id"] == job_id)
+    assert job["state"] == "completed", job["error"]
+    with zipfile.ZipFile(io.BytesIO(c.get(job["result"]["download_url"]).content)) as z:
+        assert not any(n.startswith("game/vocal/") for n in z.namelist())
+        assert all(
+            all(
+                x not in z.read(n) for x in [*secrets, b"PRIVATE_SPOKEN", b"PRIVATE_LINE_DIRECTION"]
+            )
+            for n in z.namelist()
+        )
+
+
+def test_private_editorial_roundtrip_keeps_open_deferred_resolved_and_stale_work(project, tmp_path):
+    c, pid, *_ = project
+    p = f"/api/projects/{pid}"
+    anchor = c.app.state.reader.blocks(pid)[1]["byte_start"]
+    original = None
+    for i, (status, reason) in enumerate(
+        [("deferred", "等作者回来"), ("resolved", "已复核"), ("open", "")]
+    ):
+        saved = c.post(
+            p + "/reader/editorial",
+            json={
+                "revision": i,
+                "anchor": anchor,
+                "state": status,
+                "category": "cast",
+                "note": f"私有意见-{status}",
+                "reason": reason,
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        original = saved.json()
+        if i == 0:
+            reader = c.app.state.reader
+            rev, cfg = reader.load(pid)
+            reader.save(pid, rev, cfg | {"subtitle": "新版本"})  # preserve stale version receipts
+    archive = c.get(p + "/bundle")
+    assert archive.status_code == 200, archive.text[:100]
+    with zipfile.ZipFile(io.BytesIO(archive.content)) as z:
+        doc = json.loads(z.read("project.json"))
+        assert doc["version"] == 5
+        assert doc["states"]["reader_editorial"] == {"revision": 3, "data": original["issues"]}
+        assert "不要作为读者版公开分享" in z.read("README.txt").decode()
+    other = TestClient(create_app(tmp_path / "fresh"))
+    imported = other.post("/api/project-bundles", files={"file": ("editable.zip", archive.content)})
+    assert imported.status_code == 201, imported.text
+    new = "/api/projects/" + imported.json()["id"]
+    assert not imported.json()["restore_notices"] and not imported.json()["restore_issues"]
+    assert other.get(new + "/reader/editorial").json() == original
+    assert other.get(new + "/delivery").json()["records"] == []
+    warnings = {w["detail"] for w in other.get(new + "/delivery").json()["warnings"]}
+    assert warnings == {w["detail"] for w in c.get(p + "/delivery").json()["warnings"]}
+    for label, expected in [("open", True), ("deferred", True), ("resolved", False)]:
+        assert any("私有意见-" + label in w for w in warnings) is expected
+    rejected = other.post(
+        new + "/reader/editorial",
+        json={
+            "revision": 0,
+            "anchor": anchor,
+            "category": "cast",
+            "note": "old edit",
+            "state": "open",
+            "reason": "",
+        },
+    )
+    assert rejected.status_code == 409 and other.get(new + "/reader/editorial").json() == original
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        "split-character",
+        "range",
+        "missing-reason",
+        "duplicate-id",
+        "future-version",
+        "missing-field",
+    ],
+)
+def test_private_editorial_bad_import_never_partially_restores(project, tmp_path, invalid):
+    c, pid, *_ = project
+    anchor = c.app.state.reader.blocks(pid)[1]["byte_start"]
+    p = f"/api/projects/{pid}"
+    for n in range(2):
+        assert c.post(
+            p + "/reader/editorial",
+            json={
+                "revision": n,
+                "anchor": anchor,
+                "state": "open",
+                "category": "map",
+                "note": "图例待核对",
+                "reason": "",
+            },
+        ).is_success
+    archive = c.get(p + "/bundle")
+    assert archive.is_success
+    from test_reader_motion import repack as with_inventory
+
+    def change(doc):
+        items = doc["states"]["reader_editorial"]["data"]
+        if invalid == "split-character":
+            items[0]["anchor"] += 1
+        elif invalid == "range":
+            items[0]["anchor"] = 999999
+        elif invalid == "missing-reason":
+            items[0]["state"] = "deferred"
+        elif invalid == "duplicate-id":
+            items[0]["id"] = items[1]["id"]
+        elif invalid == "future-version":
+            items[1]["versions"]["reader_revision"] += 100
+        else:
+            del items[1]["note"]
+
+    other = TestClient(create_app(tmp_path / "fresh"))
+    imported = other.post(
+        "/api/project-bundles",
+        files={"file": ("edited.zip", with_inventory(archive.content, change))},
+    )
+    assert imported.status_code == 400, imported.text
+    assert other.get("/api/projects").json() == []
+
+
+def test_editorial_coverage_notice_only_for_old_packages(project, tmp_path):
+    c, pid, *_ = project
+    data = c.get(f"/api/projects/{pid}/bundle").content
+    # The pre-0.6.1 inventory omitted the new optional count. Don't claim
+    # these old empty snapshots prove there were no issues in the original.
+    older = repack(data, lambda _files: None)
+    other = TestClient(create_app(tmp_path / "fresh"))
+    for blob, legacy in ((data, False), (older, True)):
+        restored = other.post("/api/project-bundles", files={"file": ("editable.zip", blob)})
+        assert restored.is_success, restored.text
+        j = restored.json()
+        assert j["restore_issues"] == []
+        assert bool(j["restore_notices"]) is legacy
+        assert other.get(f"/api/projects/{j['id']}/reader/editorial").json() == {
+            "revision": 0,
+            "issues": [],
+        }
+
+
+def test_backup_refuses_to_silently_drop_issue_added_during_validation(project, monkeypatch):
+    c, pid, *_ = project
+    p = f"/api/projects/{pid}"
+    unit = c.app.state.reader.blocks(pid)[1]
+    bundles = c.app.state.bundles
+    original = bundles.import_project
+
+    def changed_after_snapshot(raw, **kwargs):
+        result = original(raw, **kwargs)
+        assert c.post(
+            p + "/reader/editorial",
+            json={
+                "revision": 0,
+                "anchor": unit["byte_start"],
+                "category": "reading",
+                "note": "刚添加的待办意见",
+                "state": "open",
+                "reason": "",
+            },
+        ).is_success
+        return result
+
+    monkeypatch.setattr(bundles, "import_project", changed_after_snapshot)
+    response = c.get(p + "/bundle")
+    assert response.status_code == 400 and "制作意见发生修改" in response.text
+    assert c.get(p + "/reader/editorial").json()["revision"] == 1

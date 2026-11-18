@@ -85,7 +85,10 @@ def test_special_characters_parse_export_and_download(client):
         assert z.read("storygal-source/original.txt") == tricky.encode()
         manifest = json.loads(z.read("storygal-manifest.json"))
         assert "".join(u["text"] for u in manifest["units"]) == tricky
-        assert "LICENSE-WebGAL-MPL-2.0.txt" in z.namelist()
+        assert z.read("LICENSE-WebGAL-MPL-2.0.txt") == (REPO / "engine/LICENSE-MPL-2.0.txt").read_bytes()
+        assert z.read("licenses/Taleprism-MIT.txt") == (REPO / "LICENSE").read_bytes()
+        assert b"licenses/Taleprism-MIT.txt" in z.read("README.txt")
+        assert b"licenses/Taleprism-MIT.txt" in z.read("RIGHTS.txt")
         assert b"SGTEXT_" in z.read("assets/index-CC7KTie-.js")
 
 

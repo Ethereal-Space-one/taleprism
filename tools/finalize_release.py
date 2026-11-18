@@ -33,6 +33,8 @@ def finalize(output):
         raise ValueError("Release version mismatch")
     expected = {
         PREFIX + "-prompt-starter.zip",
+        PREFIX + "-the-door-left-open-reader.zip",
+        PREFIX + "-the-margin-reader.zip",
         *[
             f"{PREFIX}-{example}-{kind}.zip"
             for example in ("chibi", "last-light")
@@ -41,7 +43,9 @@ def finalize(output):
     }
     records = [a for a in manifest["artifacts"] if a.get("kind") != "source"]
     if len(records) != len(expected) or {a["file"] for a in records} != expected:
-        raise ValueError("A complete release needs the starter and both example pairs.")
+        raise ValueError(
+            "A complete release needs the starter, both editable pairs, and both reader-only demonstrations."
+        )
     for record in records:
         raw = (output / record["file"]).read_bytes()
         if len(raw) != record["bytes"] or digest(raw) != record["sha256"]:
@@ -56,8 +60,13 @@ def finalize(output):
     with zipfile.ZipFile(source) as archive:
         inventory = {name: digest(path.read_bytes()) for name, path in selected}
         document = json.loads(archive.read("taleprism/SOURCE-MANIFEST.json"))
-        expected_files = sorted("taleprism/" + name for name in [*inventory, "SOURCE-MANIFEST.json"])
-        if document["files"] != inventory or sorted(archive.namelist()) != expected_files:
+        expected_files = sorted(
+            "taleprism/" + name for name in [*inventory, "SOURCE-MANIFEST.json"]
+        )
+        if (
+            document["files"] != inventory
+            or sorted(archive.namelist()) != expected_files
+        ):
             raise ValueError("Source archive does not match the final reviewed source.")
         for name, expected_hash in inventory.items():
             if digest(archive.read("taleprism/" + name)) != expected_hash:

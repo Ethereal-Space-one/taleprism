@@ -31,6 +31,8 @@ def webgal_losses(config: dict, default_title: str) -> list[dict]:
     def add(field, label, detail):
         losses.append({"field": field, "label": label, "detail": detail})
 
+    if config.get("echo_fold"):
+        add("echo_fold", "回声折页", "WebGAL 保留原文，但不会显示可以展开的前文引句。")
     if config.get("illustrations"):
         add(
             "illustrations",
@@ -90,7 +92,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.3.3", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.9.0", lifespan=lifespan)
     instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)
@@ -128,7 +130,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
     def health():
         return {
             "status": "ok",
-            "version": "0.3.3",
+            "version": "0.9.0",
             "service": "taleprism",
             "workspace_id": sha256(str(REPO.resolve()).encode()),
             "data_id": sha256(str(store.root).encode()),
@@ -146,11 +148,18 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         file: Annotated[UploadFile, File()],
         rights_status: Annotated[str, Form()],
         encoding: Annotated[str, Form()] = "auto",
+        single_plate_studio: Annotated[bool, Form()] = False,
     ):
         if not (file.filename or "").lower().endswith(".txt"):
             raise ValueError("当前仅支持 TXT 文件。")
         raw = await file.read(MAX_BYTES + 1)
-        return store.create(raw, file.filename or "source.txt", rights_status, encoding)
+        return store.create(
+            raw,
+            file.filename or "source.txt",
+            rights_status,
+            encoding,
+            single_plate_studio=single_plate_studio,
+        )
 
     @app.post("/api/samples/chibi", status_code=201)
     def sample():
@@ -197,6 +206,22 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         revision, config = reader.load(project_id)
         default_title = store.get(project_id)["filename"].removesuffix(".txt")
         losses = webgal_losses(config, default_title)
+        if any(t["status"] == "accepted" for t in reader.narrations.state(project_id)["takes"]):
+            losses.append(
+                {
+                    "field": "narration",
+                    "label": "段落朗读",
+                    "detail": "已接受的段落朗读及其位置不会进入 WebGAL。独立阅读器可保留。",
+                }
+            )
+        if any(t["status"] == "accepted" for t in reader.soundscapes.state(project_id)["takes"]):
+            losses.append(
+                {
+                    "field": "soundscape",
+                    "label": "段落声景",
+                    "detail": "已接受的段落声景及其点播入口不会进入 WebGAL。独立阅读器可保留。",
+                }
+            )
         return {"reader_revision": revision, "compatible": not losses, "losses": losses}
 
     @app.get("/api/projects/{project_id}/exports/compatibility")
@@ -238,7 +263,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
                 + "请优先导出独立阅读器，或查看兼容性说明并明确选择简化导出。"
             )
         if report["losses"] and reader_revision is None:
-            raise ConflictError("请先查看当前 WebGAL 兼容性说明，携带 reader_revision 明确选择简化导出。")
+            raise ConflictError(
+                "请先查看当前 WebGAL 兼容性说明，携带 reader_revision 明确选择简化导出。"
+            )
         job_id = store.start_job(project_id)
         background.add_task(run_export, project_id, job_id, report)
         return {"job_id": job_id, "state": "running"}

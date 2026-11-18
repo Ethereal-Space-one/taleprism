@@ -1,199 +1,169 @@
-"""Build and verify local trial assets from source. No upload or paid-model calls."""
+"""Build only the reviewed public release assets. No publishing, API keys or author stores."""
 
 import argparse
 import hashlib
 import json
 import os
-import shutil
+import subprocess
+import sys
 import tempfile
-import zipfile
+import urllib.request
 from pathlib import Path
 
-from release_files import source_files
+from release_files import ROOT, source_files
 from release_version import PREFIX, VERSION
 
-ROOT = Path(__file__).resolve().parents[1]
 
-
-def digest(raw):
-    return hashlib.sha256(raw).hexdigest()
+def digest(b):
+    return hashlib.sha256(b).hexdigest()
 
 
 def starter_entries():
-    starter_root_files = {
+    # Separate positive list: adding a new directory to examples/ never puts it in the starter.
+    roots = {
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
-        "README.en.md",
-        "CONTRIBUTING.md",
-        "CHANGELOG.md",
+        "docs/快速上手.md",
+        "docs/RELEASE-v0.9.0.md",
     }
-    starter_docs = {
-        "docs/" + name
-        for name in [
-            "快速上手.md",
-            "COMPATIBILITY.md",
-            "使用与恢复指南.md",
-            "VALIDATION-v" + VERSION + ".md",
-            "ARCHITECTURE.md",
-            "人物视觉导演标准.md",
-            "RELEASING.md",
-        ]
+    prefixes = (
+        "prompts/",
+        "schemas/",
+        "examples/last-light/",
+        "examples/chibi/",
+        "samples/last-light/",
+        "examples/reading-lab/",
+    )
+    files = {
+        "taleprism/" + n: p.read_bytes()
+        for n, p in source_files()
+        if n in roots or n.startswith(prefixes)
     }
-    entries = {
-        "taleprism/" + name: p.read_bytes()
-        for name, p in source_files()
-        if name in starter_root_files | starter_docs
-        or name.startswith(("prompts/", "schemas/", "examples/", "samples/last-light/"))
-    }
-    entries["taleprism/README.md"] = (
-        f"# Taleprism {VERSION} prompt starter\n\n"
-        "Start with [八模板 / Templates](prompts/README.md), "
-        "[中文教程](examples/last-light/README.md) or "
-        "[English tutorial](examples/last-light/README.en.md). Images are in samples/last-light. "
-        "No application installation is needed. To install the workbench, download the source "
-        "from https://github.com/Ethereal-Space-one/taleprism.\n\n"
-        "This archive contains no workbench executable, API credentials or system voice audio. "
-        "Template examples are not approval of your outputs. Preserve LICENSE and provenance.\n"
+    files["taleprism/README.md"] = (
+        """# Taleprism 0.9.0 · Prompt starter
+从 [八套提示模板](prompts/README.md)、[三镜头教程](examples/last-light/README.md) 或 [创意实验](examples/reading-lab/README.md) 开始。无需安装软件即可阅读这些文本。
+模板中的文字只是制作示例。作者决定是否采用；独立阅读器不收录工作备份。软件与素材许可分别见 LICENSE、THIRD_PARTY_NOTICES.md 与各示例的来源说明。
+This starter contains templates, schemas and public tutorial material. Download the source to run the workbench, or a reader ZIP to read offline. No accounts or model service are required for reading.
+"""
     ).encode()
-    return entries
+    return files
 
 
 def build_starter(out):
-    starter = out / (PREFIX + "-prompt-starter.zip")
-    with zipfile.ZipFile(starter, "w", zipfile.ZIP_DEFLATED) as z:
-        for name, raw in sorted(starter_entries().items()):
-            z.writestr(name, raw)
-    return starter
+    from build_encounter_readers import pack
+
+    p = out / (PREFIX + "-prompt-starter.zip")
+    p.write_bytes(pack(starter_entries()))
+    return p
+
+
+def fetch_public_inputs(dst):
+    from build_public_example_pairs import PINS
+
+    base = "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/"
+    for example, pins in PINS.items():
+        for kind in ["project", "reader"]:
+            n = f"taleprism-v0.3.3-{example}-{kind}.zip"
+            with urllib.request.urlopen(base + n, timeout=90) as r:
+                raw = r.read(160000001)
+            if len(raw) > 160000000 or digest(raw) != pins[kind]:
+                raise ValueError(
+                    "Public release input does not match its published digest: " + n
+                )
+            (dst / n).write_bytes(raw)
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--output", type=Path, default=ROOT / ".release" / ("v" + VERSION)
+    from build_encounter_readers import build as encounters
+    from build_public_example_pairs import build as pairs
+    from export_prompt_kit import outputs
+    from package_source import package_source
+
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--output", type=Path, default=ROOT / ".release" / ("v" + VERSION))
+    p.add_argument(
+        "--public-inputs",
+        type=Path,
+        help="Directory with four pinned public v0.3.3 example ZIPs; build offline.",
     )
-    parser.add_argument(
+    p.add_argument(
         "--chibi-source",
         type=Path,
-        help="Pinned public Chibi v0.1 reader archive for a complete release",
+        help="Legacy CI switch: verify v0.1 public Chibi, then download four pinned v0.3.3 release assets if --public-inputs is absent.",
     )
-    args = parser.parse_args()
+    p.add_argument(
+        "--reuse-verified-pairs",
+        action="store_true",
+        help="Re-use the four already built, hash-checked files in --output; never use this on untrusted inputs.",
+    )
+    args = p.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    prefix = PREFIX
-    from build_content_pack import build
-    from export_prompt_kit import outputs
-
-    for name, value in outputs().items():
-        if (ROOT / name).read_text() != value:
-            raise ValueError("Stale generated prompt/schema: " + name)
-    with tempfile.TemporaryDirectory(prefix="taleprism-release-") as temp:
-        os.environ["STORYGAL_DATA_DIR"] = str(Path(temp) / "initial")
-        from fastapi.testclient import TestClient
-        from storygal.app import create_app
-
-        app = create_app(Path(temp) / "build")
-        report = build(
-            ROOT / "samples/last-light/recipe.json",
-            "http://testserver",
-            out / (prefix + "-last-light-project.zip"),
-            client_factory=lambda **_kw: TestClient(app),
-        )
-        reader_raw = (
-            TestClient(app).get(report["export"]["result"]["download_url"]).content
-        )
-        reader_zip = out / (prefix + "-last-light-reader.zip")
-        reader_zip.write_bytes(reader_raw)
-        # The public project is rebuilt from the unchanged, inspected recipe without voice.
-        raw = (out / (prefix + "-last-light-project.zip")).read_bytes()
-        with zipfile.ZipFile(out / (prefix + "-last-light-project.zip")) as z:
-            project = json.loads(z.read("project.json"))
-            assert not project["records"]["speech_takes"]
-            assert not any(n.startswith("audio/") for n in z.namelist())
-        other = TestClient(create_app(Path(temp) / "import"))
-        r = other.post("/api/project-bundles", files={"file": ("project.zip", raw)})
-        if r.status_code != 201:
-            raise ValueError("Public sample import failed: " + r.text)
-        pid = r.json()["id"]
-        plan = other.get(f"/api/projects/{pid}/production").json()["plan"]
-        assert len(plan["shots"]) == 3 and len(plan["scenes"][0]["objects"]) == 11
-        assert all(
-            s["continuity_check"]["reviewer"] == "assistant" for s in plan["shots"]
-        )
-        assert (
-            other.get(f"/api/projects/{pid}/source").content
-            == (ROOT / "samples/last-light/source.txt").read_bytes()
-        )
-        assert other.get(f"/api/projects/{pid}/delivery").json()["records"] == []
-        assert other.post(f"/api/projects/{pid}/reader/exports").status_code == 202
-        assert other.get(f"/api/projects/{pid}/jobs").json()[0]["state"] == "completed"
-        # Verify every file in the independent reader before making a Pages directory.
-        with zipfile.ZipFile(reader_zip) as z:
-            manifest = json.loads(z.read("storygal-delivery.json"))
-            assert set(z.namelist()) == set(manifest["files"]) | {
-                "storygal-delivery.json"
-            }
-            for name, record in manifest["files"].items():
-                content = z.read(name)
-                assert (
-                    len(content) == record["bytes"]
-                    and digest(content) == record["sha256"]
-                )
-            reader = json.loads(z.read("reader.json"))
-            assert not any(a["type"] == "audio" for a in reader["media"].values())
-            assert len(reader["config"]["illustrations"]) == 3
-            assert all(
-                a["url"].startswith("./media/") for a in reader["media"].values()
-            )
-            site = out / "site"
-            if site.exists():
-                shutil.rmtree(site)
-            z.extractall(site)
-        # The private build report contains temporary paths/project IDs; do not publish it.
-        (out / (prefix + "-last-light-project.build.json")).unlink()
-
+    for n, expected in outputs().items():
+        if (ROOT / n).read_text() != expected:
+            raise ValueError("Out-of-date prompt/schema: " + n)
+    if (
+        args.chibi_source
+        and digest(args.chibi_source.read_bytes())
+        != "b8597e51982dfc23acd10cdb99caf0e75cb616a599e4049ce9fb217a87adf84a"
+    ):
+        raise ValueError("Unrecognized legacy Chibi source")
+    if not args.reuse_verified_pairs:
+        with tempfile.TemporaryDirectory(prefix="public-release-inputs-") as t:
+            src = args.public_inputs
+            if not src:
+                if not args.chibi_source:
+                    p.error(
+                        "--public-inputs (or explicit --chibi-source download mode) is required"
+                    )
+                src = Path(t)
+                fetch_public_inputs(src)
+            pairs(src, out)
+    data = json.loads((out / "public-example-pairs.json").read_bytes())
+    for a in data["artifacts"]:
+        if digest((out / a["file"]).read_bytes()) != a["sha256"]:
+            raise ValueError("Frozen project/reader changed")
+    docs = encounters(out)
     starter = build_starter(out)
-    artifacts = []
-    for p in [starter, out / (prefix + "-last-light-project.zip"), reader_zip]:
-        artifacts.append(
-            {
-                "file": p.name,
-                "bytes": p.stat().st_size,
-                "sha256": digest(p.read_bytes()),
-                "example": "last-light" if p != starter else None,
-                "kind": "starter"
-                if p == starter
-                else "reader"
-                if p == reader_zip
-                else "project",
-            }
-        )
+    pack = {
+        "file": starter.name,
+        "bytes": starter.stat().st_size,
+        "sha256": digest(starter.read_bytes()),
+        "kind": "starter",
+        "example": None,
+    }
     manifest = {
         "product": "Taleprism",
         "version": VERSION,
+        "channel": "prerelease",
         "commit": None,
-        "artifacts": artifacts,
+        "artifacts": [pack, *data["artifacts"], *docs],
         "checks": {
-            "source_preserved": True,
-            "project_import_and_reexport": True,
-            "scene_objects": 11,
-            "shots": 3,
-            "system_audio_included": False,
-            "creator_final_review": "pending",
-            "external_user_test": "not_yet_validated",
+            "examples": data["checks"],
+            "pages_deployment": "unchanged",
+            "reader_only_editions": ["the-door-left-open", "the-margin"],
+            "live_provider": "not_exercised",
+            "physical_ios_safari": "not_exercised",
         },
     }
-    if args.chibi_source:
-        from build_chibi_demo import build as build_chibi
-
-        chibi = build_chibi(args.chibi_source, out)
-        manifest["artifacts"].extend(chibi["artifacts"])
-        manifest["checks"]["chibi"] = chibi.get("checks", {})
     (out / "release-manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
     )
-    (out / "SHA256SUMS").write_text(
-        "".join(a["sha256"] + "  " + a["file"] + "\n" for a in artifacts)
-    )
+    package_source(out / (PREFIX + "-source.zip"))
+    if (
+        args.chibi_source
+        and os.getenv("GITHUB_ACTIONS") == "true"
+        and sys.platform.startswith("linux")
+    ):
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tools/check_public_preview.py"),
+                "--output",
+                str(out),
+            ],
+            check=True,
+        )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 

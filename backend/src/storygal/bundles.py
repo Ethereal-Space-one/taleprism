@@ -6,6 +6,8 @@ import os
 import re
 import tempfile
 import zipfile
+from bisect import bisect_right
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 from xml.etree import ElementTree
@@ -14,14 +16,15 @@ from fastapi import File, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 
+from . import narration, soundscape
 from .character_identity import resolved_character_id
-from .reader import REPO
-from .reader_api import Configuration
+from .reader import REPO, paragraphs
+from .reader_api import Configuration, Issue
 from .review import top_dialogues
 from .speech import inspect_audio
 from .speech_api import Line
 from .speech_models import StoredProfile, validate_take_profile
-from .text import sha256
+from .text import MAX_CHARS, sha256
 
 LIMIT = 160_000_000
 MEMBER_LIMIT = 3000
@@ -29,11 +32,18 @@ JSON_LIMIT = 5_000_000
 ROW_LIMIT = 5000
 ROW_TABLES = ("characters", "dialogues", "assets", "reader_assets", "speech_takes", "visual_assets")
 STATE_TABLES = ("reader_states", "speech_states", "visual_states", "production_states")
+EDITORIAL = "reader_editorial"
+LEGACY_EDIT_NOTICE = (
+    "此旧工程包未记录制作意见清单。无法判断原工程是否有未处理、已解决或延期的意见；"
+    "如需接手审阅，请与原制作台核对。此提示不是已发现的意见，也不是最终复核。"
+)
 MEDIA = {
     "assets": ("assets", ".png"),
     "reader_assets": ("reader-assets", ".png"),
     "speech_takes": ("audio", ".wav"),
     "visual_assets": ("visual", ".png"),
+    narration.TABLE: ("narration", ".wav"),
+    soundscape.TABLE: ("soundscape", ".wav"),
 }
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 FIELDS = {
@@ -43,6 +53,8 @@ FIELDS = {
     "reader_assets": "id kind status sha256 width height license origin created_at label sample_key",
     "speech_takes": "id cache_key sha256 duration created_at profile provider model text_sha256 imported",
     "visual_assets": "id sha256 svg_sha256 config_hash license origin",
+    narration.TABLE: narration.FIELDS,
+    soundscape.TABLE: soundscape.FIELDS,
 }
 
 
@@ -67,6 +79,74 @@ def limit_errors(sizes, records=None):
     return errors
 
 
+def counted_rows(document):
+    rows = document["records"]
+    if EDITORIAL in document["states"]:
+        rows = rows | {EDITORIAL: document["states"][EDITORIAL]["data"]}
+    return rows
+
+
+def editorial_count(document):
+    return len(document["states"].get(EDITORIAL, {}).get("data", []))
+
+
+def validate_editorial(document, raw, blocks):
+    """Validate private issues against the same immutable UTF-8 source and state versions."""
+    snapshot = document["states"][EDITORIAL]
+    issues = snapshot["data"]
+    if (
+        type(snapshot["revision"]) is not int
+        or not isinstance(issues, list)
+        or not 1 <= len(issues) <= min(ROW_LIMIT, snapshot["revision"])
+    ):
+        raise ValueError("制作意见清单数量或版本无效。")
+    starts = [b["byte_start"] for b in blocks]
+    seen = set()
+    current = {
+        "reader_revision": document["states"]["reader_states"]["revision"],
+        "review_revision": document["review_revision"],
+        "speech_revision": document["states"]["speech_states"]["revision"],
+        "production_revision": document["states"]["production_states"]["revision"],
+    }
+    for issue in issues:
+        if set(issue) != {
+            "id",
+            "anchor",
+            "category",
+            "note",
+            "state",
+            "reason",
+            "updated_at",
+            "versions",
+        }:
+            raise ValueError("制作意见字段无效。")
+        item = Issue.model_validate(
+            {
+                "revision": 0,
+                **{k: v for k, v in issue.items() if k not in {"updated_at", "versions"}},
+            },
+            strict=True,
+        )
+        if not item.id or not ID.fullmatch(item.id) or item.id in seen:
+            raise ValueError("制作意见编号无效或重复。")
+        seen.add(item.id)
+        i = bisect_right(starts, item.anchor) - 1
+        if i < 0 or item.anchor >= blocks[i]["byte_end"] or raw[item.anchor] & 0xC0 == 0x80:
+            raise ValueError("制作意见位置不在完整的原文字符上。")
+        if item.state == "deferred" and not item.reason.strip():
+            raise ValueError("延期事项必须记录理由。")
+        if (
+            len(issue["updated_at"]) > 64
+            or datetime.fromisoformat(issue["updated_at"]).tzinfo is None
+        ):
+            raise ValueError("制作意见时间无效。")
+        versions = issue["versions"]
+        if set(versions) != set(current) or any(
+            type(versions[k]) is not int or not 0 <= versions[k] <= current[k] for k in current
+        ):
+            raise ValueError("制作意见所记录的版本无效。")
+
+
 class Bundles:
     def __init__(self, app):
         self.app, self.store = app, app.state.store
@@ -87,6 +167,12 @@ class Bundles:
                 ]
                 for t in ROW_TABLES
             }
+            voices = a.review.rows(db, narration.TABLE, pid)
+            if voices:
+                rows[narration.TABLE] = voices
+            soundscapes = a.review.rows(db, soundscape.TABLE, pid)
+            if soundscapes:
+                rows[soundscape.TABLE] = soundscapes
             states = {
                 t: dict(
                     db.execute(
@@ -95,6 +181,11 @@ class Bundles:
                 )
                 for t in STATE_TABLES
             }
+            editorial = db.execute(
+                "SELECT revision,data FROM reader_editorial WHERE project_id=?", (pid,)
+            ).fetchone()
+            if editorial and editorial["revision"]:
+                states[EDITORIAL] = dict(editorial)
             for s in states.values():
                 s["data"] = json.loads(s["data"])
             review_revision = db.execute(
@@ -112,17 +203,38 @@ class Bundles:
             "states": states,
             "review_note": "素材接受与方案确认是原工程制作记录；本包不包含接收者或发布者最终复核。",
         }
+        # A navigation hint, never evidence about artwork or motion. Do not
+        # change the shape of historical / ordinary project packages.
+        if meta.get("single_plate_studio") is True:
+            document["version"] = 3
+            document["project"]["single_plate_studio"] = True
+        # V4 only when there are actual recorded takes (including withdrawn).
+        # Never add empty/unknown fields to ordinary or existing studio archives.
+        if voices:
+            document["version"] = 4
+        if EDITORIAL in states:
+            document["version"] = 5
+        if soundscapes:
+            document["version"] = 6
+        if states["reader_states"]["data"].get("echo_fold") is not None:
+            document["version"] = 7
+        else:
+            states["reader_states"]["data"].pop("echo_fold", None)
         return document
 
     def inventory(self, pid, document):
         """Stat all recorded media, including old/unselected takes; never silently omit any."""
         files = {"project.json": encoded(document)}
         files["README.txt"] = (
-            "Taleprism 可编辑工程。请在制作台导入工程包，不要手动运行包内文件。包含原文、制作状态与媒体；不含密钥、模型缓存、工作日志或个人阅读进度。\n".encode()
+            "Taleprism 私有可编辑工程｜给自己备份，或交给可信的共同制作者。不要作为读者版公开分享。\n此包可含原文、草稿、拒绝或撤回的素材和录音、未公开署名、配音说明与制作意见（含延期理由）。它不转移最终交付复核，不含密钥、模型缓存、工作日志或个人阅读进度。请在制作台导入；给读者请另导出独立阅读器。\n".encode()
         )
+        if soundscape.TABLE in document["records"]:
+            files["README.txt"] += (
+                "此私有工程还含声景草稿、撤下版本、对应原文引句与调音设置。\n".encode()
+            )
         paths = {name: None for name in ("original.txt", "source.utf8.txt")}
         for table, (directory, ext) in MEDIA.items():
-            for asset in document["records"][table]:
+            for asset in document["records"].get(table, []):
                 paths[f"{directory}/{asset['id']}{ext}"] = asset["sha256"]
                 if table == "visual_assets" and asset.get("svg_sha256"):
                     paths[f"{directory}/{asset['id']}.svg"] = asset["svg_sha256"]
@@ -139,6 +251,7 @@ class Bundles:
             {
                 "format": "storygal-project-inventory",
                 "version": 1,
+                "editorial_count": editorial_count(document),
                 "files": {name: "0" * 64 for name in [*files, *paths]},
             }
         )
@@ -148,7 +261,7 @@ class Bundles:
     def preflight(self, pid):
         document = self.snapshot(pid)
         _, paths, sizes, missing = self.inventory(pid, document)
-        errors = limit_errors(sizes, document["records"])
+        errors = limit_errors(sizes, counted_rows(document))
         if missing:
             errors.append(f"有 {len(missing)} 个已记录文件缺失，不能生成完整工程备份。")
         media = [{"path": name, "bytes": sizes[name]} for name in paths if "/" in name]
@@ -166,7 +279,7 @@ class Bundles:
             "uncompressed_bytes": sum(sizes.values()),
             "members": len(sizes),
             "json_bytes": {name: sizes[name] for name in ("project.json", "manifest.json")},
-            "rows": {table: len(rows) for table, rows in document["records"].items()},
+            "rows": {table: len(rows) for table, rows in counted_rows(document).items()},
             "media_bytes": sum(item["bytes"] for item in media),
             "media_files": len(media),
             "largest_media": sorted(media, key=lambda item: item["bytes"], reverse=True)[:10],
@@ -177,7 +290,7 @@ class Bundles:
     def export(self, pid):
         document = self.snapshot(pid)
         files, paths, sizes, missing = self.inventory(pid, document)
-        errors = limit_errors(sizes, document["records"])
+        errors = limit_errors(sizes, counted_rows(document))
         if missing:
             errors.append("已记录文件缺失：" + "、".join(missing[:5]))
         if errors:
@@ -197,24 +310,15 @@ class Bundles:
             {
                 "format": "storygal-project-inventory",
                 "version": 1,
+                "editorial_count": editorial_count(document),
                 "files": {name: sha256(raw) for name, raw in files.items()},
             }
         )
-        errors = limit_errors({name: len(raw) for name, raw in files.items()}, document["records"])
+        errors = limit_errors(
+            {name: len(raw) for name, raw in files.items()}, counted_rows(document)
+        )
         if errors:
             raise ValueError("不能导出完整可编辑工程：" + " ".join(errors))
-        with self.store.db() as db:
-            current = {
-                t: db.execute(f"SELECT revision FROM {t} WHERE project_id=?", (pid,)).fetchone()[0]
-                for t in STATE_TABLES
-            }
-            current_review = db.execute(
-                "SELECT revision FROM review_states WHERE project_id=?", (pid,)
-            ).fetchone()[0]
-        if current_review != document["review_revision"] or any(
-            current[t] != document["states"][t]["revision"] for t in STATE_TABLES
-        ):
-            raise ValueError("打包期间工程发生修改，请重试。")
         out = io.BytesIO()
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             for name, raw in files.items():
@@ -226,6 +330,26 @@ class Bundles:
             self.import_project(raw, validate_only=True)
         except ValueError as exc:
             raise ValueError(f"工程无法通过恢复校验，未导出备份：{exc}") from exc
+        with self.store.db() as db:
+            db.execute("BEGIN")
+            current = {
+                t: db.execute(f"SELECT revision FROM {t} WHERE project_id=?", (pid,)).fetchone()[0]
+                for t in STATE_TABLES
+            }
+            editorial = db.execute(
+                "SELECT revision FROM reader_editorial WHERE project_id=?", (pid,)
+            ).fetchone()
+            if (editorial[0] if editorial else 0) != document["states"].get(EDITORIAL, {}).get(
+                "revision", 0
+            ):
+                raise ValueError("打包期间制作意见发生修改，请重试。")
+            current_review = db.execute(
+                "SELECT revision FROM review_states WHERE project_id=?", (pid,)
+            ).fetchone()[0]
+        if current_review != document["review_revision"] or any(
+            current[t] != document["states"][t]["revision"] for t in STATE_TABLES
+        ):
+            raise ValueError("打包期间工程发生修改，请重试。")
         return raw
 
     def inspect(self, raw):
@@ -261,7 +385,11 @@ class Bundles:
             if any(sha256(data) != manifest["files"][name] for name, data in files.items()):
                 raise ValueError("工程包哈希校验失败。")
             doc = json.loads(files["project.json"])
-            if doc.get("format") != "storygal-project" or doc.get("version") not in {1, 2}:
+            if (
+                doc.get("format") != "storygal-project"
+                or type(doc.get("version")) is not int
+                or doc["version"] not in {1, 2, 3, 4, 5, 6, 7}
+            ):
                 raise ValueError("不支持此工程包版本。")
             if set(doc) != {
                 "format",
@@ -273,13 +401,46 @@ class Bundles:
                 "review_note",
             }:
                 raise ValueError("工程包包含未知字段。")
-            if set(doc["records"]) != set(ROW_TABLES) or set(doc["states"]) != set(STATE_TABLES):
+            required_tables = set(ROW_TABLES)
+            if doc["version"] == 4 or (doc["version"] >= 5 and narration.TABLE in doc["records"]):
+                required_tables.add(narration.TABLE)
+            if doc["version"] == 6 or (doc["version"] >= 7 and soundscape.TABLE in doc["records"]):
+                required_tables.add(soundscape.TABLE)
+            state_tables = set(STATE_TABLES)
+            if doc["version"] == 5 or (doc["version"] >= 6 and EDITORIAL in doc["states"]):
+                state_tables.add(EDITORIAL)
+            if set(doc["records"]) != required_tables or set(doc["states"]) != state_tables:
                 raise ValueError("工程包记录类型不匹配。")
+            has_echo = doc["states"]["reader_states"]["data"].get("echo_fold") is not None
+            if has_echo != (doc["version"] == 7):
+                raise ValueError("回声折页与工程包版本不一致。")
             if any(not isinstance(rows, list) for rows in doc["records"].values()):
                 raise ValueError("工程记录类型无效。")
-            errors = limit_errors({}, doc["records"])
+            errors = limit_errors({}, counted_rows(doc))
             if errors:
                 raise ValueError(" ".join(errors))
+            voice_ids = {r["id"] for r in doc["records"].get(narration.TABLE, [])}
+            if narration.TABLE in required_tables and not voice_ids:
+                raise ValueError("带朗读的工程包缺少录音记录。")
+            sound_ids = {r["id"] for r in doc["records"].get(soundscape.TABLE, [])}
+            if soundscape.TABLE in required_tables and not sound_ids:
+                raise ValueError("带声景的工程包缺少声景记录。")
+            passage_ids = voice_ids | sound_ids
+            if voice_ids & sound_ids or any(
+                row["id"] in passage_ids for table in ROW_TABLES for row in doc["records"][table]
+            ):
+                raise ValueError("段落声音的编号与其他记录重复。")
+            voice_blocks = {}
+            source_sha = original_sha = ""
+            if passage_ids:
+                source = files["source.utf8.txt"]
+                # Match the workbench text import bound before computing paragraph offsets.
+                if len(source) > MAX_CHARS * 4 or len(source.decode("utf-8")) > MAX_CHARS:
+                    raise ValueError("段落朗读绑定的原文过大。")
+                voice_blocks = {b["byte_start"]: b for b in paragraphs(source)}
+                source_sha = sha256(source)
+                original_sha = sha256(files["original.txt"])
+            accepted = set()
             allowed = {"original.txt", "source.utf8.txt", "project.json", "README.txt"}
             for table, records in doc["records"].items():
                 if len({r["id"] for r in records}) != len(records):
@@ -305,6 +466,23 @@ class Bundles:
                                 ):
                                     raise ValueError("图片格式或大小无效。")
                                 image.verify()
+                        elif table in (narration.TABLE, soundscape.TABLE):
+                            codec = narration if table == narration.TABLE else soundscape
+                            canonical, duration = (
+                                narration.canonical_wav(media)
+                                if codec is narration
+                                else soundscape.inspect_wav(media)
+                            )
+                            if canonical != media:
+                                raise ValueError("工程内段落录音不是去除附加元数据的标准 PCM WAV。")
+                            codec.validate_record(
+                                row, voice_blocks, source_sha, original_sha, duration
+                            )
+                            if row["status"] == "accepted":
+                                key = (table, row["byte_start"])
+                                if key in accepted:
+                                    raise ValueError("同一段落存在多条相同种类的已接受声音。")
+                                accepted.add(key)
                         else:
                             inspect_audio(media)
                         if table == "visual_assets" and row.get("svg_sha256"):
@@ -333,7 +511,18 @@ class Bundles:
                                     raise ValueError("图解包含主动内容。")
             if set(files) != allowed:
                 raise ValueError("工程包含清单之外的文件。")
-            return doc, files
+            # Free-form README is not a machine signal. Older importers ignore
+            # this additive inventory field and can still use no-issue v2–v4.
+            coverage = "editorial_count" in manifest
+            if (doc["version"] >= 5 and not coverage) or (
+                coverage
+                and (
+                    type(manifest["editorial_count"]) is not int
+                    or manifest["editorial_count"] != editorial_count(doc)
+                )
+            ):
+                raise ValueError("制作意见清单与工程状态不一致。")
+            return doc, files, coverage
         except (
             KeyError,
             TypeError,
@@ -349,7 +538,7 @@ class Bundles:
             raise ValueError("工程包结构或素材损坏，未导入任何项目。") from exc
 
     def import_project(self, raw, *, validate_only=False):
-        doc, files = self.inspect(raw)
+        doc, files, coverage = self.inspect(raw)
         from .app import create_app
 
         staging_root = self.store.root / ".imports"
@@ -358,16 +547,28 @@ class Bundles:
             staged = create_app(Path(temp)).state
             try:
                 meta = doc["project"]
-                if set(meta) != {
+                required_meta = {
                     "filename",
                     "encoding",
                     "rights_status",
                     "sha256",
                     "canonical_sha256",
-                }:
+                }
+                studio = doc["version"] == 3 or (
+                    doc["version"] >= 4 and "single_plate_studio" in meta
+                )
+                if studio:
+                    required_meta.add("single_plate_studio")
+                if set(meta) != required_meta or (
+                    studio and meta["single_plate_studio"] is not True
+                ):
                     raise ValueError("工程元数据字段无效。")
                 project = staged.store.create(
-                    files["original.txt"], meta["filename"], meta["rights_status"], meta["encoding"]
+                    files["original.txt"],
+                    meta["filename"],
+                    meta["rights_status"],
+                    meta["encoding"],
+                    single_plate_studio=studio,
                 )
                 pid = project["id"]
                 if (
@@ -377,6 +578,8 @@ class Bundles:
                     != files["source.utf8.txt"]
                 ):
                     raise ValueError("工程原文与工作副本不一致。")
+                if EDITORIAL in doc["states"]:
+                    validate_editorial(doc, files["source.utf8.txt"], staged.reader.blocks(pid))
                 records = doc["records"]
                 chars = {c["id"]: c for c in records["characters"]}
                 assets = {a["id"]: a for a in records["assets"]}
@@ -477,7 +680,7 @@ class Bundles:
                     for table, state in doc["states"].items():
                         if (
                             set(state) != {"revision", "data"}
-                            or not isinstance(state["revision"], int)
+                            or type(state["revision"]) is not int
                             or state["revision"] < 0
                         ):
                             raise ValueError("工程状态版本无效。")
@@ -508,8 +711,12 @@ class Bundles:
                 for item in staged.visual.load(pid)[1]["items"]:
                     staged.visual.validate(pid, item)
                 staged.store.verify(pid)
+                receipt = {
+                    "restore_issues": sorted(set(restore_issues)),
+                    "restore_notices": [] if coverage else [LEGACY_EDIT_NOTICE],
+                }
                 if validate_only:
-                    return {"restore_issues": sorted(set(restore_issues))}
+                    return receipt
                 destination = self.store.project_dir(pid)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(staged.store.project_dir(pid), destination)
@@ -521,8 +728,8 @@ class Bundles:
                             "spans",
                             "units",
                             "review_states",
-                            *ROW_TABLES,
-                            *STATE_TABLES,
+                            *doc["records"],
+                            *doc["states"],
                         ):
                             rows = source.execute(f"SELECT * FROM {table}").fetchall()
                             for row in rows:
@@ -535,13 +742,13 @@ class Bundles:
                             pid,
                             "project.import",
                             None,
-                            {"source_sha256": project["sha256"], "format": 1},
+                            {"source_sha256": project["sha256"], "format": doc["version"]},
                             actor="project-import",
                         )
                 except Exception:
                     os.replace(destination, staged.store.project_dir(pid))
                     raise
-                return project | {"restore_issues": sorted(set(restore_issues))}
+                return project | receipt
             except (KeyError, TypeError, IndexError, AttributeError) as exc:
                 raise ValueError("工程状态或引用不完整，未导入任何项目。") from exc
 

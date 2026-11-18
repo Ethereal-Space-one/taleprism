@@ -124,6 +124,170 @@ try {
   assert.ok(new Set(frameCounts[0]).size > 8, 'shared tide phase changes approach/impact/backwash work across the cycle')
   assert.equal(new Set(frameCounts[1]).size, 1, 'rain particle count is fixed, not accumulated')
 
+  // Record actual submitted particle paths, not just a non-empty canvas clip.
+  // The old composition-specific renderer passed the work-budget test while
+  // rendering nothing in left/top masks and silently rejecting right-side spray.
+  function recordedRenderer(recipe) {
+    let path = [], mask = null, strokeStyle = '', fillStyle = '', translation = null
+    const stack = [], draws = []
+    const context = new Proxy({}, {
+      get(_target, name) {
+        if (name === 'createRadialGradient') return () => ({ addColorStop() {} })
+        return (...args) => {
+          for (const v of args) if (typeof v === 'number') assert.ok(Number.isFinite(v), `${name}: finite geometry`)
+          if (name === 'save') stack.push({ mask, translation })
+          if (name === 'restore') { assert.ok(stack.length); ({ mask, translation } = stack.pop()) }
+          if (name === 'beginPath') path = []
+          if (['moveTo', 'lineTo', 'ellipse', 'closePath'].includes(name)) path.push([name, ...args])
+          if (name === 'clip') mask = path.map((p) => [...p])
+          if (name === 'translate') translation = args
+          if (name === 'stroke') draws.push({ type: 'stroke', path: path.map((p) => [...p]), mask, style: strokeStyle })
+          if (name === 'fillRect') draws.push({ type: 'soft', center: translation, mask, style: fillStyle })
+        }
+      },
+      set(_target, name, value) {
+        if (typeof value === 'number') assert.ok(Number.isFinite(value))
+        if (name === 'strokeStyle') strokeStyle = value
+        if (name === 'fillStyle') fillStyle = value
+        return true
+      },
+    })
+    const render = createMotionRenderer(context, recipe)
+    return (t) => { draws.length = 0; render(t, 1000, 563); assert.equal(stack.length, 0); return JSON.parse(JSON.stringify(draws)) }
+  }
+  const inPolygon = (points, x, y) => {
+    let inside = false
+    for (let i = 0; i < points.length; i++) {
+      const [ax, ay] = points[i], [bx, by] = points[(i + 1) % points.length]
+      if (Math.abs((x - ax) * (by - ay) - (y - ay) * (bx - ax)) < 1e-11 &&
+          x >= Math.min(ax, bx) - 1e-11 && x <= Math.max(ax, bx) + 1e-11 &&
+          y >= Math.min(ay, by) - 1e-11 && y <= Math.max(ay, by) + 1e-11) return true
+      if ((ay > y) !== (by > y) && x < ax + (y - ay) * (bx - ax) / (by - ay)) inside = !inside
+    }
+    return inside
+  }
+  const assertMasked = (draws, polygons) => {
+    const within = (x, y) => polygons.some((p) => inPolygon(p, x, y))
+    for (const draw of draws) {
+      assert.ok(draw.mask?.length, 'every streak, ring and soft spray stays canvas-clipped to creator polygons')
+      if (draw.type === 'soft') {
+        assert.ok(draw.center && within(...draw.center), 'soft particle centers must not be repeatedly drawn outside the mask')
+        continue
+      }
+      for (const [kind, x, y, rx, ry] of draw.path) {
+        if (kind === 'moveTo' || kind === 'lineTo') assert.ok(within(x, y), `submitted streak point ${x},${y} is inside mask`)
+        if (kind === 'ellipse') {
+          assert.ok(rx > 0 && ry > 0, 'rings have actual positive radii')
+          for (let a = 0; a < 16; a++)
+            assert.ok(within(x + rx * Math.cos(a * Math.PI / 8), y + ry * Math.sin(a * Math.PI / 8)), 'rain rings fit inside their authored mask')
+        }
+      }
+    }
+  }
+  const leftMask = [[[.015, .08], [.045, .08], [.045, .145], [.015, .145]]]
+  const topMask = [[[.12, .015], [.18, .015], [.18, .035], [.12, .035]]]
+  const concaveMask = [[[.02, .02], [.1, .02], [.1, .035], [.04, .035], [.04, .12], [.02, .12]]]
+  const originalMathRandom = Math.random
+  Math.random = () => { throw Error('renderer must not use runtime randomness') }
+  try {
+    for (const areas of [leftMask, topMask, concaveMask]) {
+      const recipe = { ...rain, areas, ground: areas, drops: 24, rings: 5 }, before = JSON.stringify(recipe)
+      const render = recordedRenderer(recipe), repeated = recordedRenderer(recipe)
+      for (const t of [0, .23, 1.71, 7.09, 1000]) {
+        const draws = render(t)
+        assert.equal(draws.filter((d) => d.type === 'stroke').length, recipe.drops, 'tiny masks receive every actual rain/contact particle')
+        const ringCount = draws.filter((d) => d.path?.some(([kind]) => kind === 'ellipse')).length
+        assert.ok(ringCount > 0 && ringCount <= recipe.rings, 'wet-mask contacts alternate falling streaks and real rings')
+        assertMasked(draws, areas)
+        assert.deepEqual(draws, repeated(t), 'particle layout and phases repeat from the same recipe/time')
+        assert.deepEqual(render(t), draws, 'no particle accumulation or time-step state')
+      }
+      assert.equal(JSON.stringify(recipe), before, 'sampling does not rewrite creator geometry')
+    }
+    const explicitGround = [[[.019, .12], [.04, .12], [.04, .14], [.019, .14]]]
+    const causalRecipe = { ...rain, areas: leftMask, ground: explicitGround, drops: 1, rings: 1 }
+    const causal = recordedRenderer(causalRecipe), contactTime = .46 / .73
+    const prior = causal(contactTime - .02), contact = causal(contactTime), after = causal(contactTime + .1)
+    assert.equal(prior.length, 1)
+    assert.ok(!prior.some((d) => d.path?.some(([kind]) => kind === 'ellipse')), 'no ripple before its paired drop reaches ground')
+    const contactLine = contact.find((d) => d.path?.some(([kind]) => kind === 'lineTo'))
+    const contactRing = contact.find((d) => d.path?.some(([kind]) => kind === 'ellipse'))
+    assert.ok(contactLine && contactRing, 'drop contact and first ripple share an actual event')
+    const endpoint = contactLine.path.find(([kind]) => kind === 'lineTo').slice(1)
+    const initialRing = contactRing.path.find(([kind]) => kind === 'ellipse')
+    assert.ok(Math.abs(endpoint[0] - initialRing[1]) < 1e-12 && Math.abs(endpoint[1] - initialRing[2]) < 1e-12,
+      'the falling streak endpoint is exactly the ring origin')
+    const priorEndpoint = prior[0].path.find(([kind]) => kind === 'lineTo').slice(1)
+    assert.ok(priorEndpoint[1] < endpoint[1], 'drop approaches ground before contact')
+    const grownRing = after.find((d) => d.path?.some(([kind]) => kind === 'ellipse'))?.path.find(([kind]) => kind === 'ellipse')
+    assert.ok(grownRing && grownRing[3] > initialRing[3], 'same-point ripple expands only after contact')
+    assert.deepEqual(grownRing.slice(1, 3), initialRing.slice(1, 3))
+    for (const draws of [prior, contact, after]) assertMasked(draws, leftMask)
+    assertMasked([contactRing, ...after], explicitGround)
+    // A sky-only mask, absent wet-ground metadata, empty ground, and disjoint
+    // ground all remain falling rain. Screen height never invents a wet surface.
+    for (const ground of [undefined, [], [[[.7, .7], [.8, .7], [.8, .9], [.7, .9]]]]) {
+      const sky = recordedRenderer({ ...rain, areas: topMask, ground, drops: 8, rings: 16 })
+      for (const t of [0, .3, contactTime, 1, 2]) {
+        const draws = sky(t)
+        assert.equal(draws.length, 8)
+        assert.ok(!draws.some((d) => d.path?.some(([kind]) => kind === 'ellipse')), 'no explicit overlapping wet ground means no rings')
+        assertMasked(draws, topMask)
+      }
+    }
+    // Opposite input winding must not cancel overlapping allowed regions.
+    const nested = [[.022, .1], [.038, .1], [.038, .13], [.022, .13]]
+    const windingAreas = [leftMask[0], nested.slice().reverse()]
+    const winding = recordedRenderer({ ...rain, areas: windingAreas, ground: [], drops: 8, rings: 2 })(0)
+    const windingGround = recordedRenderer({ ...rain, areas: windingAreas, ground: windingAreas, drops: 1, rings: 1 })(contactTime)
+      .find((d) => d.path?.some(([kind]) => kind === 'ellipse'))
+    const windingWater = recordedRenderer({ ...shore, water: windingAreas, bank: [[.015, .14], [.045, .14]],
+      hits: [{ x: .03, phase: 0, length: 7.1, gain: 1 }] })(0).find((d) => d.type === 'stroke')
+    const signedArea = (p) => p.reduce((sum, [x, y], i) => sum + x * p[(i + 1) % p.length][1] - p[(i + 1) % p.length][0] * y, 0)
+    for (const draw of [winding[0], windingGround, windingWater]) {
+      assert.ok(draw, 'rain, wet ground and shoreline all draw within nested union masks')
+      const clipPolys = [], current = []
+      for (const [kind, x, y] of draw.mask) {
+        if (kind === 'moveTo') { current.length = 0; current.push([x, y]) }
+        else if (kind === 'lineTo') current.push([x, y])
+        else if (kind === 'closePath') clipPolys.push([...current])
+      }
+      assert.equal(clipPolys.length, 2)
+      assert.ok(clipPolys.every((p) => signedArea(p) > 0), 'opposite-winding nested area/ground/water polygons stay a union, not accidental holes')
+    }
+
+    const rightShore = { ...shore, water: [[[.82, .06], [.99, .06], [.99, .15], [.82, .15]]],
+      bank: [[.83, .145], [.98, .115]], hits: [{ x: .91, phase: 0, length: 7.1, gain: 1.1 }] }
+    const tinyShore = { ...shore, water: [[[.015, .012], [.065, .012], [.065, .05], [.015, .05]]],
+      bank: [[.018, .048], [.06, .04]], hits: [{ x: .04, phase: 0, length: 7.1, gain: .9 }] }
+    for (const recipe of [rightShore, tinyShore]) {
+      const before = JSON.stringify(recipe), render = recordedRenderer(recipe), counts = []
+      for (let t = 0; t < 7.1; t += .1) {
+        const draws = render(t)
+        assert.ok(draws.some((d) => d.type === 'stroke'), 'arbitrary shoreline remains visible throughout its cycle')
+        assertMasked(draws, recipe.water)
+        counts.push(draws.length)
+      }
+      assert.ok(new Set(counts).size > 8, 'localized approach, impact and backwash retain phase changes')
+      const impact = render(0)
+      assert.ok(impact.some((d) => d.type === 'stroke' && /rgba\((226,246,242|165,217,227),/.test(d.style)), 'arbitrary shoreline has actual impact spray')
+      assert.ok(render(1.3).some((d) => d.type === 'stroke' && d.style.startsWith('rgba(221,241,235,')), 'actual backwash follows impact')
+      assert.equal(JSON.stringify(recipe), before)
+    }
+    const offMaskBank = recordedRenderer({ ...rightShore, bank: [[.83, .9], [.98, .9]] })
+    for (const t of [0, 1.3, 4, 6.3]) assert.deepEqual(offMaskBank(t), [], 'off-mask bank must not be relocated to an invented contact line')
+    const maximumShore = { ...shore, water: [[[0, 0], [1, 0], [1, 1], [0, 1]]], bank: [[0, .9], [1, .9]],
+      hits: Array.from({ length: 6 }, (_, i) => ({ x: .25 + i * .1, phase: 0, length: 7.1, gain: 1.3 })) }
+    const maximumRender = recordedRenderer(maximumShore)
+    for (let t = 0; t < 7.1; t += .1) {
+      const count = maximumRender(t).filter((d) => d.type === 'stroke').length
+      assert.ok(count < 1500, 'creator maximum six-hit recipe keeps the fixed draw budget')
+      maxStrokes = Math.max(maxStrokes, count)
+    }
+    const invalidFrame = recordedRenderer(rain)
+    for (const t of [NaN, Infinity, -Infinity]) assert.deepEqual(invalidFrame(t), [], 'invalid direct-render time fails without canvas work')
+  } finally { Math.random = originalMathRandom }
+
   function events(extra = {}) {
     const listeners = new Map()
     return { ...extra, listeners,
@@ -156,6 +320,13 @@ try {
   const canvas = { hidden: true, style: {}, width: 0, height: 0, getContext: () => context }
   const tick = (t) => { const callbacks = [...pending.values()]; pending.clear(); callbacks.forEach((cb) => cb(t)) }
   const intersect = (visible) => intersections.at(-1).cb([{ target: viewport, isIntersecting: visible, intersectionRatio: visible ? 1 : 0 }])
+  const beforeMalformed = [resizers.length, intersections.length, pending.size, image.count(), window.count(), document.count()]
+  for (const malformed of [null, [], {}, { ...rain, areas: null }, { ...shore, bank: 'not points' }, { ...shore, hits: [null] }]) {
+    assert.doesNotThrow(() => startEnvironmentMotion(image, canvas, viewport, malformed)())
+    assert.equal(canvas.hidden, true, 'malformed external recipe remains static')
+  }
+  assert.deepEqual([resizers.length, intersections.length, pending.size, image.count(), window.count(), document.count()], beforeMalformed,
+    'malformed recipes allocate no observers, listeners or frames')
   const stop = startEnvironmentMotion(image, canvas, viewport, shore)
   intersect(true)
   assert.equal(pending.size, 0, 'not loaded: static')
@@ -186,6 +357,27 @@ try {
   for (let visit = 0; visit < 8; visit++) {
     const cleanup = startEnvironmentMotion(image, canvas, viewport, rain)
     intersect(true); assert.equal(pending.size, 1); cleanup(); assert.equal(pending.size, 0)
+  }
+  // Inline reading encounters are finite and not resumed like an expanded
+  // opt-in. Hidden/failed/offscreen/end releases every DOM hook immediately.
+  for (const end of ['finite', 'offscreen', 'reduced', 'hidden', 'error', 'slow-load-exit']) {
+    let first=0
+    image.complete=end!=='slow-load-exit'
+    const cleanup=startEnvironmentMotion(image,canvas,viewport,shore,()=>first++,undefined,undefined,'inline-once')
+    intersect(true);tick(100)
+    assert.equal(first,image.complete?1:0)
+    if(end==='finite')tick(8101)
+    if(end==='offscreen'||end==='slow-load-exit')intersect(false)
+    if(end==='error')image.emit('error')
+    if(end==='reduced'){media.matches=true;media.emit('change')}
+    if(end==='hidden'){document.hidden=true;document.emit('visibilitychange')}
+    assert.equal(canvas.hidden,true,end+' returns to base image')
+    assert.equal(pending.size,0,end+' leaves no animation frame')
+    for(const e of [image,document,window,media])assert.equal(e.count(),0,end+' releases all listeners')
+    for(const o of [...resizers,...intersections])assert.equal(o.targets.size,0,end+' releases observers')
+    document.hidden=false;media.matches=false;image.complete=true;image.emit('load');intersect(true)
+    assert.equal(pending.size,0,end+' cannot trigger a late replay')
+    cleanup()
   }
   // Exercise the actual React component effects with deterministic hook slots.
   // This checks user opt-in, zoom, disclosure, reduced-motion changes, unmount,
@@ -264,11 +456,11 @@ try {
   assert.ok(app.includes('pending={!!imageVisit?.pending}'))
   assert.ok(viewer.includes('useState(false)'), 'motion defaults off')
   assert.ok(viewer.replace(/\s+/g, ' ').includes('!enabled || reduced || zoomed || pending'), 'zoom/disclosure disable runtime')
-  for (const staticFile of ['ReaderPlate.tsx', 'ReaderContents.tsx']) {
-    assert.ok(!fs.readFileSync(path.join(root, 'frontend/src/reader', staticFile), 'utf8').includes('startEnvironmentMotion'))
-  }
+  const plateView = fs.readFileSync(path.join(root, 'frontend/src/reader/ReaderPlate.tsx'), 'utf8')
+  assert.match(plateView, /motionArmed && motionSeen && motionRecipe/, 'an eligible recipe alone does not start inline motion')
+  assert.ok(!fs.readFileSync(path.join(root, 'frontend/src/reader/ReaderContents.tsx'), 'utf8').includes('ReaderPlateMotion'), 'contents and gallery thumbnails do not animate')
   assert.ok(!app.includes('wave-impact-backwash') && !app.includes('rain-wet-ground'), 'no story-specific renderer branches in ReaderApp')
-  console.log(`Reader motion: exact edition/image binding, generic arrival UUIDs, finite bounded recipes/rendering (max ${maxStrokes} strokes/frame), contain geometry, static fallbacks and repeated lifecycle cleanup passed.`)
+  console.log(`Reader motion: exact edition/image binding, generic arrival UUIDs, arbitrary polygon-local deterministic particles, explicit-ground causal rain contact/ripples and masked shore spray, finite bounded recipes/rendering (max ${maxStrokes} strokes/frame), contain geometry, static fallbacks and repeated lifecycle cleanup passed.`)
 } finally {
   for (const [name, value] of Object.entries(saved)) if (value === undefined) delete global[name]; else global[name] = value
   fs.rmSync(temp, { recursive: true, force: true })

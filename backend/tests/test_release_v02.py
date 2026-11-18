@@ -141,3 +141,46 @@ def test_bad_catalog_manifest_does_not_partially_write(catalog, bad):
             {"version": "0.2.0", "artifacts": artifacts("last-light") + incoming}, root
         )
     assert path.read_bytes() == before
+
+
+def test_clean_checkout_and_gitless_repack_produce_identical_source_archive(tmp_path, monkeypatch):
+    import hashlib
+    import os
+    import stat
+    import zipfile
+
+    monkeypatch.syspath_prepend(str(ROOT / "tools"))
+    builder = tool("package_source")
+    src, restored = tmp_path / "one checkout", tmp_path / "unpacked"
+    inventory(src, ["LICENSE", "打开原页.command", "tools/public-source.json"])
+    (src / "LICENSE").write_bytes((ROOT / "LICENSE").read_bytes())
+    (src / "打开原页.command").write_bytes(b"#!/bin/sh\nexit 0\n")
+    (src / "SOURCE-MANIFEST.json").write_text("stale generated record")
+    a, b = (tmp_path / place / "source.zip" for place in ("first", "second"))
+    sa = builder.package_source(a, src)
+    with zipfile.ZipFile(a) as z:
+        infos = z.infolist()
+        assert len(infos) == len({i.filename for i in infos}) == 4
+        for info in infos:
+            assert info.date_time == (1980, 1, 1, 0, 0, 0)
+            assert info.create_system == 3 and info.compress_type == zipfile.ZIP_STORED
+            assert stat.S_ISREG(info.external_attr >> 16)
+            assert stat.S_IMODE(info.external_attr >> 16) == (
+                0o755 if info.filename.endswith(".command") else 0o644
+            )
+        manifest = json.loads(z.read("taleprism/SOURCE-MANIFEST.json"))
+        assert manifest["files"] == {
+            i.filename.removeprefix("taleprism/"): hashlib.sha256(z.read(i)).hexdigest()
+            for i in infos if not i.filename.endswith("/SOURCE-MANIFEST.json")
+        }
+        z.extractall(restored)
+    for p in (restored / "taleprism").rglob("*"):
+        if p.is_file():
+            os.utime(p, (1_900_000_000, 1_900_000_000))
+    sb = builder.package_source(b, restored / "taleprism")
+    assert a.read_bytes() == b.read_bytes()
+    assert a.with_suffix(".json").read_bytes() == b.with_suffix(".json").read_bytes()
+    assert sa == sb == {
+        "file": "source.zip", "files": 3, "bytes": a.stat().st_size,
+        "sha256": hashlib.sha256(a.read_bytes()).hexdigest(),
+    }

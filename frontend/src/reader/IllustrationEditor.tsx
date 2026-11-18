@@ -1,22 +1,39 @@
-import type { ReaderConfig, ReaderState } from '../reader-types'
+import type { ReaderConfig, ReaderContent, ReaderState } from '../reader-types'
+import { MotionDirector } from './MotionDirector'
 
 export function IllustrationEditor({
   draft,
   state,
   anchor,
   update,
+  content,
+  onPendingChange,
 }: {
   draft: ReaderConfig
   state: ReaderState
   anchor: number
   update: (c: Partial<ReaderConfig>) => void
+  content?: ReaderContent
+  onPendingChange: (id: string, pending: boolean) => void
 }) {
   const plates = draft.illustrations || []
   const assets = state.assets.filter((a) => a.kind === 'scene' && a.status !== 'rejected')
   const patch = (id: string, value: Partial<(typeof plates)[number]>) =>
     update({
       illustrations: plates
-        .map((p) => (p.id === id ? { ...p, ...value } : p))
+        .map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                ...value,
+                ...((value.image_asset_id !== undefined &&
+                  value.image_asset_id !== p.image_asset_id) ||
+                (value.after_byte !== undefined && value.after_byte !== p.after_byte)
+                  ? { motion: null }
+                  : {}),
+              }
+            : p,
+        )
         .sort((a, b) => a.after_byte - b.after_byte),
     })
   return (
@@ -24,6 +41,9 @@ export function IllustrationEditor({
       <h3>章节插图</h3>
       <p>
         插图位于完整原文段落之后。选择画卷阅读时显示完整构图，图文并读仍使用场景编排；两种阅读方式均可自由切换。
+      </p>
+      <p>
+        动效在每幅插图下单独导演。更换底图或原文位置会先恢复静图，须重新建立和复核。动效面板的修改先「纳入章节草稿」，再保存章节编排。
       </p>
       <label>
         默认阅读排布
@@ -121,6 +141,17 @@ export function IllustrationEditor({
           >
             移除此处插图
           </button>
+          {content && assets.find((a) => a.id === p.image_asset_id) && (
+            <MotionDirector
+              key={`${p.id}:${p.image_asset_id}:${p.after_byte}`}
+              plate={p}
+              asset={assets.find((a) => a.id === p.image_asset_id)!}
+              state={state}
+              content={content}
+              onChange={(motion) => patch(p.id, { motion })}
+              onPendingChange={onPendingChange}
+            />
+          )}
         </article>
       ))}
     </section>

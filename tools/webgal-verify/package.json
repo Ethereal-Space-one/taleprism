@@ -1,13 +1,12 @@
 {
   "name": "webgal-verify",
   "private": true,
-  "version": "0.3.3",
+  "version": "0.9.0",
   "description": "用 WebGAL 官方解析器回读导出的场景脚本",
   "type": "module",
   "dependencies": {
+    "jsdom": "26.1.0",
+    "playwright": "1.64.1",
     "webgal-parser": "4.6.5"
-  },
-  "devDependencies": {
-    "playwright": "1.64.1"
   }
 }

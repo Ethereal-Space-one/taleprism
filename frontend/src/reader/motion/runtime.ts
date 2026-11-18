@@ -28,15 +28,19 @@ export function supportsEnvironmentMotion() {
 }
 
 /**
- * Owns every listener, observer and RAF for ONE expanded image. Its caller only
- * mounts this when opted in, unzoomed and not awaiting spoiler disclosure.
+ * Owns all resources for one plate. The expanded viewer explicitly opts in;
+ * the inline reader is armed only by the reading conductor at a bound cue.
  * Missing platform capabilities fail static rather than assuming visibility.
  */
 export function startEnvironmentMotion(
   image: HTMLImageElement,
   canvas: HTMLCanvasElement,
-  viewport: HTMLDivElement,
+  viewport: HTMLElement,
   recipe: EnvironmentMotionRecipe,
+  onFirstFrame?: () => void,
+  onReviewCycle?: () => void,
+  onReviewSecond?: (seconds: number) => void,
+  playback: 'expanded' | 'inline-once' = 'expanded',
 ): () => void {
   canvas.hidden = true
   if (!supportsEnvironmentMotion() || !validMotionRecipe(recipe)) return () => {}
@@ -55,15 +59,21 @@ export function startEnvironmentMotion(
     typeof reduced.removeEventListener !== 'function'
   )
     return () => {}
+  const inline = playback === 'inline-once'
+  if (inline && (document.hidden || reduced.matches)) return () => {}
   const render = createMotionRenderer(context, recipe)
   let disposed = false,
     failed = false,
     visible = false,
     frame = 0
+  let reported = false
+  let cycleReported = false,
+    reportedSecond = -1
   let width = 0,
     height = 0,
     seconds = 0,
-    last: number | null = null
+    last: number | null = null,
+    began: number | null = null
   const imageReady = () =>
     image.complete && image.naturalWidth === recipe.width && image.naturalHeight === recipe.height
   const eligible = () =>
@@ -87,23 +97,50 @@ export function startEnvironmentMotion(
   const draw = (now: number) => {
     frame = 0
     if (!eligible()) {
-      stop()
+      if (inline && reported) dispose()
+      else stop()
       return
     }
-    if (last !== null) seconds += Math.min(0.05, Math.max(0, (now - last) / 1000))
+    if (inline) {
+      began ??= now
+      // One quiet eight-second encounter, measured in wall time even on a slow
+      // device. Fade the overlay, never the still, and never restart it on return.
+      seconds = (now - began) / 1000
+      if (seconds >= 8) {
+        dispose()
+        return
+      }
+      canvas.style.opacity = String(Math.min(1, (seconds + 0.02) / 0.3, (8 - seconds) / 0.7))
+    } else if (last !== null) seconds += Math.min(0.05, Math.max(0, (now - last) / 1000))
     last = now
     try {
       render(seconds, width, height)
+      if (!reported) {
+        reported = true
+        onFirstFrame?.()
+      }
+      const wholeSecond = Math.min(8, Math.floor(seconds))
+      if (onReviewSecond && wholeSecond !== reportedSecond) {
+        reportedSecond = wholeSecond
+        onReviewSecond(wholeSecond)
+      }
+      if (!cycleReported && seconds >= 8) {
+        cycleReported = true
+        onReviewCycle?.()
+      }
     } catch {
       failed = true
-      stop()
+      if (inline) dispose()
+      else stop()
       return
     }
-    frame = requestAnimationFrame(draw)
+    if (!disposed) frame = requestAnimationFrame(draw)
   }
   const sync = () => {
+    if (disposed) return
     if (!eligible()) {
-      stop()
+      if (inline && (reported || reduced.matches || document.hidden)) dispose()
+      else stop()
       return
     }
     canvas.hidden = false
@@ -147,16 +184,30 @@ export function startEnvironmentMotion(
   }
   const errored = () => {
     failed = true
-    stop()
+    if (inline) dispose()
+    else stop()
   }
   const resizeObserver = new ResizeObserver(resize)
-  const intersectionObserver = new IntersectionObserver((entries) => {
-    if (disposed) return
-    visible = entries.some(
-      (entry) => entry.target === viewport && entry.isIntersecting && entry.intersectionRatio > 0,
-    )
-    sync()
-  })
+  // The reader can render a partial image; creator review needs most of it in view.
+  const reviewThreshold = onReviewCycle ? 0.65 : 0
+  const intersectionObserver = new IntersectionObserver(
+    (entries) => {
+      if (disposed) return
+      const before = visible
+      visible = entries.some(
+        (entry) =>
+          entry.target === viewport &&
+          entry.isIntersecting &&
+          entry.intersectionRatio > 0 &&
+          entry.intersectionRatio >= reviewThreshold,
+      )
+      // A slow-loading inline image may not have drawn yet. Leaving its first
+      // encounter still expires it: finally decoding on scroll-back is not a cue.
+      if (inline && before && !visible) dispose()
+      else sync()
+    },
+    { threshold: reviewThreshold },
+  )
   image.addEventListener('load', loaded)
   image.addEventListener('error', errored)
   document.addEventListener('visibilitychange', sync)
@@ -166,7 +217,9 @@ export function startEnvironmentMotion(
   resizeObserver.observe(image)
   intersectionObserver.observe(viewport)
   resize()
-  return () => {
+  return dispose
+  function dispose() {
+    if (disposed) return
     disposed = true
     stop()
     image.removeEventListener('load', loaded)

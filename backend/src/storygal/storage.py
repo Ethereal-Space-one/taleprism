@@ -77,7 +77,15 @@ class Store:
             raise KeyError("项目不存在。") from None
         return self.root / "projects" / project_id
 
-    def create(self, raw: bytes, filename: str, rights: str, encoding: str) -> dict:
+    def create(
+        self,
+        raw: bytes,
+        filename: str,
+        rights: str,
+        encoding: str,
+        *,
+        single_plate_studio: bool = False,
+    ) -> dict:
         if rights not in RIGHTS:
             raise ValueError("请选择文本权利状态。")
         selected, canonical = decode_source(raw, encoding)
@@ -104,6 +112,8 @@ class Store:
             "unit_count": len(units),
             "created_at": now(),
         }
+        if single_plate_studio:
+            metadata["single_plate_studio"] = True
         with self.db() as db:
             db.execute("INSERT INTO projects VALUES (?, ?)", (project_id, json.dumps(metadata)))
             db.executemany(

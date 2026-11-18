@@ -1,0 +1,203 @@
+{
+  "schema_version": 5,
+  "project": {
+    "id": "93ea530c-d6a9-5ed8-8ffd-d40aa4742176",
+    "filename": "留门.txt",
+    "sha256": "8f65e32a101d626f7959b98a03ffed8ea3e349f3da827fc4da36aaf8f8ffc0f4",
+    "canonical_sha256": "8f65e32a101d626f7959b98a03ffed8ea3e349f3da827fc4da36aaf8f8ffc0f4",
+    "rights_status": "owned",
+    "character_count": 150
+  },
+  "versions": {
+    "reader_revision": 0,
+    "review_revision": 0,
+    "speech_revision": 0,
+    "production_revision": 0
+  },
+  "config": {
+    "title": "留门",
+    "subtitle": "",
+    "cover_asset_id": null,
+    "scenes": [],
+    "map_profile": null,
+    "presentations": [],
+    "map_entries": [],
+    "reading_layout": "illustrated",
+    "illustrations": [
+      {
+        "id": "studio-first-illustration",
+        "after_byte": 236,
+        "image_asset_id": "d51f7f92-2432-5176-9dea-7371e59c5577",
+        "title": "门槛外的一线水",
+        "description": "半落的卷门下，两只小黄靴背向而立，一只朝店内，一只朝街。右侧灰蓝路面拖着一条细长的车灯反光。",
+        "motion": {
+          "version": 1,
+          "effect": "rain-wet-ground",
+          "image_sha256": "b9376efa6522951961c3d9b95e2feb02e9a511b3dca4d04733ce4724b8bcb6d1",
+          "source_sha256": "8f65e32a101d626f7959b98a03ffed8ea3e349f3da827fc4da36aaf8f8ffc0f4",
+          "after_byte": 236,
+          "width": 1440,
+          "height": 900,
+          "reviewed": true,
+          "areas": [
+            [
+              [
+                0.5590534085974815,
+                0.708901432913591
+              ],
+              [
+                0.7790563033724128,
+                0.5495730206976408
+              ],
+              [
+                0.9793747286148502,
+                0.46990881458966566
+              ],
+              [
+                0.9793747286148502,
+                0.9590099869735128
+              ],
+              [
+                0.5497901288174845,
+                0.9590099869735128
+              ]
+            ]
+          ],
+          "ground": [
+            [
+              [
+                0.6597915762049501,
+                0.7496598639455783
+              ],
+              [
+                0.8693732812273846,
+                0.6199739470256188
+              ],
+              [
+                0.9492690693298595,
+                0.6588797221016066
+              ],
+              [
+                0.8994789405123752,
+                0.8682298451295412
+              ],
+              [
+                0.6794760457374439,
+                0.9182515559415255
+              ]
+            ]
+          ],
+          "drops": 46,
+          "rings": 4,
+          "playback_only": true
+        }
+      }
+    ]
+  },
+  "blocks": [
+    {
+      "id": "p-0",
+      "byte_start": 0,
+      "byte_end": 102,
+      "text": "她把修鞋铺的卷门放到一半。门槛上那双小黄靴，鞋尖一只朝里，一只朝街。",
+      "heading": false,
+      "source_gap_before": "",
+      "runs": [
+        {
+          "byte_start": 0,
+          "byte_end": 102,
+          "text": "她把修鞋铺的卷门放到一半。门槛上那双小黄靴，鞋尖一只朝里，一只朝街。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-104",
+      "byte_start": 104,
+      "byte_end": 236,
+      "text": "雨落在铁篷上。起先还能一滴滴地数，一辆车从巷口驶过，沙的一声，把雨点之间的空隙都填满了。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 104,
+          "byte_end": 236,
+          "text": "雨落在铁篷上。起先还能一滴滴地数，一辆车从巷口驶过，沙的一声，把雨点之间的空隙都填满了。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": [],
+      "soundscape": {
+        "id": "35ca1717-fd28-544e-80da-4d5ed25c79b9",
+        "duration": 12.0,
+        "label": "段落声景",
+        "description": "细雨中一辆车驶过"
+      }
+    },
+    {
+      "id": "p-238",
+      "byte_start": 238,
+      "byte_end": 361,
+      "text": "墙上那道车灯移了过去，两只黄靴又成了旧颜色。她蹲下来，把朝里的那一只也转向了街口。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 238,
+          "byte_end": 361,
+          "text": "墙上那道车灯移了过去，两只黄靴又成了旧颜色。她蹲下来，把朝里的那一只也转向了街口。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    },
+    {
+      "id": "p-363",
+      "byte_start": 363,
+      "byte_end": 438,
+      "text": "雨停了。门底还留着一个孩子不用低头就能进来的高度。",
+      "heading": false,
+      "source_gap_before": "\n\n",
+      "runs": [
+        {
+          "byte_start": 363,
+          "byte_end": 438,
+          "text": "雨停了。门底还留着一个孩子不用低头就能进来的高度。",
+          "speaker_id": null,
+          "take_id": null
+        }
+      ],
+      "audio": []
+    }
+  ],
+  "characters": {},
+  "media": {
+    "d51f7f92-2432-5176-9dea-7371e59c5577": {
+      "id": "d51f7f92-2432-5176-9dea-7371e59c5577",
+      "type": "image",
+      "sha256": "b9376efa6522951961c3d9b95e2feb02e9a511b3dca4d04733ce4724b8bcb6d1",
+      "width": 1440,
+      "height": 900,
+      "origin": "user_upload",
+      "license": "本版原创程序插画《门槛外的一线水》；不含外部图像、字体或纹理。",
+      "url": "./media/d51f7f92-2432-5176-9dea-7371e59c5577.png"
+    },
+    "35ca1717-fd28-544e-80da-4d5ed25c79b9": {
+      "id": "35ca1717-fd28-544e-80da-4d5ed25c79b9",
+      "type": "audio",
+      "sha256": "f2ada82c195c893b8001baf9104d7187e8a136946e928fe6451863cc78250ce8",
+      "duration": 12.0,
+      "origin": "paragraph_soundscape",
+      "url": "./media/35ca1717-fd28-544e-80da-4d5ed25c79b9.wav"
+    }
+  },
+  "map": null,
+  "preview": false,
+  "issues": [],
+  "presentations": [],
+  "map_entries": []
+}

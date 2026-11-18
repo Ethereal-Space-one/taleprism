@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { EnvironmentMotionRecipe } from './motion/recipes'
 import { startEnvironmentMotion, supportsEnvironmentMotion } from './motion/runtime'
 
-/** Only this viewer can opt into local motion. Inline plates and gallery stay static. */
+/** Manual expansion is independent of automatic reading cues. Gallery thumbnails stay static. */
 export function ReaderExpandedImage({
   viewportRef,
   src,
@@ -13,6 +13,9 @@ export function ReaderExpandedImage({
   recipe,
   onLoad,
   onError,
+  onMotionFrame,
+  onMotionCycle,
+  onMotionSecond,
 }: {
   viewportRef: RefObject<HTMLDivElement | null>
   src: string
@@ -23,6 +26,9 @@ export function ReaderExpandedImage({
   recipe: EnvironmentMotionRecipe | null
   onLoad: () => void
   onError: () => void
+  onMotionFrame?: () => void
+  onMotionCycle?: () => void
+  onMotionSecond?: (seconds: number) => void
 }) {
   const image = useRef<HTMLImageElement>(null),
     canvas = useRef<HTMLCanvasElement>(null)
@@ -60,8 +66,28 @@ export function ReaderExpandedImage({
       !viewportRef.current
     )
       return
-    return startEnvironmentMotion(image.current, canvas.current, viewportRef.current, recipe)
-  }, [recipe, enabled, reduced, zoomed, pending, src, viewportRef])
+    onMotionSecond?.(0)
+    return startEnvironmentMotion(
+      image.current,
+      canvas.current,
+      viewportRef.current,
+      recipe,
+      onMotionFrame,
+      onMotionCycle,
+      onMotionSecond,
+    )
+  }, [
+    recipe,
+    enabled,
+    reduced,
+    zoomed,
+    pending,
+    src,
+    viewportRef,
+    onMotionFrame,
+    onMotionCycle,
+    onMotionSecond,
+  ])
   return (
     <>
       <div

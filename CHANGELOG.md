@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 · Public preview (not stable)
+
+- Read at your pace: finite soundscapes, reviewed local image motion and exact-text echo folds arrive at their source passage. Cover and quiet reading stay quiet; pause, mute and reduced motion remain independent.
+- Authors can finish without requesting AI. Optionally review evidence-bound sound, picture and presentation proposals separately; unaccepted ideas do not travel to readers.
+- Two original, reader-only examples demonstrate these cues; Chibi and Last Light remain the editable public examples. Release downloads and the existing Pages deployment are independent.
+- The untagged 0.4.0, 0.5.0, 0.6.0, 0.6.1, 0.7.0 and 0.8.0 engineering iterations and the 0.9 reader changes are recorded in [Iteration history](docs/ITERATION-HISTORY.md). [Release guide](docs/RELEASE-v0.9.0.md) · [Validation scope](docs/VALIDATION-v0.9.0.md).
+
 ## 0.3.3 — Public Preview
 
 - Review already reached chapter art without opening future plates or losing the current reading position.

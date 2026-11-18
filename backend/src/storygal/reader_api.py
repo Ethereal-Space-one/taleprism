@@ -2,11 +2,16 @@ from typing import Annotated, Literal
 
 from fastapi import BackgroundTasks, File, Form, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
+from .creative import mount_creative
+from .narration import mount_narrations
 from .reader import Reader
+from .reader_echo import EchoFold
 from .reader_editorial import Editorial
+from .reader_motion import IllustrationMotion
 from .reader_presentation import chibi
+from .soundscape import mount_soundscapes
 
 
 class Input(BaseModel):
@@ -59,6 +64,16 @@ class Illustration(BaseModel):
     image_asset_id: str
     title: str = Field(min_length=1, max_length=80)
     description: str = Field(default="", max_length=300)
+    motion: IllustrationMotion | None = None
+
+    @model_serializer(mode="wrap")
+    def preserve_static_override(self, handler):
+        result = handler(self)
+        # Omission retains the exact legacy recipe fallback. Explicit null is
+        # the author's static override and must survive API and bundle roundtrips.
+        if "motion" not in self.model_fields_set:
+            result.pop("motion", None)
+        return result
 
 
 class Issue(Input):
@@ -80,6 +95,14 @@ class Configuration(Input):
     map_entries: list[MapEntry] = Field(default_factory=list, max_length=128)
     reading_layout: Literal["split", "illustrated"] = "split"
     illustrations: list[Illustration] = Field(default_factory=list, max_length=64)
+    echo_fold: EchoFold | None = None
+
+    @model_serializer(mode="wrap")
+    def omit_unused_fold(self, handler):
+        result = handler(self)
+        if self.echo_fold is None:
+            result.pop("echo_fold", None)
+        return result
 
 
 class Acceptance(Input):
@@ -89,6 +112,9 @@ class Acceptance(Input):
 def mount_reader(app, store, review, speech):
     reader = Reader(store, review, speech)
     app.state.reader = reader
+    mount_creative(app, reader)
+    mount_narrations(app, reader)
+    mount_soundscapes(app, reader)
     editorial = Editorial(reader)
     reader.editorial = editorial
 

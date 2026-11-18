@@ -169,6 +169,8 @@ def test_fetch_failure_does_not_create_or_modify_projects(tmp_path, monkeypatch)
     def failed():
         raise ValueError("公开样例校验未通过。" + sample.FALLBACK)
 
+    # Exercise the download path even in a checkout with a verified local example.
+    monkeypatch.setattr(sample, "_checked", lambda _path: None)
     monkeypatch.setattr(sample, "_download", failed)
     response = client.post("/api/samples/last-light/guided", json={"url": "https://evil.invalid"})
     assert response.status_code == 400

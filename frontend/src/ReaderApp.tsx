@@ -1,3 +1,4 @@
+import { originalSpacing, preferOriginalLines, spacedVerse } from './reader/sourceLayout'
 import {
   lazy,
   Fragment,
@@ -10,12 +11,13 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type RefObject,
 } from 'react'
 import { ReaderMap } from './ReaderMap'
 import { ReaderContents } from './reader/ReaderContents'
 import { ReaderStoryGraph } from './reader/ReaderStoryGraph'
 import { resolveStoryGraph } from './reader/storyGraph'
-import type { ReaderContent, ReaderMapEntry } from './reader-types'
+import type { ReaderContent, ReaderEchoAnchor, ReaderMapEntry } from './reader-types'
 import {
   blockAt,
   highlightedRuns,
@@ -42,8 +44,12 @@ import {
 import { useDialogueAudio, type AudioPoint } from './reader/useDialogueAudio'
 import { useStagePreload } from './reader/useStagePreload'
 import { ReaderPlate } from './reader/ReaderPlate'
+import { PassageVoice } from './reader/PassageVoice'
 import { ReaderExpandedImage } from './reader/ReaderExpandedImage'
-import { resolveEnvironmentMotion } from './reader/motion/recipes'
+import { useReadingCues } from './reader/useReadingCues'
+import { ReaderCueTransport } from './reader/ReaderCueTransport'
+import './reader/auto-transport.css'
+import { resolveEnvironmentMotion, resolveReadingMotion } from './reader/motion/recipes'
 import { followScroll, isReadingStep, type ScrollJourney } from './reader/readingSession'
 import { imageRecoveryReducer, imageRetryUrl, MAX_IMAGE_RETRIES } from './reader/imageRecovery'
 import { ReaderImageRetry } from './reader/ReaderImageRetry'
@@ -75,6 +81,29 @@ type Panel =
   | 'restart'
   | 'gallery'
   | null
+type PanelOpener = { element: HTMLElement; name: string }
+function panelOpener(): PanelOpener | null {
+  const el = document.activeElement
+  return el instanceof HTMLElement && el.matches('button, a, input, select')
+    ? { element: el, name: el.getAttribute('aria-label') || el.textContent || '' }
+    : null
+}
+function resolveOpener(opener: PanelOpener, scope: HTMLElement | null) {
+  if (opener.element.isConnected && (!scope || scope.contains(opener.element)))
+    return opener.element
+  // A nested panel's controls are remounted when going Back. Restore only a
+  // unique matching control in that panel, never a similarly named book control.
+  if (!scope || !opener.name) return null
+  const matches = Array.from(
+    scope.querySelectorAll<HTMLElement>('button, a, input, select'),
+  ).filter(
+    (el) =>
+      el.tagName === opener.element.tagName &&
+      (el.getAttribute('aria-label') || el.textContent) === opener.name,
+  )
+  return matches.length === 1 ? matches[0] : null
+}
+
 type Screen = {
   session: string
   depth: number
@@ -85,6 +114,48 @@ type Screen = {
   sound: AudioPoint
   viewer?: { asset: string | null; whole: boolean }
 }
+function EchoMargin({
+  earlier,
+  sourceByte,
+  cueKey,
+  onManual,
+  detailsRef,
+  onToggle,
+}: {
+  earlier: ReaderEchoAnchor
+  sourceByte: number
+  cueKey: string
+  onManual: () => void
+  detailsRef: RefObject<HTMLDetailsElement | null>
+  onToggle: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <details
+      className="reader-echo-fold"
+      ref={detailsRef}
+      data-echo-source-byte={sourceByte}
+      data-auto-echo={cueKey}
+      onToggle={(event) => {
+        setOpen(event.currentTarget.open)
+        onToggle()
+      }}
+    >
+      <summary onClick={onManual}>
+        <span aria-hidden="true" className="reader-echo-mark" />
+        回声折页<span className="reader-echo-hint">重读前文</span>
+      </summary>
+      {/* Native browser Find should not disclose a second copy of the line while closed. */}
+      {open && (
+        <div className="reader-echo-leaf">
+          <small>前文原句 · 第 {earlier.paragraph} 段</small>
+          <blockquote>{earlier.quote}</blockquote>
+        </div>
+      )}
+    </details>
+  )
+}
+
 export function ReaderApp({ projectId, exportUrl }: { projectId?: string; exportUrl?: string }) {
   const [data, setData] = useState<ReaderContent | null>(null),
     [error, setError] = useState(''),
@@ -116,7 +187,7 @@ export function ReaderApp({ projectId, exportUrl }: { projectId?: string; export
     )
   return <ReaderView key={data.project.id} data={data} standalone={!!exportUrl} />
 }
-function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boolean }) {
+export function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boolean }) {
   const storyGraph = useMemo(() => resolveStoryGraph(data), [data])
   const platePresentations = useMemo(() => resolvePlatePresentations(data), [data])
   const storageKey = `storygal-reader:${data.project.id}:${data.project.canonical_sha256}`
@@ -150,7 +221,27 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     [storageError, setStorageError] = useState(false)
   const [externalRecord, setExternalRecord] = useState<string | null>(null),
     conflict = useRef(false)
-  const [tools, setTools] = useState(true),
+  // A tiny unchaptered work ends on its own last line, not a progress dashboard.
+  const storyLength = data.blocks.reduce((n, b) => n + [...b.text].length, 0)
+  const quietEnding =
+    !data.map &&
+    !storyGraph &&
+    !data.config.scenes.length &&
+    !data.presentations.length &&
+    data.blocks.length <= 8 &&
+    data.blocks.every((b) => !b.heading && !b.audio.length) &&
+    storyLength <= 280
+  const shortForm = quietEnding && data.blocks.length <= 4 && storyLength <= 220
+  const echo = data.config.echo_fold
+  const echoElement = useRef<HTMLDetailsElement>(null)
+  const spacing = useMemo(() => originalSpacing(data.blocks), [data.blocks])
+  const originalLines = !!spacing && (preferences.originalLines ?? preferOriginalLines(data))
+  const sourceGaps = useMemo(
+    () =>
+      spacing ? new Map(data.blocks.map((b, i) => [b.byte_start, spacing[i].gap])) : undefined,
+    [data.blocks, spacing],
+  )
+  const [tools, setTools] = useState(!shortForm),
     [query, setQuery] = useState(''),
     [exactMatch, setExactMatch] = useState(false),
     [searchMatcher, setSearchMatcher] = useState<TextMatcher | null>(null),
@@ -184,7 +275,32 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   }, [imageVisit?.pending])
   const scroll = useRef<HTMLDivElement>(null),
     dialog = useRef<HTMLDialogElement>(null),
-    opener = useRef<HTMLElement | null>(null)
+    panelOpeners = useRef(new Map<number, PanelOpener | null>()),
+    returnOpener = useRef<PanelOpener | null>(null)
+  useEffect(() => {
+    if (!started || !echo) return
+    // Some browsers dispatch Copy to the document/body, not the paragraph that
+    // owns the selection. Filter only ranges crossing this edition's fold.
+    function copyManuscript(event: ClipboardEvent) {
+      const fold = echoElement.current
+      const selection = window.getSelection()
+      if (
+        !event.clipboardData ||
+        !scroll.current ||
+        !fold ||
+        !selection?.rangeCount ||
+        !selection.getRangeAt(0).intersectsNode(fold)
+      )
+        return
+      const original = selectedExcerpt(scroll.current, sourceGaps)
+      if (original) {
+        event.clipboardData.setData('text/plain', original.text)
+        event.preventDefault()
+      }
+    }
+    document.addEventListener('copy', copyManuscript)
+    return () => document.removeEventListener('copy', copyManuscript)
+  }, [started, echo, sourceGaps])
   const audio = useDialogueAudio(data),
     audioRef = useRef(audio)
   audioRef.current = audio
@@ -273,8 +389,56 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   const at = nav.view.byte,
     scene = data.config.scenes.filter((s) => s.start_byte <= at).at(-1)
   const presentation = data.presentations.filter((p) => p.start_byte <= at).at(-1)
-  const illustrated = preferences.layout === 'illustrated'
   const plates = data.config.illustrations || []
+  const hasScenes = data.config.scenes.length > 0 || data.presentations.length > 0
+  const hasArt = hasScenes || plates.length > 0
+  // No picture by design is not a broken image. An unillustrated page gets the full column.
+  const illustrated = plates.length > 0 && (preferences.layout === 'illustrated' || !hasScenes)
+  const showArt = hasArt && preferences.stage
+
+  const motionRecipes = useMemo(
+    () =>
+      new Map((data.config.illustrations || []).map((p) => [p.id, resolveReadingMotion(data, p)])),
+    [data],
+  )
+  const [activeMotionId, setActiveMotionId] = useState<string | null>(null)
+  const motionSeen = useRef(new Set<string>()),
+    hasStarted = useRef(false)
+  const enabled = preferences.creativeAuto !== false
+  const hasAuto =
+    !!echo || data.blocks.some((b) => b.soundscape) || [...motionRecipes.values()].some(Boolean)
+  const hasSound = data.blocks.some((b) => b.soundscape || b.narration || b.audio.length)
+  const cues = useReadingCues({
+    root: scroll,
+    edition: storageKey,
+    running: hasAuto && enabled && started && !panel && !nav.visits.length && !editing,
+    onCue: (kind, key) => {
+      if (document.hidden || screen.current.panel || navRef.current.visits.length) return
+      if (kind === 'sound') audioRef.current.cueAt(Number(key))
+      else if (kind === 'motion') setActiveMotionId(key)
+      else if (kind === 'echo' && echoElement.current) echoElement.current.open = true
+    },
+    onDiscontinuity: () => {
+      setActiveMotionId(null)
+      audioRef.current.interruptCue()
+    },
+  })
+  const invalidateCues = useRef(cues.invalidate)
+  invalidateCues.current = cues.invalidate
+  useLayoutEffect(() => {
+    audioRef.current.setCueMuted(preferences.muted === true)
+  }, [preferences.muted])
+  function toggleRunning() {
+    cues.invalidate()
+    audio.suspend()
+    audio.setAutomatic(false)
+    setPreferences((v) => ({ ...v, creativeAuto: v.creativeAuto === false }))
+  }
+  function toggleMute() {
+    const mute = preferences.muted !== true
+    audio.setCueMuted(mute)
+    setPreferences((v) => ({ ...v, muted: mute }))
+  }
   const reachedPlates =
     panel === 'gallery'
       ? galleryAtPosition(plates, platePresentations, imageBoundary(nav.view))
@@ -324,6 +488,19 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     () => (searchReady ? search(data, query, matcher) : []),
     [data, query, matcher, searchReady],
   )
+  const narratedBlocks = useMemo(() => data.blocks.filter((b) => b.narration), [data.blocks])
+  const ambientBlocks = useMemo(() => data.blocks.filter((b) => b.soundscape), [data.blocks])
+  const ambientActive = ambientBlocks.some((b) => b.soundscape!.id === audio.current)
+  // An original plate may offer its own paragraph's sound when explicitly expanded.
+  // When an illustration was reused, don't guess a different paragraph's sound.
+  const companion =
+    expandedPlate &&
+    plates.filter((p) => p.image_asset_id === expandedId).length === 1 &&
+    !imageVisit?.pending &&
+    preferences.showSoundscapes !== false
+      ? data.blocks.find((b) => b.byte_end === expandedPlate.after_byte && b.soundscape)
+      : undefined
+  const narrationActive = narratedBlocks.some((b) => b.narration!.id === audio.current)
   const voices = data.blocks.flatMap((b) =>
     b.audio.map((a, i) => ({ block: b, clip: a, index: i })),
   )
@@ -435,7 +612,24 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     const pop = (event: PopStateEvent) => {
       const s = event.state?.storygal as Screen | undefined
       if (!s || s.session !== screen.current.session) return
-      audioRef.current.restore(s.sound)
+      invalidateCues.current()
+      const previous = screen.current
+      const dismissing = !!previous.panel && s.depth === previous.depth - 1
+      returnOpener.current = dismissing ? panelOpeners.current.get(previous.depth) || null : null
+      // Reentering a panel via Forward creates the same focus-return contract.
+      if (s.panel && s.depth > previous.depth) panelOpeners.current.set(s.depth, panelOpener())
+      if (s.depth < previous.depth)
+        for (const depth of panelOpeners.current.keys())
+          if (depth > s.depth) panelOpeners.current.delete(depth)
+      const hiddenVoice =
+        record.current.preferences.showNarrations === false &&
+        s.sound &&
+        data.blocks.some((b) => b.narration?.id === s.sound?.id)
+      const hiddenSound =
+        record.current.preferences.showSoundscapes === false &&
+        s.sound &&
+        data.blocks.some((b) => b.soundscape?.id === s.sound?.id)
+      audioRef.current.restore(hiddenVoice || hiddenSound ? null : s.sound)
       screen.current = s
       setStarted(s.started)
       setPanel(s.panel)
@@ -446,7 +640,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       )
       setViewerZoom(false)
       navigate({ type: 'restore', position: s.view, visits: s.visits })
-      locate(s.view, !s.panel)
+      // A panel dismissal restores the view without subsequently stealing the
+      // focus that the dialog effect returns to its invoking control.
+      locate(s.view, !s.panel && !dismissing)
     }
     window.addEventListener('popstate', pop)
     return () => window.removeEventListener('popstate', pop)
@@ -470,7 +666,19 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   }, [data.config.title])
   useLayoutEffect(() => {
     if (started) locate(navRef.current.view, false)
-  }, [started, preferences, locate])
+  }, [
+    started,
+    preferences.size,
+    preferences.leading,
+    preferences.width,
+    preferences.layout,
+    preferences.stage,
+    preferences.originalLines,
+    preferences.showEchoFold,
+    preferences.showSoundscapes,
+    preferences.showNarrations,
+    locate,
+  ])
   useEffect(() => {
     const root = scroll.current
     if (!started || !root) return
@@ -480,11 +688,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       if (root.clientWidth === width && root.clientHeight === height) return
       width = root.clientWidth
       height = root.clientHeight
+      invalidateCues.current()
       layoutLocked.current = true
       cancelAnimationFrame(raf.current)
       locate(navRef.current.view, false)
     })
     const resizing = () => {
+      invalidateCues.current()
       layoutLocked.current = true
       cancelAnimationFrame(raf.current)
       locate(navRef.current.view, false)
@@ -498,12 +708,18 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   }, [started, locate])
   useEffect(() => {
     const d = dialog.current
-    if (panel && !d?.open) d?.showModal()
-    if (panel) d?.querySelector<HTMLElement>('#reader-panel-title')?.focus()
-    if (!panel && d?.open) {
+    const returning = returnOpener.current
+    returnOpener.current = null
+    if (panel) {
+      if (!d?.open) d?.showModal()
+      const target =
+        (returning && resolveOpener(returning, d)) ||
+        d?.querySelector<HTMLElement>('#reader-panel-title')
+      target?.focus()
+    } else if (d?.open) {
       d.close()
-      if (opener.current?.isConnected) opener.current.focus({ preventScroll: true })
-      else scroll.current?.focus({ preventScroll: true })
+      const target = (returning && resolveOpener(returning, null)) || scroll.current
+      target?.focus({ preventScroll: true })
     }
   }, [panel])
   useEffect(
@@ -526,8 +742,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     return plate ? Math.max(position.byte, plate.disclosureByte) : position.byte
   }
   function open(next: Exclude<Panel, null>, viewer?: Screen['viewer']) {
-    opener.current = document.activeElement as HTMLElement
+    cues.invalidate()
     const old = remember()
+    panelOpeners.current.set(old.depth + 1, panelOpener())
     audio.suspend()
     commit({ ...old, depth: old.depth + 1, panel: next, viewer })
     setImageVisit(
@@ -544,6 +761,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   function browseImage(index: number) {
     const target = plates[index]
     if (!target) return
+    if (ambientActive) audio.stop()
     const threshold = platePresentations.get(target.id)?.disclosureByte ?? target.after_byte
     setImageVisit((current) =>
       requestImage(
@@ -559,6 +777,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     else setPanel(null)
   }
   function visit(target: number | Position) {
+    cues.invalidate()
     const old = remember(),
       position = validPosition(
         data,
@@ -582,6 +801,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     locate(position)
   }
   function returnMain() {
+    cues.invalidate()
     const old = remember(),
       position = navRef.current.resume
     audio.stop()
@@ -591,6 +811,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     locate(position)
   }
   function continueHere() {
+    cues.invalidate()
     captureCurrent()
     cancelFollow()
     navigate({ type: 'continue' })
@@ -598,7 +819,16 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     const s = snapshot()
     commit({ ...s, visits: [], sound: null }, true)
   }
-  function start(fresh = false) {
+  function start(fresh = false, quiet = false) {
+    if (quiet) {
+      setPreferences((v) => ({ ...v, creativeAuto: false }))
+      cues.invalidate()
+    }
+    if (fresh) {
+      motionSeen.current.clear()
+      audio.resetCueVisit()
+      if (echoElement.current) echoElement.current.open = false
+    }
     const position = fresh ? { byte: data.blocks[0].byte_start, offset: 0 } : navRef.current.resume
     const old = remember()
     audio.stop()
@@ -622,6 +852,27 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     setPanel(null)
     setStarted(true)
     locate(position)
+    const opening = !!(
+      fresh ||
+      (!hasStarted.current &&
+        position.byte === data.blocks[0].byte_start &&
+        !position.plate &&
+        navRef.current.furthest <= position.byte)
+    )
+    hasStarted.current = true
+    const allow = hasAuto && !quiet && !editing && enabled
+    const first = data.blocks[0]
+    cues.begin(
+      fresh,
+      opening && allow,
+      opening &&
+        allow &&
+        first.soundscape &&
+        preferences.showSoundscapes !== false &&
+        !preferences.muted
+        ? String(first.byte_start)
+        : undefined,
+    )
   }
   function trackScroll() {
     cancelAnimationFrame(raf.current)
@@ -685,6 +936,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
     setNotice('原文摘录已保存。')
   }
   function read(id: string, byte?: number) {
+    cues.invalidate()
+    const owner = data.blocks.find((b) => b.soundscape?.id === id)
+    if (owner) cues.consume('sound', String(owner.byte_start))
+    if (preferences.muted) {
+      setNotice('当前已静音。可以取消静音后再听。')
+      return
+    }
     cancelFollow()
     if (byte !== undefined && (byte < active.byte_start || byte >= active.byte_end)) visit(byte)
     else if (panel) {
@@ -692,10 +950,17 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       commit({ ...old, panel: null }, true)
       setPanel(null)
     }
-    if (scroll.current) audio.leave(visibleAudioIds(scroll.current))
+    if (scroll.current) {
+      // Focusing an off-screen control scrolls the document before its click.
+      // A delayed scroll frame for that *earlier* jump must not stop the
+      // playback the reader explicitly chose at its destination.
+      previousY.current = scroll.current.scrollTop
+      audio.leave(visibleAudioIds(scroll.current))
+    }
     audio.play(id)
   }
   function settings(update: Partial<typeof preferences>) {
+    cues.invalidate()
     cancelFollow()
     audio.suspend()
     setPreferences((v) => ({ ...v, ...update }))
@@ -717,7 +982,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
   )[panel || 'about']
   return (
     <div
-      className={`reader-root ${started ? 'is-reading' : 'is-cover'} ${preferences.stage ? '' : 'stage-collapsed'} ${illustrated ? 'is-illustrated' : ''} ${plates.length ? 'has-plates' : ''}`}
+      className={`reader-root ${started ? 'is-reading' : 'is-cover'} ${showArt ? '' : 'stage-collapsed'} ${illustrated ? 'is-illustrated' : ''} ${plates.length ? 'has-plates' : ''}`}
       data-view-byte={at}
       data-view-plate={nav.view.plate}
       data-resume-byte={nav.resume.byte}
@@ -789,10 +1054,22 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               <button className="reader-primary" onClick={() => start()}>
                 {nav.resume.byte > data.blocks[0].byte_start ? '继续阅读' : '开始阅读'} →
               </button>
-              {nav.resume.byte > data.blocks[0].byte_start && (
+              {hasAuto && enabled && (
+                <button type="button" onClick={() => start(false, true)}>
+                  安静阅读
+                </button>
+              )}
+              {(nav.resume.byte > data.blocks[0].byte_start || (hasAuto && hasStarted.current)) && (
                 <button onClick={() => open('restart')}>从头读起</button>
               )}
             </div>
+            {hasAuto && (
+              <p className="reader-cover-cues">
+                {enabled
+                  ? '随读演绎 · 才读到，才出现。可随时暂停；静图不会擅自动起来。'
+                  : '已暂停自动演绎。进入后可继续演绎，原文不变。'}
+              </p>
+            )}
             <p className="reader-cover-meta">
               {data.project.character_count.toLocaleString()} 字 · {data.config.scenes.length}{' '}
               个场景{!!plates.length && ` · ${plates.length} 幅叙事插图`}
@@ -815,6 +1092,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           <header className="reader-header">
             <button
               onClick={() => {
+                cues.invalidate()
                 const old = remember()
                 audio.stop()
                 audio.setAutomatic(false)
@@ -835,9 +1113,32 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 {audio.automatic ? ' · 自动对白已开' : ''}
               </small>
             </span>
-            <button onClick={() => open('contents')} aria-label="打开章节目录">
-              目录
-            </button>
+            {hasAuto && (
+              <ReaderCueTransport
+                active={enabled}
+                muted={!!preferences.muted}
+                sound={hasSound}
+                blocked={enabled && audio.cueBlocked && !panel && !nav.visits.length}
+                onRunning={toggleRunning}
+                onMute={toggleMute}
+                onEnable={() => {
+                  if (scroll.current) audio.enableCueSound(visibleAudioIds(scroll.current))
+                }}
+              />
+            )}
+            {shortForm ? (
+              <button
+                onClick={() => setTools((v) => !v)}
+                aria-expanded={tools}
+                aria-label="阅读工具"
+              >
+                {tools ? '收起' : '工具'}
+              </button>
+            ) : (
+              <button onClick={() => open('contents')} aria-label="打开章节目录">
+                目录
+              </button>
+            )}
           </header>
           {!!nav.visits.length && (
             <div className="reader-visit" role="status">
@@ -855,7 +1156,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
             </Suspense>
           )}
           <div className="reader-layout">
-            {preferences.stage && !illustrated && (
+            {showArt && !illustrated && (
               <aside
                 className="reader-stage"
                 aria-label="当前场景"
@@ -953,10 +1254,10 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 freeze.current = 0
               }}
               onPointerUp={() => {
-                if (scroll.current) setSelection(selectedExcerpt(scroll.current))
+                if (scroll.current) setSelection(selectedExcerpt(scroll.current, sourceGaps))
               }}
               onKeyUp={() => {
-                if (scroll.current) setSelection(selectedExcerpt(scroll.current))
+                if (scroll.current) setSelection(selectedExcerpt(scroll.current, sourceGaps))
               }}
               tabIndex={0}
               aria-label="连续阅读正文"
@@ -968,17 +1269,42 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                 } as CSSProperties
               }
             >
-              <article className="reader-prose">
-                {data.blocks.map((block) => (
+              <article
+                className={originalLines ? 'reader-prose uses-original-lines' : 'reader-prose'}
+              >
+                {data.blocks.map((block, paragraphIndex) => (
                   <Fragment key={block.id}>
                     <section
                       className={`reader-paragraph ${block.heading ? 'reader-chapter' : ''} ${active.id === block.id ? 'is-current' : ''}`}
                       id={block.id}
                       key={block.id}
+                      style={
+                        originalLines && spacing
+                          ? ({ '--source-blanks': spacing[paragraphIndex].blanks } as CSSProperties)
+                          : undefined
+                      }
                       data-byte-start={block.byte_start}
+                      data-auto-sound={
+                        block.soundscape &&
+                        preferences.showSoundscapes !== false &&
+                        !preferences.muted
+                          ? String(block.byte_start)
+                          : undefined
+                      }
+                      data-soundscape-paragraph={
+                        preferences.showSoundscapes !== false ? block.soundscape?.id : undefined
+                      }
+                      data-narrated-paragraph={
+                        preferences.showNarrations !== false ? block.narration?.id : undefined
+                      }
                     >
                       {block.heading ? (
                         <h2 className="reader-paragraph-text">
+                          {originalLines && spacing && (
+                            <span className="source-indent" aria-hidden="true">
+                              {spacing[paragraphIndex].indent}
+                            </span>
+                          )}
                           {highlightedRuns(block, searchReady ? query : '', matcher).map((r) => (
                             <span
                               key={r.byte_start}
@@ -991,7 +1317,18 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           ))}
                         </h2>
                       ) : (
-                        <p className="reader-paragraph-text">
+                        <p
+                          className={
+                            originalLines && spacedVerse(block.text)
+                              ? 'reader-paragraph-text is-spaced-verse'
+                              : 'reader-paragraph-text'
+                          }
+                        >
+                          {originalLines && spacing && (
+                            <span className="source-indent" aria-hidden="true">
+                              {spacing[paragraphIndex].indent}
+                            </span>
+                          )}
                           {highlightedRuns(block, searchReady ? query : '', matcher).map((r) => (
                             <span
                               key={r.byte_start}
@@ -1013,11 +1350,39 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           ))}
                         </p>
                       )}
+                      {block.narration && preferences.showNarrations !== false && (
+                        <PassageVoice
+                          cue={block.narration}
+                          paragraph={paragraphIndex + 1}
+                          current={audio.current}
+                          status={audio.status}
+                          element={audio.element}
+                          onStart={() => read(block.narration!.id)}
+                          onPause={audio.suspend}
+                          onResume={audio.resume}
+                          onStop={audio.stop}
+                        />
+                      )}
+                      {block.soundscape && preferences.showSoundscapes !== false && (
+                        <PassageVoice
+                          cue={block.soundscape}
+                          ambience={block.soundscape.description}
+                          paragraph={paragraphIndex + 1}
+                          current={audio.current}
+                          status={audio.status}
+                          element={audio.element}
+                          onStart={() => read(block.soundscape!.id)}
+                          onPause={audio.suspend}
+                          onResume={audio.resume}
+                          onStop={audio.stop}
+                        />
+                      )}
                       {!!block.audio.length && (
                         <div className="reader-inline-audio">
                           {block.audio.map((a, i) => (
                             <button
                               key={a.take_id}
+                              data-take={a.take_id}
                               onClick={() => read(a.take_id)}
                               aria-label={`播放${data.characters[a.speaker_id]?.name || '对白'}第${i + 1}段`}
                             >
@@ -1044,6 +1409,23 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           </div>
                         ))}
                     </section>
+                    {echo &&
+                      preferences.showEchoFold !== false &&
+                      paragraphIndex + 1 === echo.later.paragraph && (
+                        <EchoMargin
+                          earlier={echo.earlier}
+                          cueKey={String(block.byte_start)}
+                          onManual={() => cues.consume('echo', String(block.byte_start))}
+                          detailsRef={echoElement}
+                          sourceByte={block.byte_end - byteLength([...block.text].at(-1)!)}
+                          onToggle={() => {
+                            // Opening the margin is not a reading step or an audio cue.
+                            cancelFollow()
+                            freeze.current = performance.now() + 300
+                            if (scroll.current) previousY.current = scroll.current.scrollTop
+                          }}
+                        />
+                      )}
                     {illustrated &&
                       preferences.stage &&
                       plates
@@ -1056,6 +1438,15 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                           <ReaderPlate
                             key={p.id}
                             plate={p}
+                            motionRecipe={motionRecipes.get(p.id)}
+                            motionArmed={
+                              enabled &&
+                              started &&
+                              !panel &&
+                              !nav.visits.length &&
+                              activeMotionId === p.id
+                            }
+                            motionSeen={motionSeen.current}
                             visualDescription={platePresentations.get(p.id)?.visualDescription}
                             displayAfterByte={platePresentations.get(p.id)?.displayAfterByte}
                             asset={imageSource(p.image_asset_id) || undefined}
@@ -1072,31 +1463,39 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                         ))}
                   </Fragment>
                 ))}
-                <footer className="reader-end">
-                  <h2>已到本卷结尾。</h2>
-                  <p>抵达结尾不代表已经通读。你可以回看，也可以标记本轮阅读完成。</p>
-                  <button aria-pressed={completed} onClick={() => setCompleted((v) => !v)}>
-                    {completed ? '本轮已完成 · 撤销' : '标记本轮阅读完成'}
-                  </button>
-                  <div className="reader-end-actions">
-                    <button onClick={() => open('contents')}>回顾场景</button>
-                    {voices.length > 0 && <button onClick={() => open('voices')}>重听对白</button>}
-                    {data.map && (
-                      <button
-                        onClick={() => {
-                          setMapEntry(null)
-                          open('map')
-                        }}
-                      >
-                        回顾地图
-                      </button>
-                    )}
-                  </div>
-                </footer>
+                {quietEnding ? (
+                  <footer className="reader-end reader-short-end" aria-label="篇末">
+                    <span aria-hidden="true">◆</span>
+                  </footer>
+                ) : (
+                  <footer className="reader-end">
+                    <h2>已到本卷结尾。</h2>
+                    <p>抵达结尾不代表已经通读。你可以回看，也可以标记本轮阅读完成。</p>
+                    <button aria-pressed={completed} onClick={() => setCompleted((v) => !v)}>
+                      {completed ? '本轮已完成 · 撤销' : '标记本轮阅读完成'}
+                    </button>
+                    <div className="reader-end-actions">
+                      <button onClick={() => open('contents')}>回顾场景</button>
+                      {voices.length > 0 && (
+                        <button onClick={() => open('voices')}>重听对白</button>
+                      )}
+                      {data.map && (
+                        <button
+                          onClick={() => {
+                            setMapEntry(null)
+                            open('map')
+                          }}
+                        >
+                          回顾地图
+                        </button>
+                      )}
+                    </div>
+                  </footer>
+                )}
               </article>
             </div>
           </div>
-          {audio.current && (
+          {audio.current && !narrationActive && !ambientActive && (
             <div className="reader-playback" aria-label="对白播放器">
               <span>
                 {data.characters[clip?.speaker_id || '']?.name || '对白'} ·{' '}
@@ -1113,34 +1512,40 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               <button onClick={audio.stop}>停止</button>
             </div>
           )}
-          <nav className="reader-toolbar" aria-label="阅读工具">
-            <div className="reader-tool-pill">
-              <span className="reader-progress" aria-label={`当前位置 ${progress}%`}>
-                {progress}%
-              </span>
-              {tools && (
-                <>
-                  <button onClick={() => open('search')}>搜索</button>
-                  <button onClick={() => open('marks')}>收藏</button>
-                </>
-              )}
-              {data.map && (
-                <button
-                  onClick={() => {
-                    setMapEntry(null)
-                    open('map')
-                  }}
-                >
-                  地图
-                </button>
-              )}
-              {storyGraph && <button onClick={() => open('graph')}>脉络</button>}
-              <button onClick={() => setTools((v) => !v)} aria-expanded={tools}>
-                {tools ? '收起' : '工具'}
-              </button>
-              <button onClick={() => open('settings')}>设置</button>
-            </div>
-          </nav>
+          {(!shortForm || tools) && (
+            <nav className="reader-toolbar" aria-label="阅读工具栏">
+              <div className="reader-tool-pill">
+                {!shortForm && (
+                  <span className="reader-progress" aria-label={`当前位置 ${progress}%`}>
+                    {progress}%
+                  </span>
+                )}
+                {tools && (
+                  <>
+                    <button onClick={() => open('search')}>搜索</button>
+                    <button onClick={() => open('marks')}>收藏</button>
+                  </>
+                )}
+                {data.map && (
+                  <button
+                    onClick={() => {
+                      setMapEntry(null)
+                      open('map')
+                    }}
+                  >
+                    地图
+                  </button>
+                )}
+                {storyGraph && <button onClick={() => open('graph')}>脉络</button>}
+                {!shortForm && (
+                  <button onClick={() => setTools((v) => !v)} aria-expanded={tools}>
+                    {tools ? '收起' : '工具'}
+                  </button>
+                )}
+                <button onClick={() => open('settings')}>设置</button>
+              </div>
+            </nav>
+          )}
         </>
       )}
       {(notice || audio.notice || storageError || externalRecord) && (
@@ -1157,6 +1562,7 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
               <button
                 onClick={() => {
                   const r = readRecord(data, externalRecord)
+                  cues.invalidate()
                   conflict.current = false
                   setExternalRecord(null)
                   navigate({ type: 'restart', position: r.resume })
@@ -1193,9 +1599,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       )}
       {selection && started && (
         <div className="reader-selection">
-          <button onPointerDown={(e) => e.preventDefault()} onClick={excerpt}>
-            保存原文摘录
-          </button>
+          {selection.text.length <= 3000 ? (
+            <button onPointerDown={(e) => e.preventDefault()} onClick={excerpt}>
+              保存原文摘录
+            </button>
+          ) : (
+            <span role="status">摘录较长，请分段选择后保存。</span>
+          )}
           <button onClick={() => setSelection(null)}>取消</button>
         </div>
       )}
@@ -1213,7 +1623,9 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
       >
         <div className="reader-dialog-head">
           <h2 id="reader-panel-title" tabIndex={-1}>
-            {title}
+            {panel === 'image' && expandedPlate && !imageVisit?.pending
+              ? expandedPlate.title
+              : title}
           </h2>
           <button onClick={close} aria-label="关闭面板">
             ×
@@ -1270,10 +1682,28 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   onConfirm={() => setImageVisit((v) => (v ? confirmImageDisclosure(v) : v))}
                 />
               )}
-              <button aria-pressed={viewerZoom} onClick={() => setViewerZoom((v) => !v)}>
-                {viewerZoom ? '恢复完整画面' : '放大细节 2×'}
-              </button>
-              {expandedPlate && (
+              <div className="reader-image-tools">
+                {companion?.soundscape && (
+                  <div className="reader-art-sound" aria-label="随画声景">
+                    <PassageVoice
+                      cue={companion.soundscape}
+                      ambience={companion.soundscape.description}
+                      paragraph={data.blocks.indexOf(companion) + 1}
+                      current={audio.current}
+                      status={audio.status}
+                      element={audio.element}
+                      onStart={() => audio.play(companion.soundscape!.id)}
+                      onPause={audio.suspend}
+                      onResume={audio.resume}
+                      onStop={audio.stop}
+                    />
+                  </div>
+                )}
+                <button aria-pressed={viewerZoom} onClick={() => setViewerZoom((v) => !v)}>
+                  {viewerZoom ? '恢复完整画面' : '放大细节 2×'}
+                </button>
+              </div>
+              {expandedPlate && plates.length > 1 && (
                 <div className="reader-gallery-controls">
                   <button
                     disabled={plates.indexOf(expandedPlate) === 0}
@@ -1457,6 +1887,19 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           )}
           {panel === 'settings' && (
             <div className="reader-settings">
+              {spacing && (
+                <label>
+                  文字排版
+                  <select
+                    aria-label="文字排版"
+                    value={originalLines ? 'source' : 'composed'}
+                    onChange={(e) => settings({ originalLines: e.target.value === 'source' })}
+                  >
+                    <option value="source">原稿行式 · 保留缩进和空行</option>
+                    <option value="composed">舒展段落 · 统一行距与首行</option>
+                  </select>
+                </label>
+              )}
               <h3>阅读与画面</h3>
               {!!plates.length && (
                 <>
@@ -1464,13 +1907,13 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                     画面排布
                     <select
                       aria-label="画面排布"
-                      value={preferences.layout || 'split'}
+                      value={illustrated ? 'illustrated' : 'split'}
                       onChange={(e) =>
                         settings({ layout: e.target.value as 'split' | 'illustrated' })
                       }
                     >
                       <option value="illustrated">画卷阅读 · 完整插图穿插原文</option>
-                      <option value="split">图文并读 · 画面与正文并置</option>
+                      {hasScenes && <option value="split">图文并读 · 画面与正文并置</option>}
                     </select>
                   </label>
                   <button onClick={() => open('gallery')}>本章画卷 · {plates.length} 幅</button>
@@ -1514,12 +1957,14 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                   onChange={(e) => settings({ width: Number(e.target.value) })}
                 />
               </label>
-              <button
-                aria-pressed={preferences.stage}
-                onClick={() => settings({ stage: !preferences.stage })}
-              >
-                {preferences.stage ? '收起场景画面' : '展开场景画面'}
-              </button>
+              {hasArt && (
+                <button
+                  aria-pressed={preferences.stage}
+                  onClick={() => settings({ stage: !preferences.stage })}
+                >
+                  {preferences.stage ? '收起场景画面' : '展开场景画面'}
+                </button>
+              )}
               {Object.entries(imageRequests).some(
                 ([, r]) => r.status === 'failed' || (r.status === 'loading' && r.attempt > 0),
               ) && (
@@ -1546,8 +1991,71 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
                     ))}
                 </section>
               )}
+              {hasAuto && (
+                <section>
+                  <h3>随读演绎</h3>
+                  <p>
+                    文字不跟着任何声音或动作翻页。快速跳读不补演，回看不自动重播；想重读全篇，可从头开始新的一轮。
+                  </p>
+                  <button onClick={toggleRunning}>
+                    {enabled ? '暂停随读演绎' : '恢复随读演绎'}
+                  </button>
+                  {hasSound && (
+                    <button onClick={toggleMute}>
+                      {preferences.muted ? '取消全部静音' : '让本篇静音'}
+                    </button>
+                  )}
+                  <button onClick={() => open('restart')}>从头重新演绎</button>
+                </section>
+              )}
+              {echo && (
+                <section>
+                  <h3>回声折页</h3>
+                  <p>读到后段的折角，才自动翻出前文原句。收起后不反复打开；也能藏起折角。</p>
+                  <button
+                    aria-pressed={preferences.showEchoFold !== false}
+                    onClick={() => settings({ showEchoFold: preferences.showEchoFold === false })}
+                  >
+                    {preferences.showEchoFold === false ? '显示回声折页' : '隐藏回声折页'}
+                  </button>
+                </section>
+              )}
+              {ambientBlocks.length > 0 && (
+                <section>
+                  <h3>段落声景</h3>
+                  <p>
+                    读到对应段落时演绎一次；不会为了声音翻页。仍可点听，也可隐藏入口并关闭本项自动触发。
+                  </p>
+                  <button
+                    aria-pressed={preferences.showSoundscapes !== false}
+                    onClick={() => {
+                      if (ambientActive) audio.stop()
+                      settings({ showSoundscapes: preferences.showSoundscapes === false })
+                    }}
+                  >
+                    {preferences.showSoundscapes === false ? '显示声景入口' : '收起声景入口'}
+                  </button>
+                </section>
+              )}
+              {narratedBlocks.length > 0 && (
+                <>
+                  <h3>段落朗读</h3>
+                  <p>只在原文旁点听，一次读一段。想默读，可以收起这些入口。</p>
+                  <button
+                    aria-pressed={preferences.showNarrations !== false}
+                    onClick={() => {
+                      if (narrationActive) audio.stop()
+                      settings({ showNarrations: preferences.showNarrations === false })
+                    }}
+                  >
+                    {preferences.showNarrations === false ? '显示段落朗读入口' : '收起段落朗读入口'}
+                  </button>
+                </>
+              )}
               <h3>对白与地图</h3>
-              <p>声音由 AI 合成，仅覆盖已制作的部分对白；快速跳读与回看不会自动重播。</p>
+              <p>
+                已制作的角色对白可以单独点听；快速跳读与回看不会自动重播。段落朗读不参与自动对白。
+              </p>
               <button
                 disabled={!voices.length}
                 aria-pressed={audio.automatic}
@@ -1574,8 +2082,33 @@ function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boo
           )}
           {panel === 'about' && (
             <div className="reader-about">
-              <p>正文完整保留。画面为艺术化阅读辅助；声音由 AI 合成，声音与地图仍需人工审校。</p>
+              <p>正文完整保留。画面、声音与地图是可选的阅读辅助。</p>
               {data.preview && <p>当前素材仍待确认。</p>}
+              {narratedBlocks.length > 0 && (
+                <section aria-label="段落朗读来源">
+                  <h3>段落朗读</h3>
+                  <p>创作者为原文段落配入的录音，默认不播放。</p>
+                  {[
+                    ...new Set(
+                      narratedBlocks
+                        .map((b) => data.media[b.narration!.id]?.credit)
+                        .filter((c): c is string => typeof c === 'string' && !!c),
+                    ),
+                  ].map((c) => (
+                    <p className="reader-voice-credit" key={c}>
+                      {c}
+                    </p>
+                  ))}
+                </section>
+              )}
+              {ambientBlocks.length > 0 && (
+                <section aria-label="段落声景来源">
+                  <h3>段落声景</h3>
+                  <p>
+                    这些声音由制作者按原文选配，在本机合成，不是实地录音。顺读到该段时响一次；可暂停演绎或只关声音。
+                  </p>
+                </section>
+              )}
               {data.issues.map((s, i) => (
                 <p key={i}>{s}</p>
               ))}

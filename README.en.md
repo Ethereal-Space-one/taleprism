@@ -1,76 +1,39 @@
 # Taleprism
 
-**An open workflow for turning fiction into illustrated reading experiences, with character direction, scene continuity, and optional voice.**
+**Keep every word of the story. Let a map explain a battle or a passing car break the quiet at the moment the text calls for it.** Taleprism is a local authoring workbench and a standalone reader. A passage that needs no sound or picture stays on the page as prose.
 
-v0.3.3 Public Preview · [中文](README.md) · [Read Chibi](https://ethereal-space-one.github.io/taleprism/) · [Downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3)
+**[Start with Chibi (Red Cliffs)](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [Hear the rain in The Door Left Open](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 public preview and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [中文](README.md)
 
-![Chibi: the Red Cliffs reading showcase](examples/chibi/cover.png)
+## The classical showcase: Chibi, a battle map that doesn't give away the ending
 
-**Chibi showcases the reading experience; Last Light teaches the production workflow.** The public demo includes 12 scene illustrations, eight principal characters, nine portraits and three historical map stages. The [Last Light short-story tutorial and materials](examples/last-light/README.en.md) remain in Git.
+![Chibi: raising the wind at the altar and the fire attack on the river](examples/chibi/cover.png)
 
-## Two ways to use it
+In chapters 49 and 50 of *Romance of the Three Kingdoms*, commanders shift allegiance and fleets change position. A map drawn with hindsight would reveal the retreat before the reader reaches the battle. Here, the three stages of the map, faction ties and chains of cause and effect unfold with the text. Read back and later outcomes disappear again. Browse the illustrations you have reached without opening the whole chapter's gallery.
 
-- **Prompt workflow:** use the [eight templates](prompts/README.md) and [complete English walkthrough](examples/last-light/README.en.md) with your chosen AI tools. No workbench installation or API key is required by the toolkit; your AI service may require an account and payment.
-- **Local workbench:** import a chapter, review speakers and characters, direct illustrations, track props, inspect continuity, optionally produce voice, and export an editable project or standalone reader.
+Twelve illustrations follow eight principal characters. The maker's plan tracks who has seen what and which boat an object belongs on; a change of camera angle doesn't erase the previous scene. This edition uses no voices or ambient soundtrack. To see how it works, [open the editable Chibi project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) alongside its [shot and continuity notes (Chinese)](examples/chibi/README.md).
 
-The online example is a static reading experience. It has no hosted editing backend. Image generation happens in an external tool; the webpage cannot call a Codex conversation's built-in image generator.
+## The modern showcase: The Door Left Open
 
-## Install the workbench
+A cobbler has lowered the shutter halfway. A pair of small yellow boots sits on the threshold. The first paragraph is silent. Reach the second and rain strikes the metal awning; a car passes the mouth of the lane, closest at six seconds. Only the wet road on the right of the illustration moves. The boots and the dry threshold stay still. When the rain stops in the story, the reader doesn't play it again as a closing theme.
 
-Requirements: Python 3.11+ (uv can manage it), [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. The UI is currently Chinese. macOS is the primary manually tested environment; see [validation](docs/VALIDATION-v0.3.3.md) for the exact platform checks. Native Windows startup is not supported.
+[The Door Left Open](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip) is the short introduction to 0.9's passage-timed design. A smaller experiment, [The Margin](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-margin-reader.zip), takes a different approach: a still life stays still, an earlier sentence returns in a fold, and a few pencil strokes give way to silence. Both downloads are readers, not editable backups.
 
-```sh
-git clone https://github.com/Ethereal-Space-one/taleprism.git
-cd taleprism
-./start.sh
-```
+## Open a book and set its pace
 
-Open `http://127.0.0.1:8000`. Initial dependency installation needs internet. Later use `./run.sh`; on macOS the Taleprism `.command` launchers also work. The service binds to localhost. Restart it after rebooting.
+1. **Download a Reader ZIP → extract it fully → open `index.html` in that folder.** Keep the assets beside the HTML. Don't open the HTML in a ZIP preview. Reading needs no terminal, network, workbench or model key.
+2. The cover stays silent. Choose **开始阅读** (Start reading): an adopted soundscape can play once at its passage, and a picture appears where the author placed it. Only separately reviewed motion can animate. If your browser blocks the first sound, use the prompt inside the reader; don't change browser permissions.
+3. **安静阅读** (Quiet reading) leaves the cues for you to try manually. Pause automatic cues while reading, or choose **静音** (Mute) to silence the book without hiding art or folds. System reduced motion keeps illustrations still. Passage narration is click-to-play; character dialogue retains its own settings. Nothing turns the page for you.
 
-Download the Chibi or Last Light `project.zip` from the v0.3.3 Release. In the left sidebar choose **示例与工程 → 导入可编辑工程** (Examples and projects → Import editable project). Each import creates a new project. Chibi provides a complete chapter and ensemble example; Last Light provides a three-shot tutorial. The source checkout includes tutorial reference images; complete projects download separately.
+**Web and download are different editions.** The [online Chibi showcase](https://ethereal-space-one.github.io/taleprism/) is the deployed **0.3.2** reader. **0.3.3** was an earlier GitHub preview, not the Pages deployment. For **0.9.0**, use the release downloads above. Neither the website nor an old ZIP is upgraded by downloading the new edition.
 
-Both projects include unchanged source text, assets, direction plans and assistant inspection evidence. Unfinished projects can be restored for repair; old checks without dependency evidence require reinspection. Public packages omit macOS system-generated demonstration audio. Final creator art review is still pending.
+## Make an edition: choose the passage before the effect
 
-## Make a chapter
+In the Chinese-language workbench, choose **用自己的图文开始**, import a TXT, inspect an illustration you have permission to distribute and place it after the right paragraph. That is a finished edition if you want it to be. Add a licensed passage recording or compose a soundscape only where it helps. Listen before accepting it. To add rain or shore motion, mark the actual region on the image and review it instead of animating the whole frame.
 
-1. Import your TXT (one chapter or short story, up to 30,000 characters). The original stays immutable.
-2. Review identities and dialogue speakers in **人物与审校**.
-3. In **章节制作方案**, select a paragraph for each picture; write moment, exact evidence, framing, separate acting for each person, and forbidden early revelations.
-4. Establish a scene master and every important object's state. Export prompts/tasks, attach reference images in your image tool, then upload and accept the result in **独立阅读器**. Assign it to the shot, approve the plan, compare master/previous/current images, record checks, then apply.
-5. Optionally prepare a few important dialogue lines in **对白配音**, listen and accept. Preview and export an independent reader.
+**One More Thing** is an optional last reading of the work, not a “generate book” button. Ask for a suggestion about sound, imagery or presentation, or accept that none is needed. Local rules are identified as rules; asking an external model is an explicit step that confirms which text goes to which endpoint. Only adopted arrangements enter the reader. The reader itself never calls a model.
 
-For external text AI, export a complete workbench task and import `{project_id, base_plan_revision, source_sha256, plan}`. Keep the three binding fields from the exported task unchanged. If the current plan has changed, export a new task; old output can be kept as a manual reference. Do not turn human tutorial paragraph IDs into byte offsets yourself. Text services use your local `.env`; only explicit AI operations send text. Keep credentials local.
+**Share a Reader; keep the Editable backup for authoring.** Backups may contain rejected material, notes or review history. For a first production exercise, follow the [three-shot Last Light tutorial](examples/last-light/README.en.md). The local workbench needs Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/), Node.js 22.12+ and npm. Run `./start.sh` from the directory that contains it, then open the local address it prints. Initial setup needs a network connection. Use `./run.sh` on subsequent runs. No native Windows launcher is included.
 
-## Downloads
+[Quick start (Chinese)](docs/快速上手.md) · [Eight prompt templates](prompts/README.md) · [Reproducible Reading Lab](examples/reading-lab/README.md) · [Iteration history (Chinese)](docs/ITERATION-HISTORY.md) · [Validation and limits](docs/VALIDATION-v0.9.0.md) · [Contributing](CONTRIBUTING.md)
 
-- `prompt-starter.zip`: templates, complete tutorial, source and actual reference images.
-- `last-light-project.zip`: import into the workbench to continue editing.
-- `chibi-project.zip`: the editable twelve-shot Chibi project with reference-bound checks.
-- `chibi-reader.zip`: the complete standalone Chibi reading showcase.
-- `last-light-reader.zip`: extract and serve over HTTP to read without the workbench.
-- `source.zip` or GitHub Source code ZIP: application source and tutorial references; project packages download separately.
-
-Check the unified `SHA256SUMS` and `release-manifest.json`. Previous release attachments remain available. Inside the extracted reader directory run:
-
-```sh
-python3 verify_package.py
-python3 -m http.server 8080 --bind 127.0.0.1
-```
-
-Open `http://127.0.0.1:8080`, not a `file://` HTML page.
-
-## What is verified, and what is not
-
-Last Light demonstrates a fixed-camera scene workflow, including actual repairs for an extended bench and a missing bicycle basket. Minor brushwork and contour drift remain. Other models, arbitrary reverse shots and whole-book automation are not validated. A prompt or a software test cannot approve visual quality.
-
-The [second-story worksheet](examples/archive-room/README.md) checks general evidence/state handling without model calls; it does not claim a second successful image generation run. External-user usability is still unverified.
-
-Local speech uses macOS voices and ffmpeg. Existing audio travels with editable projects. The OpenAI voice adapter is prepared but has not been live-validated. No voice cloning is included. Optional WebGAL export is installed with `./start.sh --with-webgal`. [Chibi](examples/chibi/README.md) is the public showcase; its approximate historical maps explain camps and movements, and are not a general map-generation service.
-
-The legacy `storygal` module, `STORYGAL_*` environment variables, bundle format identifiers and browser progress keys stay compatible in this release. See [compatibility](docs/COMPATIBILITY.md).
-
-## Contribute
-
-Report the exact failed step or visual inconsistency through [Issues](https://github.com/Ethereal-Space-one/taleprism/issues/new/choose). Never submit API keys; source excerpts and images are optional. [Contributing](CONTRIBUTING.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
-
-Code and prompts: [MIT](LICENSE). Content and dependencies retain their own [provenance and notices](THIRD_PARTY_NOTICES.md). AI-generated images are not claimed to be exclusive. Earlier Storygal contributors remain credited.
+Code and prompts are [MIT-licensed](LICENSE). See the separate [content and dependency notices](THIRD_PARTY_NOTICES.md) and keep the credits included with each reader.

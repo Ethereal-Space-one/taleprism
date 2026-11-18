@@ -1,8 +1,8 @@
 # Last Light: a three-frame continuity walkthrough
 
-Make a readable scene from fiction without changing its text. [中文](README.md) · [Offline reader](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/taleprism-v0.3.3-last-light-reader.zip) · [Editable project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/taleprism-v0.3.3-last-light-project.zip) · [Prompt starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.3.3/taleprism-v0.3.3-prompt-starter.zip)
+Make a readable scene from fiction without changing its text. [中文](README.md) · [Offline reader](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-last-light-reader.zip) · [Editable project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-last-light-project.zip) · [Prompt starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-prompt-starter.zip)
 
-No workbench installation is needed for the prompt route. Download the v0.3.3 source or prompt starter ZIP, keep its folders together, and open [the v0.2.1 templates](../../prompts/README.md). The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
+No workbench installation is needed for the prompt route. Download the v0.9.0 source or prompt starter ZIP, keep its folders together, and open [the v0.2.1 templates](../../prompts/README.md). The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
 
 ## Story and files
 

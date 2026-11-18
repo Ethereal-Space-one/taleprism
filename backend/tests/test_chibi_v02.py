@@ -256,6 +256,20 @@ def test_inline_data_preserves_the_same_public_identity():
         builder.sync_reader_data({"reader-data.js": b"unknown format"}, previous, content)
 
 
+def test_portable_page_rebinding_matches_reader_json_and_escapes_source_text():
+    from storygal.portable_reader import DATA_TAG, TEMPLATE, embed_story
+
+    previous = {"project": {"id": "generated"}}
+    content = {"project": {"id": "stable"}, "text": "</ScRiPt> < & <script>源文"}
+    files = {"index.html": embed_story(TEMPLATE, previous).encode()}
+    builder.sync_reader_data(files, previous, content)
+    page = files["index.html"].decode()
+    payload = page.split(DATA_TAG)[1].split("</script>")[0]
+    assert json.loads(payload) == content and "<" not in payload
+    with pytest.raises(ValueError, match="不一致"):
+        builder.sync_reader_data(files, previous, content)
+
+
 def test_recorded_recipe_is_source_bound_and_has_real_shared_scene():
     from storygal.production import Plan
 
@@ -314,7 +328,14 @@ def test_full_public_rebuild_preserves_source_media_choreography_and_bookmark_ke
     assert record["version"] == builder.VERSION
     assert content["project"]["id"] == old_content["project"]["id"]
     assert content["project"]["canonical_sha256"] == old_content["project"]["canonical_sha256"]
-    assert content["blocks"] == old_content["blocks"]
+    previous_end = 0
+    source = old["storygal-source/source.utf8.txt"]
+    for actual, historical in zip(content["blocks"], old_content["blocks"], strict=True):
+        assert actual == {
+            **historical,
+            "source_gap_before": source[previous_end : historical["byte_start"]].decode(),
+        }
+        previous_end = historical["byte_end"]
     assert content["presentations"] == old_content["presentations"]
     assert content["map"] == old_content["map"]
     assert [p["id"] for p in content["config"]["illustrations"]] == [

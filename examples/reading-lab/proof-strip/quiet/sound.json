@@ -1,0 +1,8 @@
+{
+  "lens": "sound",
+  "source_sha256": "e0d90da00208574de1cfef67be37643f0775dd6b26b4f6525f3150c56a0fa36a",
+  "proposal": {
+    "decision": "quiet",
+    "rationale": "原文没有人或机器发声。"
+  }
+}

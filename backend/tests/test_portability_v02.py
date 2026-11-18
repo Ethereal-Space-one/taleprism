@@ -37,6 +37,9 @@ def offline(monkeypatch, tmp_path):
 @pytest.fixture
 def portable(monkeypatch, tmp_path):
     root = tmp_path / "source-only"
+    from reader_build_fixture import fake_reader_build
+
+    fake_reader_build(root)
     (root / "frontend/dist/assets").mkdir(parents=True)
     (root / "frontend/dist/index.html").write_text("<html><head></head><body></body></html>")
     (root / "frontend/dist/assets/app.js").write_text("/* isolated exporter fixture */")
@@ -173,7 +176,7 @@ def test_chibi_map_missing_or_invalid_fails_only_when_selected(portable, map_byt
 def test_health_identifies_instance_workspace_and_data(portable, tmp_path):
     c, root = portable
     health = c.get("/api/health").json()
-    assert health["version"] == "0.3.3" and c.app.version == "0.3.3"
+    assert health["version"] == "0.9.0" and c.app.version == "0.9.0"
     assert health["service"] == "taleprism"
     assert health == c.get("/api/health").json()
     same = TestClient(create_app(c.app.state.store.root)).get("/api/health").json()

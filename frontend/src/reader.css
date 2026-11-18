@@ -1411,6 +1411,7 @@
   padding: 40px clamp(16px, 4vw, 56px) 120px;
 }
 .reader-root.is-illustrated .reader-paragraph,
+.reader-root.is-illustrated .reader-echo-fold,
 .reader-root.is-illustrated .reader-end {
   max-width: var(--reader-width, 680px);
   margin-inline: auto;
@@ -1429,6 +1430,7 @@
   scroll-margin-top: 24px;
 }
 .reader-plate .reader-plate-art {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1759,6 +1761,211 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .reader-image-motion {
+    display: none;
+  }
+}
+
+/* Voices belong to their passages, not a floating global soundtrack. */
+.reader-passage-voice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  margin-block: 0.25rem 0.4rem;
+  font: 0.85rem/1.4 var(--font-body);
+  color: var(--reader-muted);
+}
+.reader-passage-voice button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  min-height: 34px;
+  padding: 0.25rem 0.12rem;
+  color: var(--reader-ink);
+  font: inherit;
+}
+.reader-passage-voice button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.reader-passage-voice-main small {
+  font-variant-numeric: tabular-nums;
+  margin-inline-start: 0.3rem;
+  color: var(--reader-muted);
+}
+.reader-voice-credit {
+  overflow-wrap: anywhere;
+}
+@media (pointer: coarse) {
+  .reader-passage-voice button {
+    min-height: 44px;
+  }
+}
+
+/* A quiet typographic tailpiece, not a completion prompt for a poem or fragment. */
+.reader-short-end {
+  text-align: center;
+  padding: 24px 0 0;
+  font-size: 7px;
+  color: var(--reader-muted);
+}
+
+/* A short layout viewport can come from page zoom, a small window or a
+   landscape phone. Keep the cover in document flow: tall content can scroll. */
+@media (max-height: 560px) {
+  .reader-cover {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 16px clamp(20px, 5vw, 72px) 22px;
+  }
+  .reader-cover-header,
+  .reader-cover-copy,
+  .reader-cover-about {
+    position: static;
+    transform: none;
+    max-width: none;
+  }
+  .reader-cover-header {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 0;
+  }
+  .reader-cover-copy {
+    width: min(100%, 46rem);
+    margin-block: auto;
+    padding: 0;
+  }
+  .reader-cover-copy h1,
+  .reader-cover-copy h1.reader-long-title {
+    max-height: none;
+    overflow: visible;
+    font-size: clamp(30px, 5vw, 54px);
+    margin-bottom: 12px;
+  }
+  .reader-cover-source,
+  .reader-cover-subtitle {
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+  }
+  .reader-cover-meta {
+    margin-bottom: 0;
+  }
+}
+
+/* Original line layout preserves stanza breaks and native indentation while
+   keeping the same byte anchors for narration, motion, and personal records. */
+.reader-root .reader-prose.uses-original-lines .reader-paragraph {
+  margin-block: 0;
+  padding-block: calc(
+      var(--source-blanks, 0) * var(--reader-size, 21px) * var(--reader-leading, 1.95)
+    )
+    0;
+}
+.reader-root .reader-prose.uses-original-lines .reader-paragraph-text {
+  text-indent: 0;
+  text-align: start;
+  tab-size: 4;
+}
+.reader-mark > button:first-child {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reader-prose.uses-original-lines .is-spaced-verse {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.reader-ambient-caption {
+  color: var(--reader-muted);
+}
+.reader-art-sound {
+  margin-block: 8px;
+}
+.reader-art-sound .reader-passage-voice {
+  margin-inline: auto;
+}
+.reader-passage-voice.is-soundscape .reader-passage-voice-main {
+  max-width: 100%;
+}
+
+.reader-image-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+}
+.reader-image-tools .reader-art-sound {
+  margin: 0;
+}
+
+/* A small marginal fold, outside the manuscript's byte-anchored paragraphs. */
+.reader-echo-fold {
+  margin: -0.65em 0 1.7em;
+  max-width: 38em;
+  color: var(--reader-muted);
+  overflow-anchor: none;
+}
+.uses-original-lines .reader-echo-fold {
+  margin: 0.2em 0 0.7em;
+}
+.reader-echo-fold summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62em;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--reader-accent);
+  font: 0.92rem var(--reader-font-ui);
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+.reader-echo-fold summary::-webkit-details-marker {
+  display: none;
+}
+.reader-echo-mark {
+  width: 0.85em;
+  height: 1em;
+  border: 1px solid var(--reader-accent);
+  border-radius: 1px;
+  background: linear-gradient(
+    135deg,
+    transparent 65%,
+    var(--reader-accent) 66% 72%,
+    var(--reader-panel) 73%
+  );
+}
+.reader-echo-fold[open] .reader-echo-mark {
+  background: var(--reader-highlight);
+}
+.reader-echo-hint,
+.reader-echo-leaf small {
+  color: var(--reader-muted);
+  font: 0.83rem var(--reader-font-ui);
+  letter-spacing: 0.04em;
+}
+.reader-echo-fold[open] .reader-echo-hint {
+  display: none;
+}
+.reader-echo-leaf {
+  margin: 0.2em 0 0.5em 0.35em;
+  padding: 0.75em 0 0.8em 1.35em;
+  border-inline-start: 1px solid var(--reader-accent);
+}
+.reader-echo-leaf blockquote {
+  margin: 0.38em 0 0;
+  color: var(--reader-ink);
+  font: 0.94em/1.85 var(--reader-font-literary);
+  font-size: calc(var(--reader-size, 21px) * 0.94);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media print {
+  .reader-echo-fold {
     display: none;
   }
 }

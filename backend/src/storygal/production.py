@@ -889,22 +889,30 @@ class Production:
         rrev, config = self.reader.load(pid)
         if rrev != reader_revision:
             raise ConflictError("阅读器编排已更新，请刷新后重试。")
+        previous_plates = {p["id"]: p for p in config["illustrations"]}
         plates = [p for p in config["illustrations"] if not p["id"].startswith("plan-")]
         occupied = {p["after_byte"] for p in plates}
         if any(s["after_byte"] in occupied for s in selected):
             raise ValueError("所选段落已有手工插图，请先在阅读器编排中处理位置冲突。")
+        applied = []
+        for shot in selected:
+            plate = {
+                "id": "plan-" + shot["id"],
+                "after_byte": shot["after_byte"],
+                "image_asset_id": shot["image_asset_id"],
+                "title": shot["title"],
+                "description": shot["moment"][:300],
+            }
+            previous = previous_plates.get(plate["id"], {})
+            if "motion" in previous:
+                if previous["motion"] is not None and any(
+                    previous[key] != plate[key] for key in ("after_byte", "image_asset_id")
+                ):
+                    raise ValueError("制作插图的位置或图片已改变，请先移除旧动效，再重新核对动效。")
+                plate["motion"] = previous["motion"]
+            applied.append(plate)
         config["illustrations"] = sorted(
-            plates
-            + [
-                {
-                    "id": "plan-" + s["id"],
-                    "after_byte": s["after_byte"],
-                    "image_asset_id": s["image_asset_id"],
-                    "title": s["title"],
-                    "description": s["moment"][:300],
-                }
-                for s in selected
-            ],
+            plates + applied,
             key=lambda x: x["after_byte"],
         )
         config["reading_layout"] = "illustrated"

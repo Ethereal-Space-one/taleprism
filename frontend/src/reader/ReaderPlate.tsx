@@ -1,7 +1,9 @@
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import type { ReaderContent, ReaderIllustration } from '../reader-types'
 import type { ImageRequest } from './imageRecovery'
 import { ReaderImageRetry } from './ReaderImageRetry'
+import { ReaderPlateMotion } from './ReaderPlateMotion'
+import type { EnvironmentMotionRecipe } from './motion/recipes'
 
 export function ReaderPlate({
   plate,
@@ -10,6 +12,9 @@ export function ReaderPlate({
   displayAfterByte,
   visualDescription,
   request,
+  motionRecipe,
+  motionArmed = false,
+  motionSeen,
   onLoad,
   onRetry,
   onError,
@@ -21,12 +26,17 @@ export function ReaderPlate({
   displayAfterByte?: number
   visualDescription?: string | null
   request?: ImageRequest
+  motionRecipe?: EnvironmentMotionRecipe | null
+  motionArmed?: boolean
+  motionSeen?: Set<string>
   onLoad: () => void
   onRetry: () => void
   onError: () => void
   onOpen: () => void
 }) {
   const descriptionId = useId()
+  const art = useRef<HTMLButtonElement>(null),
+    image = useRef<HTMLImageElement>(null)
   const description = visualDescription || plate.description || plate.title
   const failed = request?.status === 'failed'
   return (
@@ -38,8 +48,10 @@ export function ReaderPlate({
       data-image-asset={plate.image_asset_id}
     >
       <button
+        ref={art}
         className="reader-plate-art"
         data-illustration-anchor="true"
+        data-auto-motion={motionRecipe && asset && !failed ? plate.id : undefined}
         aria-label={`放大插图：${plate.title}`}
         aria-describedby={descriptionId}
         onClick={onOpen}
@@ -48,6 +60,7 @@ export function ReaderPlate({
       >
         {asset && !failed ? (
           <img
+            ref={image}
             key={`${asset.id}:${request?.attempt || 0}`}
             src={asset.url}
             alt={description}
@@ -60,6 +73,15 @@ export function ReaderPlate({
           />
         ) : (
           <span>这幅插图暂不可用，正文仍可阅读。</span>
+        )}
+        {asset && !failed && motionArmed && motionSeen && motionRecipe && (
+          <ReaderPlateMotion
+            key={`motion:${asset.id}:${request?.attempt || 0}`}
+            recipe={motionRecipe}
+            seen={motionSeen}
+            art={art}
+            image={image}
+          />
         )}
       </button>
       <span id={descriptionId} hidden>

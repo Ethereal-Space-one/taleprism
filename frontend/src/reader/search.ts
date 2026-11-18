@@ -4,7 +4,7 @@ import { literalMatches, type TextMatcher, type TextMatch } from './model'
 // Generic t2s only: no regional vocabulary, Japanese conversion, case folding,
 // punctuation/whitespace removal, Unicode compatibility normalization outside Han,
 // fuzzy search, or changes to the rendered source. This module loads on search.
-const toSimplified = Converter({ from: 't', to: 'cn' })
+let toSimplified: ReturnType<typeof Converter>
 type Folded = { text: string; source: (number | undefined)[] }
 function fold(text: string): Folded {
   let folded = '',
@@ -26,6 +26,8 @@ function fold(text: string): Folded {
 }
 
 export function createSearchMatcher(): TextMatcher {
+  // The file:// build includes the dictionary but only prepares it on opening search.
+  toSimplified ??= Converter({ from: 't', to: 'cn' })
   // Reader-local bounded cache, not a persistent copy of private source/searches.
   const cache = new Map<string, Folded>()
   const cached = (text: string) => {

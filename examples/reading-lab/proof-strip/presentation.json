@@ -1,0 +1,16 @@
+{
+  "lens": "presentation",
+  "source_sha256": "9cd2949480f85869b3dc2f0f510076564525a0520d5bcebce0e0ec0ecc14e188",
+  "proposal": {
+    "decision": "echo",
+    "rationale": "对齐时可重读前文的检查提示，让读者自己发现问题。",
+    "earlier": {
+      "paragraph": 2,
+      "quote": "先看边线"
+    },
+    "later": {
+      "paragraph": 5,
+      "quote": "对准那道细线"
+    }
+  }
+}

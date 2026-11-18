@@ -9,6 +9,6 @@ Use **章节制作方案 → 导出 AI 任务** for a particular project. Give t
 
 External responses must return the binding fields unchanged. A result from another project is rejected even if both projects contain the same source. If the plan changed after task export, export a new task instead of editing the old result's revision. Legacy responses without project/revision bindings are not automatically upgraded because their origin and age cannot be verified; retain them as manual reference or rerun a newly exported task. Editable-project v1/v2 recovery and the in-workbench synchronous AI generation route are unchanged. These fields bind a task snapshot; they are not proof of the model or author that produced the JSON.
 
-Product/template version: 0.1.0. Existing `storygal-image-tasks` and editable-project formats keep their own version 2 for compatibility. Legacy editable-project version 1 remains accepted.
+Product/template version: 0.1.0. Existing `storygal-image-tasks` and ordinary editable projects keep their own version 2 for compatibility. Legacy editable-project version 1 remains accepted. The local 0.5.0 workbench uses editable-project version 3 only for single-illustration studio backups; it adds the return-to-studio navigation marker, not a change to the AI task schemas.
 
 Regenerate/check with `uv run --project backend python tools/export_prompt_kit.py [--check]`.

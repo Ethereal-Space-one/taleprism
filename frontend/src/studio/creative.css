@@ -1,0 +1,225 @@
+.creative-desk {
+  --creative-paper: #f8f6ef;
+  --creative-ink: #242f2a;
+  --creative-weak: #4c5a50;
+  --creative-rule: #c5cabd;
+  color: var(--creative-ink);
+  border: 1px solid var(--creative-rule);
+  border-top: 3px solid #627961;
+  border-radius: 3px;
+  background: var(--creative-paper);
+  margin: 2.7rem 0 1rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.creative-desk > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 1.15rem clamp(1rem, 4vw, 2.4rem);
+  font:
+    600 clamp(1.15rem, 2.5vw, 1.55rem) / 1.35 Georgia,
+    'Noto Serif CJK SC',
+    serif;
+  list-style: none;
+}
+.creative-desk > summary::-webkit-details-marker {
+  display: none;
+}
+.creative-desk > summary small,
+.creative-label,
+.creative-lenses small {
+  display: block;
+  color: var(--creative-weak);
+  font:
+    600 0.68rem/1.6 ui-monospace,
+    monospace;
+  letter-spacing: 0.09em;
+}
+.creative-mark {
+  font:
+    1.4rem/1 ui-monospace,
+    monospace;
+}
+.creative-desk[open] .creative-mark {
+  transform: rotate(45deg);
+}
+.creative-interior {
+  padding: 0 clamp(1rem, 4vw, 2.4rem) 1.2rem;
+  max-width: 58rem;
+}
+.creative-interior p {
+  line-height: 1.7;
+}
+.creative-desk fieldset {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.creative-intro {
+  max-width: 46rem;
+  color: var(--creative-weak);
+  margin: 0 0 1rem;
+}
+.creative-lenses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.45rem 0 1.1rem;
+}
+.creative-lenses button {
+  min-width: 7rem;
+  flex: 1 1 6rem;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  background: transparent;
+  color: var(--creative-ink);
+  border: 1px solid var(--creative-rule);
+  border-radius: 2px;
+}
+.creative-lenses button[aria-pressed='true'] {
+  background: #263c34;
+  color: #fff;
+  border-color: #263c34;
+}
+.creative-lenses button[aria-pressed='true'] small {
+  color: #d7e6d4;
+}
+.creative-actions,
+.creative-proof > div > button {
+  margin: 0.3rem 0.4rem 0.3rem 0;
+}
+.creative-methods button,
+.creative-proof button,
+.creative-withdraw button {
+  cursor: pointer;
+  white-space: normal;
+}
+.creative-desk button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+.creative-desk button:focus-visible,
+.creative-desk summary:focus-visible {
+  outline: 3px solid #527550;
+  outline-offset: 3px;
+}
+.creative-methods h3,
+.creative-proof h3 {
+  font:
+    600 1.42rem/1.48 Georgia,
+    'Noto Serif CJK SC',
+    serif;
+  margin: 0.6rem 0;
+}
+.creative-fine,
+.creative-end,
+.creative-status,
+.creative-import > p,
+.creative-fold-test small,
+.creative-image small {
+  font-size: 0.83rem;
+  color: var(--creative-weak);
+}
+.creative-import,
+.creative-consent,
+.creative-withdraw {
+  padding: 0.65rem 0;
+}
+.creative-import summary,
+.creative-fold-test summary,
+.creative-withdraw summary {
+  cursor: pointer;
+}
+.creative-proof {
+  background: #fffefa;
+  color: var(--creative-ink);
+  border: 1px solid var(--creative-rule);
+  padding: clamp(0.85rem, 3vw, 1.6rem);
+  margin: 1.2rem 0;
+}
+.creative-proof .creative-quote {
+  margin: 1rem 0;
+  border-left: 2px solid #8d9d84;
+  padding-left: 1rem;
+}
+.creative-quote small,
+.creative-proof .creative-reason strong {
+  display: block;
+  color: var(--creative-weak);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.creative-quote blockquote,
+.creative-fold-test blockquote {
+  font:
+    1.12rem/1.8 Georgia,
+    'Noto Serif CJK SC',
+    serif;
+  white-space: pre-wrap;
+  padding: 0;
+  margin: 0.15rem 0;
+}
+.creative-proof .creative-reason {
+  margin: 1rem 0;
+}
+.creative-consent {
+  border-left: 3px solid #a36c34;
+  padding-left: 1rem;
+}
+.creative-consent code {
+  overflow-wrap: anywhere;
+}
+.creative-interior label {
+  display: block;
+  margin: 0.6rem 0;
+}
+.creative-interior input:not([type='checkbox']),
+.creative-interior select,
+.creative-interior textarea {
+  display: block;
+  width: 100%;
+  max-width: 38rem;
+  box-sizing: border-box;
+  margin: 0.3rem 0;
+}
+.creative-art-preview {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  max-height: 30rem;
+  object-fit: contain;
+  margin: 0.6rem 0;
+}
+.creative-desk .creative-discard {
+  display: block;
+  margin-top: 1rem;
+  background: none;
+  border: none;
+  color: var(--creative-weak);
+  padding: 0.45rem 0;
+  text-decoration: underline;
+}
+.creative-fold-test {
+  border-top: 1px dashed var(--creative-rule);
+  padding: 0.8rem 0;
+}
+.creative-end {
+  border-top: 1px solid var(--creative-rule);
+  padding-top: 0.65rem;
+}
+@media (max-width: 440px) {
+  .creative-lenses button {
+    min-width: 0;
+    padding: 0.55rem 0.4rem;
+    flex-basis: 0;
+  }
+  .creative-lenses small {
+    font-size: 0.6rem;
+  }
+  .creative-desk > summary {
+    font-size: 1.03rem;
+  }
+}

@@ -11,7 +11,11 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 from . import reader_presentation as presentation
+from .narration import Narrations
+from .reader_echo import validate_echo_fold
+from .reader_image import normalize_still
 from .review import ConflictError
+from .soundscape import Soundscapes
 from .text import sha256, visible_text
 
 REPO = Path(__file__).resolve().parents[3]
@@ -46,6 +50,8 @@ def paragraphs(raw: bytes) -> list[dict]:
 class Reader:
     def __init__(self, store, review, speech):
         self.store, self.review, self.speech = store, review, speech
+        self.narrations = Narrations(self)
+        self.soundscapes = Soundscapes(self)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS reader_states(project_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, data TEXT NOT NULL);
@@ -96,7 +102,25 @@ class Reader:
 
     def state_assets(self, pid):
         with self.store.db() as db:
-            return self.review.rows(db, "reader_assets", pid)
+            assets = self.review.rows(db, "reader_assets", pid)
+        directory = self.store.project_dir(pid) / "reader-assets"
+        for asset in assets:
+            # Old projects need not have recorded dimensions, and imported
+            # metadata is not authoritative. Report the actual local image size
+            # where readable without mutating the original editable records.
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", Image.DecompressionBombWarning)
+                    with Image.open(directory / (asset["id"] + ".png")) as image:
+                        asset.update(width=image.width, height=image.height)
+            except (
+                OSError,
+                UnidentifiedImageError,
+                Image.DecompressionBombWarning,
+                Image.DecompressionBombError,
+            ):
+                pass
+        return assets
 
     def version_state(self, db, pid):
         result = {}
@@ -112,8 +136,7 @@ class Reader:
 
     def state(self, pid):
         revision, config = self.load(pid)
-        with self.store.db() as db:
-            assets = self.review.rows(db, "reader_assets", pid)
+        assets = self.state_assets(pid)
         review = self.review.state(pid)
         return {
             "revision": revision,
@@ -163,7 +186,15 @@ class Reader:
             raise ValueError("赤壁地图素材缺失或损坏，请重新安装完整赤壁示例素材。") from None
 
     def validate(self, pid, config, check_characters=True, *, for_restore=False):
-        starts = {p["byte_start"] for p in self.blocks(pid)}
+        # Import lazily: the endpoint schema depends on Reader. Internal callers and
+        # stored JSON do not get the API's extra-field protection automatically.
+        from .reader_api import Configuration
+
+        if set(config) - (Configuration.model_fields.keys() - {"revision"}):
+            raise ValueError("阅读器配置包含未知字段。")
+        blocks = self.blocks(pid)
+        validate_echo_fold(config.get("echo_fold"), blocks)
+        starts = {p["byte_start"] for p in blocks}
         scenes = config["scenes"]
         if len(scenes) > 64 or len({s["id"] for s in scenes}) != len(scenes):
             raise ValueError("场景最多 64 个，场景编号不能重复。")
@@ -217,6 +248,8 @@ class Reader:
 
     def save(self, pid, revision, config):
         config = presentation.normalize(config)
+        if config.get("echo_fold") is None:
+            config.pop("echo_fold", None)  # Keep pre-fold projects readable by older workbenches.
         self.validate(pid, config)
         presentation.validate(self, pid, config)
         return self.mutate(
@@ -241,9 +274,7 @@ class Reader:
                 with Image.open(io.BytesIO(raw)) as image:
                     if image.format not in {"PNG", "JPEG", "WEBP"} or max(image.size) > 4096:
                         raise ValueError("仅支持最长边不超过 4096 的 PNG、JPEG 或 WebP。")
-                    output = io.BytesIO()
-                    image.convert("RGB").save(output, "PNG")
-                    content, size = output.getvalue(), image.size
+                    content, size = normalize_still(image)
         except (
             OSError,
             UnidentifiedImageError,
@@ -416,8 +447,7 @@ class Reader:
             if strict:
                 raise ValueError("旧场景超过两名人物，请在章节编排中明确左右在场人物后导出。")
             issues.append("旧场景超过两名人物，预览暂取前两名；请在章节编排明确选择后导出。")
-        with self.store.db() as db:
-            assets = {a["id"]: a for a in self.review.rows(db, "reader_assets", pid)}
+        assets = {a["id"]: a for a in self.state_assets(pid)}
         used = {s["asset_id"] for s in config["scenes"]}
         used.update(p["image_asset_id"] for p in config.get("presentations", []))
         used.update(p["image_asset_id"] for p in config.get("illustrations", []))
@@ -531,8 +561,13 @@ class Reader:
             if d["status"] == "reviewed" and d["speaker_id"] in characters
         ]
         raw = self.review.source(pid)
+        previous_end = 0
         for block in blocks:
             start, end = block["byte_start"], block["byte_end"]
+            # Preserve original line endings, stanza breaks and indentation without
+            # moving old anchors used by media, bookmarks, or source checks.
+            block["source_gap_before"] = raw[previous_end:start].decode("utf-8")
+            previous_end = end
             ds = [d for d in dialogues if d["outer_start"] < end and d["outer_end"] > start]
             clips = [a for a in audio if a["byte_start"] < end and a["byte_end"] > start]
             boundaries = sorted(
@@ -570,6 +605,8 @@ class Reader:
             if "".join(r["text"] for r in runs) != block["text"]:
                 raise ValueError("阅读器文字片段回拼失败。")
             block.update(runs=runs, audio=clips)
+        self.narrations.attach(pid, blocks, media, issues, strict)
+        self.soundscapes.attach(pid, blocks, media, issues, strict)
         map_data = None
         if config["map_profile"] == "chibi":
             map_data = self.chibi_map()
@@ -594,7 +631,12 @@ class Reader:
             config, characters
         )
         return {
-            "schema_version": 3 if config.get("illustrations") else 2,
+            "schema_version": max(
+                6 if config.get("echo_fold") else 2,
+                5 if any("soundscape" in b for b in blocks) else 2,
+                4 if any("narration" in b for b in blocks) else 2,
+                3 if config.get("illustrations") else 2,
+            ),
             "presentations": presentations,
             "map_entries": config.get("map_entries", []),
             "project": {

@@ -1,0 +1,162 @@
+.motion-director {
+  grid-column: 1 / -1;
+  width: 100%;
+  border: 1px solid var(--line, #a6aaa4);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--panel, #f5f3ed);
+  color: var(--text, #222);
+}
+.motion-director summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.motion-director p {
+  max-width: 76ch;
+  line-height: 1.65;
+}
+.motion-director label {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+}
+.motion-director textarea {
+  min-height: 5rem;
+  width: 100%;
+}
+.motion-director-actions,
+.motion-director-coordinates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+.motion-director-coordinates label {
+  min-width: 7rem;
+  max-width: 26rem;
+}
+.motion-director-map {
+  position: relative;
+  max-width: 960px;
+  background: #12181b;
+  overflow: hidden;
+}
+.motion-director-map img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.motion-director-map svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+.motion-mask {
+  fill: #36b49e3d;
+  stroke: #2ad4af;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.motion-bank {
+  fill: none;
+  stroke: #6dbbff;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.motion-pending {
+  fill: none;
+  stroke: #f7bf46;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.motion-vertex {
+  fill: #ffd167;
+  stroke: #342a16;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.motion-director-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.motion-director-comparison figure {
+  margin: 0;
+}
+.motion-director-comparison figure img {
+  width: 100%;
+  height: auto;
+}
+.motion-director-preview {
+  min-width: 0;
+}
+.motion-director-preview .reader-image-viewport {
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #12181b;
+}
+.motion-director-preview .reader-expanded-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+.motion-director-preview .reader-image-motion {
+  position: absolute;
+  pointer-events: none;
+}
+.motion-director-preview .reader-motion-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+}
+.motion-director .inline-check {
+  display: flex;
+  align-items: start;
+}
+.motion-director .inline-check input {
+  margin-top: 0.25rem;
+  flex: 0 0 auto;
+}
+.motion-director-hint {
+  color: var(--muted, #5c645e);
+}
+@media (max-width: 760px) {
+  .motion-director-comparison {
+    grid-template-columns: 1fr;
+  }
+  .motion-director {
+    padding: 0.75rem;
+  }
+}
+.motion-ground {
+  fill: #668fe333;
+  stroke: #9ac2ff;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Keep even portrait art reviewable on a short screen without cropping the source. */
+.motion-director-preview .reader-image-viewport .reader-expanded-image,
+.motion-director-comparison figure img {
+  max-height: 56vh;
+  object-fit: contain;
+}
+.motion-director-preview progress {
+  display: block;
+  width: min(100%, 20rem);
+  height: 0.45rem;
+  accent-color: var(--accent, #286654);
+}

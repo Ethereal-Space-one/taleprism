@@ -1,0 +1,13 @@
+{
+  "lens": "sound",
+  "source_sha256": "9cd2949480f85869b3dc2f0f510076564525a0520d5bcebce0e0ec0ecc14e188",
+  "proposal": {
+    "decision": "sound",
+    "rationale": "收尾的记号用短暂的铅笔声，不给印机配上持续噪声。",
+    "later": {
+      "paragraph": 6,
+      "quote": "用铅笔标了个小圈"
+    },
+    "sound": "pencil"
+  }
+}

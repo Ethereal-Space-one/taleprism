@@ -1,0 +1,13 @@
+{
+  "lens": "image",
+  "source_sha256": "9cd2949480f85869b3dc2f0f510076564525a0520d5bcebce0e0ec0ecc14e188",
+  "proposal": {
+    "decision": "image",
+    "rationale": "第三段第一次展示五格样纸，此时只需要能比较颜色的静图。",
+    "later": {
+      "paragraph": 3,
+      "quote": "横排着五块色方"
+    },
+    "image": "still"
+  }
+}

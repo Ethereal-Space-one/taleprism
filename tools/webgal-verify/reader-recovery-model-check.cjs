@@ -95,6 +95,7 @@ try {
     scrollTop: 0,
     getBoundingClientRect: () => ({ top: 10, bottom: 810 }),
     querySelectorAll: () => [figure],
+    querySelector: () => null,
     focus: () => {
       viewport.focused = true;
     },
@@ -119,6 +120,48 @@ try {
     0.5,
     "responsive reflow restores normalized internal point",
   );
+  const echoTop = {
+    ...viewport,
+    querySelector: (selector) =>
+      selector === "[data-echo-source-byte]"
+        ? {
+            dataset: { echoSourceByte: "24" },
+            getBoundingClientRect: () => ({ top: 32, bottom: 100 }),
+          }
+        : null,
+  };
+  assert.deepEqual(
+    positions.capturePosition(echoTop),
+    { byte: 24, offset: 0 },
+    "an open fold borrows the last character of the later paragraph, never the next one's start",
+  );
+  const pair = {
+    earlier: { paragraph: 1, quote: "😀" },
+    later: { paragraph: 3, quote: "第三段" },
+  };
+  function loadFold(value, version = 6) {
+    return m.normalizeContent({
+      ...data,
+      schema_version: version,
+      config: { ...data.config, echo_fold: value },
+    });
+  }
+  assert.deepEqual(loadFold(pair).config.echo_fold, pair);
+  for (const invalid of [
+    { ...pair, note: "私稿" },
+    { ...pair, later: { ...pair.later, paragraph: 1 } },
+    { ...pair, earlier: { ...pair.earlier, quote: "\uD83D" } },
+    { ...pair, earlier: { ...pair.earlier, quote: "缺字" } },
+    { ...pair, earlier: { ...pair.earlier, paragraph: "1" } },
+  ]) {
+    const normalized = loadFold(invalid);
+    assert.equal(normalized.config.echo_fold, undefined);
+    assert.deepEqual(
+      normalized.blocks.map((b) => b.text),
+      blocks.map((b) => b.text),
+    );
+  }
+  assert.equal(loadFold(pair, 5).config.echo_fold, undefined);
   const moved = {
     ...data,
     config: {

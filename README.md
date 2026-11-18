@@ -1,87 +1,39 @@
 # Taleprism
 
-**保留小说原文，让人物、场景与声音共同构成连续的阅读体验。**
+**保留小说的每一个字，让读者在读到时看清局势、听见街声。** Taleprism 是一座本地制作台，也是一种不必安装的读本。图、声、动效都有原文里的落点；段落不需要它们时，页面就只有文字。
 
-从人物立场与心理表演，到场景母版、道具状态、逐图检查和定点修复：Taleprism 把制作经验整理成可复制的提示词工作流，并提供本地制作台。
+**[从《赤壁》开始读](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [再听《留门》里的雨](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 公开预览与全部下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [English](README.en.md)
 
-**v0.3.3 公开试用版** · [English](README.en.md) · [直接阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3)
+## 古典主展：《赤壁》把战局留在读者读到的那一刻
 
-![赤壁：七星坛祭风，三江口纵火](examples/chibi/cover.png)
+![《赤壁》封面：七星坛祭风与三江口火攻](examples/chibi/cover.png)
 
-**赤壁展示阅读体验，《末班灯》讲解制作方法。** 在线主示例包含 12 幅情境插图、8 位主要角色、9 张立绘和三个阶段的战区地图；[短篇教程与素材](examples/last-light/README.md)完整保留在仓库。
+《三国演义》第四十九、五十回里，人会换营，船会移位。地图若一开始就画出撤军路线，等于把结局印在了第一页。这里的三阶段地图、阵营关系和事件因果随原文进度展开；向前读才看见新局势，回读时收起后文的结果。可以看已经读到的图，不必先打开整章图集。
 
-## 选择你的开始方式
+十二幅情境插图安放在具体段落，八位主要人物有各自的立场。人物在上一幅图看见了什么、上过哪条船，不能因为下一幅换了机位就当作没发生。这个版本不加配音或背景声，靠原句、人物与图版把战局说清。想看编排怎么做的，可以[导入《赤壁》可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip)，对照[镜头与连续性记录](examples/chibi/README.md)。
 
-| 我想做什么 | 从这里开始 |
-| --- | --- |
-| 先看成品 | [在线阅读《赤壁》](https://ethereal-space-one.github.io/taleprism/)，无需安装 |
-| 在自己的 AI 工具里尝试 | [八个提示词模板](prompts/README.md) → [完整三镜头教程](examples/last-light/README.md)，无需安装制作台 |
-| 制作、审校并导出一章 | 按下方步骤安装本地制作台，再导入示例工程或自己的 TXT |
+## 现代主展：《留门》只让街上的雨动起来
 
-模板和示例可免费获取；你选择的 AI 服务可能需要账户并产生费用。浏览成品、手工编排与已有素材导入不需要模型密钥。图片由外部工具生成后回填，网页不会直接调用 Codex 会话内生图。
+修鞋铺的卷门放到一半，门槛上留着一双小黄靴。第一段没有声音；读到第二段，才听见雨落在铁篷上，一辆车从巷口驶过。十二秒里，第六秒车最近。图上的雨线只落在右侧湿路，靴子和干门槛始终不动。结尾雨停，声音也没有理由再来。
 
-## 本地制作台
+[《留门》阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)最适合试 0.9 的「随文演绎」。另一个小实验[《留白处》](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-margin-reader.zip)反而让静物画始终静止：读到后段，折页才带回前文的一句话；末段只有几笔铅笔声。两本都只发读本，不附可编辑项目。
 
-需要 Python 3.11+（由 uv 管理亦可）、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 与 npm。当前界面为中文；macOS 是主要人工验证环境，平台范围见[验证记录](docs/VALIDATION-v0.3.3.md)。
+## 怎么读？封面不响，正文不替你翻页
 
-```sh
-git clone https://github.com/Ethereal-Space-one/taleprism.git
-cd taleprism
-./start.sh
-```
+1. 下载 **Reader ZIP → 完整解压 → 双击文件夹内的 `index.html`**。保留旁边的素材文件夹，不要在 ZIP 预览里打开。不需要终端、网络、制作台或模型密钥。
+2. 选「开始阅读」，已经采用的声景读到时响一次，图在作者选定的位置出现；只有另行复核的局部动效才动。若浏览器拦住第一次声音，点阅读器内的提示即可，不必放宽系统权限。
+3. 选「安静阅读」就改为手动体验。正文可暂停自动演绎；「静音」关整部作品的声音，但保留画与折页。系统开启「减少动态效果」时，图保持静止。段落朗读仍需点听，人物对白另有设置。
 
-首次安装联网下载依赖。打开 <http://127.0.0.1:8000>。以后用 `./run.sh`；macOS 也可双击“打开Taleprism.command”。服务只监听本机。电脑重启后需要重新启动。
+**线上和下载不是同一版。** [在线《赤壁》](https://ethereal-space-one.github.io/taleprism/)是此前部署的 **0.3.2**；**0.3.3** 是此前的 GitHub 公开预览，不是当前 Pages 版本。本次 **0.9.0** 读本从上方 Release 下载，不会替换网页或你手上的旧 ZIP。
 
-在左侧“示例与工程”选择《赤壁》或《末班灯》，从下载入口取得对应的 `project.zip`，再点“导入可编辑工程”。赤壁用于完整章节与群像制作，末班灯用于三镜头入门。也可点“从《末班灯》原文练习”只导入正文，从头制作。示例工程单独下载。
+## 做自己的读本：先选原句，再决定做不做
 
-两种工程均包含原文、素材、制作方案及助手检查依据；公开样例不含 macOS 系统演示音频。每次导入新建项目，保留原工程。未完成审校的工程可恢复后继续修复，旧检查缺少依据时需重新复核。详细步骤见[快速上手](docs/快速上手.md)。
+从「用自己的图文开始」导入 TXT。给一段原文放上一张自己有权使用的画，检查底图、定好位置，这就已经能导出。需要听见什么时，再导入一段获许可的朗读，或编排短声景；听完、确认采用，才进入读本。要让画动，就在实际图上圈出雨区或岸线，预览、复核，而非让整幅画都动。
 
-## 这套流程解决什么
+制作收尾的 **One More Thing** 默认收起：可从声音、影像或呈现方式中选一项，看看是否有值得尝试的提案；「都不加」也是完成。本机规则不是模型；主动请求外部模型时会先确认正文与接口。只有作者采用的安排才交给读者，阅读时不会调用 AI。**分享用 Reader，续作用工程备份**；后者可能包含未用素材、注释和审校历史。
 
-1. **忠于原文**：原始文件与工作文本只读保留，镜头依据落到具体段落。
-2. **人物有自己的立场**：分别写目标、所知、公开姿态、顾虑和可见动作，避免两个人共享一种笼统情绪。
-3. **画面有叙事职责**：用有限图片建立空间、展现关系和心理变化，不机械地每隔几段换图。
-4. **同地点能连续**：母版固定布局，状态表说明物件去向；画外不等于消失。
-5. **错误可追查**：生成后检查真实图片、定点修复，上游变化会使相关后续检查失效。
-6. **成品可以带走**：可编辑工程用于迁移，独立阅读器用于分享，无需制作台后端。
+第一次制作可跟[《末班灯》三镜头教程](examples/last-light/README.md)。运行本地工作台需 Python 3.11+、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 和 npm；在源码中含 `start.sh` 的目录执行 `./start.sh`，依提示打开本机地址。首次安装需要联网，之后在同目录用 `./run.sh`。工作台界面为中文，无原生 Windows 启动器。
 
-[《末班灯》教程](examples/last-light/README.md)保留了长凳变长、车篮遗漏的实际返工经验，以及旧流程与连续性修订的对比。模板与制作台读取同一份规则；模板版本和任务格式有独立版本记录。
+[快速上手](docs/快速上手.md) · [八个制作提示词](prompts/README.md) · [公开复现实验](examples/reading-lab/README.md) · [逐版迭代记录](docs/ITERATION-HISTORY.md) · [本版实测与边界](docs/VALIDATION-v0.9.0.md) · [贡献指南](CONTRIBUTING.md)
 
-## 下载哪一个包
-
-附件在 [v0.3.3 Release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3)，统一对照 `SHA256SUMS` 与 `release-manifest.json`。旧版附件仍保留在原 Release。
-
-| 文件结尾 | 用途 |
-| --- | --- |
-| `prompt-starter.zip` | 模板、原创原文、参考图、完整教程；不安装程序也能用 |
-| `last-light-project.zip` | 可继续编辑的《末班灯》工程，导入制作台 |
-| `chibi-project.zip` | 赤壁完整可编辑工程，含十二镜头制作方案与检查依据 |
-| `chibi-reader.zip` | 赤壁在线主体验的完整独立阅读包 |
-| `last-light-reader.zip` | 已完成的独立阅读成品；解压后用 HTTP 服务打开 |
-| `source.zip` 或 GitHub 的 Source code ZIP | 制作台源码与教程参考图；完整工程另行下载 |
-
-独立阅读包解压后，在该目录运行：
-
-```sh
-python3 verify_package.py
-python3 -m http.server 8080 --bind 127.0.0.1
-```
-
-然后访问 <http://127.0.0.1:8080>；不要直接双击 HTML。
-
-## 可选服务与试用边界
-
-- 文本 AI：在本机 `.env` 配置兼容接口；只有主动执行 AI 操作才发送文本。无密钥也可导出任务，在自己的工具中处理后导入。
-- 图片：使用支持参考图/编辑的外部工具，完成后上传审校。本案例用 Codex 会话内生图；其他模型与任意反打、绕拍尚未验证。
-- 声音：macOS 中文系统音色与 ffmpeg 可本地合成，已有音频可随工程迁移播放。OpenAI 配音适配器已准备，真实云端调用与音色效果尚未验证。
-- 内容范围：单章或短篇 TXT，最多 30,000 字；不提供整本小说一键制作或自动艺术验收。
-- 兼容：内部 `storygal` 模块、`STORYGAL_*` 配置、旧工程格式和阅读进度键保留，见[兼容说明](docs/COMPATIBILITY.md)。Windows 原生启动未支持。
-- 试用状态：助手制作检查不等于创作者最终美术复核；外部用户独立上手尚待验证。
-
-可选 WebGAL 兼容导出使用 `./start.sh --with-webgal`。[赤壁](examples/chibi/README.md)是在线主体验，专用历史地图用于理解驻扎与进军关系；它不是通用地图生成服务。
-
-## 参与与来源
-
-[贡献指南](CONTRIBUTING.md) · [架构](docs/ARCHITECTURE.md) · [人物视觉导演标准](docs/人物视觉导演标准.md) · [更新记录](CHANGELOG.md) · [问题反馈](https://github.com/Ethereal-Space-one/taleprism/issues/new/choose)
-
-项目代码和提示词采用 [MIT](LICENSE)。小说、图片、声音和依赖分别保留[来源与许可](THIRD_PARTY_NOTICES.md)；AI 素材不承诺独占性。Taleprism 的早期本地名称为“原页 / Storygal”，原贡献声明继续保留。
+代码及提示词采用 [MIT](LICENSE)。作品、媒体、依赖的[来源与许可](THIRD_PARTY_NOTICES.md)另列；请同时保留读本附带的说明。

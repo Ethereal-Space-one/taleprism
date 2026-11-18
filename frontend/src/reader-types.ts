@@ -23,6 +23,8 @@ export type ReaderMapEntry = {
   phase_id: string
   place_ids: string[]
 }
+export type ReaderEchoAnchor = { paragraph: number; quote: string }
+export type ReaderEchoFold = { earlier: ReaderEchoAnchor; later: ReaderEchoAnchor }
 export type ReaderConfig = {
   title: string
   subtitle: string
@@ -33,6 +35,7 @@ export type ReaderConfig = {
   map_entries?: ReaderMapEntry[]
   reading_layout?: 'split' | 'illustrated'
   illustrations?: ReaderIllustration[]
+  echo_fold?: ReaderEchoFold | null
 }
 export type ReaderIllustration = {
   id: string
@@ -40,12 +43,45 @@ export type ReaderIllustration = {
   image_asset_id: string
   title: string
   description: string
+  // Omitted preserves legacy exact-image recipes; null is an explicit static direction.
+  motion?: IllustrationMotion | null
 }
+export type MotionPoint = readonly [number, number]
+export type MotionPolygons = readonly (readonly MotionPoint[])[]
+type MotionDirectionBase = {
+  version: 1
+  image_sha256: string
+  source_sha256: string
+  after_byte: number
+  width: number
+  height: number
+  evidence: string
+  note: string
+  reviewed: boolean
+}
+export type IllustrationMotion = MotionDirectionBase &
+  (
+    | {
+        effect: 'rain-wet-ground'
+        areas: MotionPolygons
+        ground: MotionPolygons
+        drops: number
+        rings: number
+      }
+    | {
+        effect: 'wave-impact-backwash'
+        water: MotionPolygons
+        bank: readonly MotionPoint[]
+        hits: readonly { x: number; phase: number; length: number; gain: number }[]
+      }
+  )
 export type ReaderAsset = {
   id: string
   kind: 'cover' | 'scene'
   status: 'pending' | 'accepted' | 'rejected'
   sha256: string
+  width?: number
+  height?: number
   license: string
   url: string
   sample_key?: string
@@ -73,7 +109,11 @@ export type ReaderClip = {
   speaker_id: string
   duration: number
 }
+export type ReaderNarration = { id: string; duration: number; label: string }
 export type ReaderBlock = {
+  source_gap_before?: string
+  soundscape?: ReaderNarration & { description: string }
+  narration?: ReaderNarration
   id: string
   byte_start: number
   byte_end: number
@@ -129,6 +169,8 @@ export type ReaderContent = {
     {
       id: string
       type: 'image' | 'figure' | 'audio'
+      origin?: string
+      credit?: string
       url: string
       sha256: string
       label?: string

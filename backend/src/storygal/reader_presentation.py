@@ -3,6 +3,7 @@
 import copy
 
 from .character_identity import resolved_character_id
+from .reader_motion import validate_binding
 
 
 def normalize(config):
@@ -48,6 +49,7 @@ def validate(reader, pid, config, *, for_restore=False):
             raise ValueError("章节插图必须属于本项目的场景素材。")
         if not p["title"].strip() or len(p["title"]) > 80 or len(p.get("description", "")) > 300:
             raise ValueError("请填写简短的插图名称与说明。")
+        validate_binding(reader, pid, p, assets[p["image_asset_id"]])
     scenes = config["scenes"]
     presentations = config.get("presentations", [])
     starts = [p["start_byte"] for p in presentations]

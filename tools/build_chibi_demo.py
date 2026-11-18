@@ -138,6 +138,11 @@ def call(client, method, path, **kwargs):
 
 def sync_reader_data(files, previous, content):
     """Support an optional inline data file without silently shipping two identities."""
+    from storygal.portable_reader import DATA_TAG, embed_story
+
+    page = files.get("index.html", b"").decode()
+    if DATA_TAG in page:
+        files["index.html"] = embed_story(page, content, previous).encode()
     if "reader-data.js" not in files:
         return
     match = re.fullmatch(
@@ -170,13 +175,22 @@ def public_reader(raw, recipe, review_raw, recipe_raw, old_files, public, maker_
         ):
             raise ValueError("新插图与旧书签位置无法一一对应。")
         plate["id"] = old_id
+    # v0.6.1 adds an original-whitespace sidecar; derive it independently
+    # from the pinned historical original rather than ignoring the new fields.
+    expected_blocks = []
+    source = old_files["storygal-source/source.utf8.txt"]
+    previous_end = 0
+    for block in public["blocks"]:
+        gap = source[previous_end:block["byte_start"]].decode("utf-8")
+        expected_blocks.append({**block, "source_gap_before": gap})
+        previous_end = block["byte_end"]
     if (
         content["characters"] != public["characters"]
         or content["presentations"] != public["presentations"]
         or content["map"] != public["map"]
         or content["map_entries"] != public["map_entries"]
         or set(content["media"]) != set(public["media"])
-        or content["blocks"] != public["blocks"]
+        or content["blocks"] != expected_blocks
     ):
         raise ValueError("重建改变了人物、正文片段、55段编排、地图或媒体集合。")
     for aid, asset in content["media"].items():

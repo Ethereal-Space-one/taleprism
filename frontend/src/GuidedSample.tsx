@@ -3,7 +3,12 @@ import { api } from './api'
 import type { Check } from './ContinuityEditor'
 import './guided-sample.css'
 
-export type GuidedProject = { projectId: string; shotId: string; restoreIssues?: string[] }
+export type GuidedProject = {
+  projectId: string
+  shotId: string
+  restoreIssues?: string[]
+  restoreNotices?: string[]
+}
 type SampleStatus = { cached: boolean; requires_api_key: boolean }
 type GuideState = {
   plan: {
@@ -144,6 +149,11 @@ export function GuidedSampleSteps({
           收起引导
         </button>
       </div>
+      {guide.restoreNotices?.map((notice) => (
+        <p key={notice} className="asset-helper">
+          恢复说明：{notice}
+        </p>
+      ))}
       {!!guide.restoreIssues?.length && (
         <p className="guided-restore-note" role="status">
           样例已保留原方案与审核记录；恢复检查提示：{guide.restoreIssues.join('；')}

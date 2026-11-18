@@ -1,0 +1,9 @@
+# 0.9.0 validation and limits
+
+The release build checks the four pinned public v0.3.3 example archives, imports both project backups into clean workspaces and exports fresh readers. Original UTF-8 bytes, artwork, public work IDs and provenance were checked; no newly generated voices or background tracks were added to those two existing works. Two original reader-only editions are built from their separately reviewed public playback projections. Their sounds are synthesized locally; neither reader includes the working project.
+
+Verification is split across independent layers: the source archive has a per-file inventory and canonical ZIP metadata; ordinary reader exports include the project MIT notice plus dependency notices; each public reader has a file-level delivery manifest. The project catalog pins exact downloadable bytes. `SHA256SUMS` covers the eight release ZIPs and the release manifest. The latter names the source commit; verify it against the prerelease tag.
+
+The reader tests cover cold cover, normal forward reading, quiet start, mute, pause, single-channel replay control, exact earlier-quote fold, motion masks and reduced-motion fallback. An extracted offline Chromium session can verify real audio playhead movement and real changed canvas pixels, but not audio quality on a physical speaker. Linux Chromium testing is not physical iOS, Safari, or an accessibility audit. Live paid inference and human artistic acceptance are not claimed. GitHub Actions reports Linux/macOS job status separately for the final commit. Installing dependencies, rebuilding the renderer and downloading historical release inputs require network access; reading and the example audio synthesis do not.
+
+The online Pages deployment is outside this release. No production rollout, stable designation or retrospective tags for intermediate engineering versions are implied.

@@ -1,13 +1,40 @@
+import hashlib
 import json
 import shutil
 import stat
 import zipfile
 
-from .exporter import assert_versions, copy_verified
+from .exporter import assert_versions, copy_verified, include_project_license, published_fields
 from .llm import api_key
+from .portable_reader import TEMPLATE, embed_story
 from .production import Production
 from .reader import REPO
-from .text import sha256
+
+
+def file_hash(path):
+    # Do not allocate the entire reader ZIP just to publish a content digest.
+    with path.open("rb") as data:
+        return hashlib.file_digest(data, "sha256").hexdigest()
+
+
+def read_runtime(build):
+    """Capture a single verified pair; rebuilding the frontend cannot ship a partial JS/CSS file."""
+    try:
+        checks = json.loads((build / "runtime-checksums.json").read_text("utf-8"))
+        names = ("reader.js", "reader.css")
+        if not isinstance(checks, dict) or set(checks) != set(names):
+            raise ValueError()
+        assets = {name: (build / name).read_bytes() for name in names}
+        if any(
+            not raw or hashlib.sha256(raw).hexdigest() != checks[name]
+            for name, raw in assets.items()
+        ):
+            raise ValueError()
+        return assets
+    except (OSError, ValueError):
+        raise ValueError(
+            "独立阅读器构建缺失、不完整或正在更新。请完成 ./start.sh 构建后重新导出；之前的成品未变。"
+        ) from None
 
 
 def export_reader(reader, pid, jid):
@@ -35,25 +62,60 @@ def export_reader(reader, pid, jid):
             "map_entries",
         ]
     }
+    # An explicit null is important: unlike an absent motion key it cannot
+    # trigger a legacy sample effect. Leave the editable configuration intact.
+    if "illustrations" in content["config"]:
+        plates = []
+        for plate in content["config"]["illustrations"]:
+            motion = plate.get("motion")
+            if motion:
+                projection = None
+                if motion["reviewed"] is True:
+                    # The full author recipe was validated against source and image
+                    # above. The player needs geometry and binding, not personal notes.
+                    geometry = {
+                        "rain-wet-ground": "areas ground drops rings",
+                        "wave-impact-backwash": "water bank hits",
+                    }[motion["effect"]]
+                    projection = published_fields(
+                        motion,
+                        "version effect image_sha256 source_sha256 after_byte width height reviewed "
+                        + geometry,
+                    ) | {"playback_only": True}
+                plate = plate | {"motion": projection}
+            plates.append(plate)
+        content["config"] = content["config"] | {"illustrations": plates}
+    # The database's accepted TTS take still contains its private voice/profile
+    # directions and cache key. Attach playback bytes/credits, not that record.
+    content["media"] = {
+        aid: published_fields(
+            asset,
+            "id type sha256 duration origin credit"
+            if asset["type"] == "audio"
+            else "id type sha256 width height origin license label portrait_state sample_key",
+        )
+        for aid, asset in content["media"].items()
+    }
     versions = content["versions"]
     dist = REPO / "frontend/dist"
-    if not (dist / "index.html").is_file():
-        raise ValueError("缺少阅读器构建，请重新运行启动程序。")
+    reader_build = dist / "reader"
+    runtime = read_runtime(reader_build)
     parent = store.project_dir(pid) / "exports"
     parent.mkdir(exist_ok=True)
     staging, target = parent / (jid + ".partial"), parent / jid
     zip_staging, archive = parent / (jid + ".zip.partial"), parent / (jid + ".zip")
     try:
         staging.mkdir()
-        shutil.copytree(dist / "assets", staging / "assets")
-        html = (dist / "index.html").read_text().replace('"/assets/', '"./assets/')
-        html = html.replace(
-            "<head>", '<head><meta name="storygal-reader-export" content="./reader.json">'
-        )
-        (staging / "index.html").write_text(html, encoding="utf-8")
+        (staging / "assets").mkdir()
+        for name, raw in runtime.items():
+            (staging / "assets" / name).write_bytes(raw)
         (staging / "media").mkdir()
         for aid, asset in content["media"].items():
-            if asset["type"] == "audio":
+            if asset.get("origin") == "paragraph_narration" and asset["type"] == "audio":
+                source, ext = reader.narrations.path(pid, aid), ".wav"
+            elif asset.get("origin") == "paragraph_soundscape" and asset["type"] == "audio":
+                source, ext = reader.soundscapes.path(pid, aid), ".wav"
+            elif asset["type"] == "audio":
                 source, ext = reader.speech.path(pid, asset), ".wav"
             elif asset["type"] == "figure":
                 source, ext = reader.review.asset_path(pid, aid), ".png"
@@ -65,6 +127,7 @@ def export_reader(reader, pid, jid):
         (staging / "reader.json").write_text(
             json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+        (staging / "index.html").write_text(embed_story(TEMPLATE, content), encoding="utf-8")
         sources = staging / "storygal-source"
         sources.mkdir()
         shutil.copy2(store.project_dir(pid) / "original.txt", sources / "original.txt")
@@ -110,14 +173,8 @@ def export_reader(reader, pid, jid):
             narrative_sources.mkdir()
             for name in ["prompts.json", "PROVENANCE.md"]:
                 shutil.copy2(REPO / "samples/reader/narrative-v1" / name, narrative_sources / name)
-        licenses.mkdir()
-        for module in [
-            "react",
-            "react-dom",
-            "scheduler",
-            "@tanstack/react-query",
-            "@tanstack/query-core",
-        ]:
+        include_project_license(REPO, staging)
+        for module in ["react", "react-dom", "scheduler"]:
             module_dir = REPO / "frontend/node_modules" / module
             license_path = next(
                 (
@@ -127,31 +184,76 @@ def export_reader(reader, pid, jid):
                 ),
                 None,
             )
-            if license_path:
-                shutil.copy2(license_path, licenses / (module.replace("/", "-") + ".txt"))
-        # The lazy search entry is emitted as search-<hash>.js by Vite. Old
-        # prebuilt readers have no such chunk and must not require a new install.
-        if any((dist / "assets").glob("search-*.js")):
-            # Fail closed for new builds: dictionary and code licenses are distinct.
-            opencc_dir = REPO / "frontend/node_modules/opencc-js"
-            for name, target_name in [
-                ("LICENSE", "opencc-js.txt"),
-                ("THIRD_PARTY_LICENSES.md", "opencc-js-THIRD_PARTY_LICENSES.md"),
-                ("LICENSES/Apache-2.0.txt", "opencc-js-Apache-2.0.txt"),
-            ]:
-                if not (opencc_dir / name).is_file():
-                    raise ValueError(
-                        f"缺少 opencc-js 许可文件 {name}；请重新安装前端依赖后导出。"
-                    )
-                shutil.copy2(opencc_dir / name, licenses / target_name)
+            if not license_path:
+                raise ValueError(f"缺少 {module} 许可文件；请重新安装前端依赖后导出。")
+            shutil.copy2(license_path, licenses / (module + ".txt"))
+        # The classic reader always includes search (OpenCC code + dictionary).
+        opencc_dir = REPO / "frontend/node_modules/opencc-js"
+        for name, target_name in [
+            ("LICENSE", "opencc-js.txt"),
+            ("THIRD_PARTY_LICENSES.md", "opencc-js-THIRD_PARTY_LICENSES.md"),
+            ("LICENSES/Apache-2.0.txt", "opencc-js-Apache-2.0.txt"),
+        ]:
+            if not (opencc_dir / name).is_file():
+                raise ValueError(f"缺少 opencc-js 许可文件 {name}；请重新安装前端依赖后导出。")
+            shutil.copy2(opencc_dir / name, licenses / target_name)
+        paragraph_credits = list(
+            dict.fromkeys(
+                m["credit"]
+                for m in content["media"].values()
+                if m.get("origin") == "paragraph_narration" and m.get("credit")
+            )
+        )
         (staging / "RIGHTS.txt").write_text(
             "原文权利状态："
             + content["project"]["rights_status"]
-            + "\n图像、语音、地图的来源与说明见 reader.json；生图提示词如适用在 storygal-source。\n历史地图为约略阅读示意，进一步考据与用户最终审核尚待完成。\n完整性检查不授予额外使用权或证明历史事实。\n前端依赖许可证见 licenses。\n",
+            + "\n素材来源见 reader.json；生图提示词如适用在 storygal-source。\n"
+            + (
+                "历史地图为约略阅读示意，进一步考据与用户最终审核尚待完成。\n"
+                if content.get("map")
+                else ""
+            )
+            + (
+                "\n段落朗读来源与许可：\n" + "\n".join(paragraph_credits) + "\n\n"
+                if paragraph_credits
+                else ""
+            )
+            + (
+                "段落声景：由 Taleprism 在本机按创作选择生成，不是现场录音、音乐或朗读。\n"
+                if any(m.get("origin") == "paragraph_soundscape" for m in content["media"].values())
+                else ""
+            )
+            + "完整性检查不授予额外使用权或证明历史事实。\n"
+            + "Taleprism 阅读器代码：licenses/Taleprism-MIT.txt；第三方依赖保留各自许可。\n",
             encoding="utf-8",
         )
         (staging / "README.txt").write_text(
-            "Taleprism · 视觉小说阅读器\n\nmacOS：完整解压 ZIP 后双击「打开阅读器.command」，无需输入终端命令；本地服务就绪后自动打开浏览器。\n阅读完成后双击「停止阅读器.command」，只停止此阅读包的服务。关闭网页不会自动停服。\n需要现有的 Python 3.9+；启动器不安装软件、不修改安全设置，也不启动制作台。若系统阻止启动，请勿关闭系统保护，可请提供者托管阅读器网页。\n服务仅绑定 127.0.0.1，自动选择可用端口，不占用或停止其他程序。\n同一路径优先沿用上次自动分配的端口；端口被占用时会换用空闲端口。浏览器记录属于同一浏览器与网址（含端口），换端口或移动目录后可能看不到原有记录，旧记录不会被删除。\n请先停止服务再移动或删除阅读包。运行记录与日志存于用户缓存，不修改本包。\n其他系统或需手动检查时：先运行 python3 verify_package.py，再运行 python3 -m http.server 8080 --bind 127.0.0.1，打开 http://127.0.0.1:8080。不能直接双击 HTML。\n\n正文连续阅读，场景随原文位置切换。声音仅覆盖已制作的部分对白，需主动开启；目录、搜索和收藏可临时查阅，再返回阅读处。地图可自由对照阶段，标明正文所在阶段。\n进度和字号只保存在当前浏览器；不向制作台或分析服务发送阅读进度，不同步到其他设备。\n原文保存在 storygal-source；素材与地图来源见 reader.json。\n本包为成品快照，继续编辑请另存制作台的可编辑工程 ZIP。\n",
+            "Taleprism · 独立阅读器 / Offline reader\n\n"
+            "1. 完整解压 ZIP（不要在压缩包、网盘或邮件预览中打开）。\n"
+            "2. 双击 index.html，用桌面浏览器阅读。不需要联网、终端、Python 或制作台，关闭网页即结束。\n"
+            "3. 分享时发送整个 ZIP；单发 HTML 会缺少 assets 中的程序和 media 中的原图、声音。\n\n"
+            "Extract the entire ZIP, then double-click index.html in a desktop browser. No server, "
+            "installation, or internet connection is required. Keep the folders together; share the ZIP, "
+            "not just the HTML file.\n"
+            "Reader software: licenses/Taleprism-MIT.txt. This does not license the manuscript or media; "
+            "see RIGHTS.txt for content and licenses/ for the bundled dependencies.\n\n"
+            "封面保持安静。「开始阅读」后，读到作者安排的位置，已采用的声景响一次，插图依原文出现；"
+            "只有已复核的动效会动。采用的回声折页在后段展开。静图始终是静图；减少动态效果时不播动效。\n"
+            "可在封面选「安静阅读」，或用「暂停」暂停自动演绎；「静音」将全部声音关闭。"
+            "若浏览器拦住第一次声音，点「开启声音」即可。段落朗读须主动点播；对白配音由独立设置控制。\n"
+            "Start reading to follow the author’s sound, imagery and echo at their passages. "
+            "Stills stay still; reduced motion prevents animation. Choose Quiet reading for manual cues, "
+            "pause automatic effects, or mute all audio. If your browser blocks sound, tap the reader’s prompt. "
+            "Narration is on demand; dialogue has separate controls. No model runs when you read.\n"
+            "缺失图片或声音时仍可读正文；请重新完整解压原 ZIP 修复素材。\n"
+            "进度和书签只保存在当前浏览器；本地文件的记录可能随浏览器、隐私设置或移动目录而变化，"
+            "不会同步到其他地址或设备。\n\n"
+            "备用打开方式：若浏览器或设备策略限制本地网页，可请提供者托管同一目录，"
+            "或在已安装 Python 3.9+ 的 macOS 双击「打开阅读器.command」；用「停止阅读器.command」结束服务。"
+            "启动器仅绑定本机，关闭网页不会停服；停止服务后再移动阅读包，不要更改系统安全设置。\n"
+            "可选完整性检查：使用 Python 在解压目录运行 python3 verify_package.py；双击 HTML 不执行此检查。"
+            "手动本机服务：python3 -m http.server 8080 --bind 127.0.0.1，然后打开 http://127.0.0.1:8080。\n"
+            "原文在 storygal-source；素材和地图来源见 reader.json 与 RIGHTS.txt。继续创作需另存可编辑工程 ZIP。\n",
             encoding="utf-8",
         )
         shutil.copy2(REPO / "tools/verify_package.py", staging / "verify_package.py")
@@ -169,7 +271,7 @@ def export_reader(reader, pid, jid):
             "files": {
                 p.relative_to(staging).as_posix(): {
                     "bytes": p.stat().st_size,
-                    "sha256": sha256(p.read_bytes()),
+                    "sha256": file_hash(p),
                 }
                 for p in sorted(staging.rglob("*"))
                 if p.is_file()
@@ -194,7 +296,7 @@ def export_reader(reader, pid, jid):
                 "storygal-delivery.json"
             }:
                 raise ValueError("阅读器压缩包校验失败，请重试。")
-        digest = sha256(zip_staging.read_bytes())
+        digest = file_hash(zip_staging)
         store.verify(pid)
         with store.db() as db:
             db.execute("BEGIN IMMEDIATE")

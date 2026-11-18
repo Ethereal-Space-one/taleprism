@@ -1,0 +1,25 @@
+@import './tokens.css';
+
+/* The normal workbench supplies these document-level defaults. The exported
+   reader has no workbench stylesheet or writer-only UI. */
+html,
+body {
+  margin: 0;
+  overflow-x: clip;
+  background: var(--reader-paper);
+  color: var(--reader-ink);
+  font: 14px/1.65 var(--font-body);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}

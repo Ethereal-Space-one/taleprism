@@ -50,6 +50,13 @@ export function restorePosition(root: HTMLElement, p: Position, focus = false) {
 }
 export function capturePosition(root: HTMLElement): Position {
   const top = root.getBoundingClientRect().top + 24
+  // The marginal quote has no source range of its own. While it fills the
+  // reading line, a bookmark belongs to the end of the later original paragraph,
+  // never to the earlier quote or the next unread paragraph.
+  const echo = root.querySelector<HTMLElement>('[data-echo-source-byte]')
+  const rect = echo?.getBoundingClientRect()
+  if (echo && rect && rect.top <= top && rect.bottom > top)
+    return { byte: Number(echo.dataset.echoSourceByte), offset: 0 }
   const plate = Array.from(root.querySelectorAll<HTMLElement>('[data-illustration-id]')).find(
     (e) => {
       const r = e.getBoundingClientRect()
@@ -89,11 +96,14 @@ export function capturePosition(root: HTMLElement): Position {
     else hi = mid
   }
   const byte = Number(span.dataset.sourceStart) + byteLength(text.slice(0, offsets[lo]))
-  const rect = rangeAt(span, byte)?.getBoundingClientRect()
+  const rangeRect = rangeAt(span, byte)?.getBoundingClientRect()
   const leading = parseFloat(getComputedStyle(span.parentElement!).lineHeight) || 40
-  return { byte, offset: rect ? Math.max(-2, Math.min(2, (rect.top - top) / leading)) : 0 }
+  return {
+    byte,
+    offset: rangeRect ? Math.max(-2, Math.min(2, (rangeRect.top - top) / leading)) : 0,
+  }
 }
-export function selectedExcerpt(root: HTMLElement) {
+export function selectedExcerpt(root: HTMLElement, gaps?: Map<number, string>) {
   const selection = window.getSelection()
   if (!selection?.rangeCount || selection.isCollapsed) return null
   const chosen = selection.getRangeAt(0)
@@ -106,8 +116,11 @@ export function selectedExcerpt(root: HTMLElement) {
     const start = chosen.startContainer === node ? chosen.startOffset : 0
     const end = chosen.endContainer === node ? chosen.endOffset : text.length
     if (end <= start) continue
+    const selectedStart = Number(span.dataset.sourceStart) + byteLength(text.slice(0, start))
+    if (ranges.length && selectedStart > ranges[ranges.length - 1].end)
+      texts.push(gaps?.get(selectedStart) ?? '\n')
     ranges.push({
-      start: Number(span.dataset.sourceStart) + byteLength(text.slice(0, start)),
+      start: selectedStart,
       end: Number(span.dataset.sourceStart) + byteLength(text.slice(0, end)),
     })
     texts.push(text.slice(start, end))
@@ -115,7 +128,7 @@ export function selectedExcerpt(root: HTMLElement) {
   return ranges.length
     ? {
         ranges,
-        text: texts.join('').slice(0, 3000),
+        text: texts.join(''),
         position: { byte: ranges[0].start, offset: 0 },
       }
     : null
@@ -124,11 +137,21 @@ export function selectedExcerpt(root: HTMLElement) {
 export function visibleAudioIds(root: HTMLElement) {
   const viewport = root.getBoundingClientRect()
   return new Set(
-    Array.from(root.querySelectorAll<HTMLElement>('[data-take]'))
+    Array.from(
+      root.querySelectorAll<HTMLElement>(
+        '[data-take], [data-narrated-paragraph], [data-soundscape-paragraph]',
+      ),
+    )
       .filter((span) => {
         const rect = span.getBoundingClientRect()
         return rect.bottom > viewport.top && rect.top < viewport.bottom
       })
-      .map((span) => span.dataset.take!),
+      .flatMap((span) =>
+        [
+          span.dataset.take,
+          span.dataset.narratedParagraph,
+          span.dataset.soundscapeParagraph,
+        ].filter((id): id is string => !!id),
+      ),
   )
 }

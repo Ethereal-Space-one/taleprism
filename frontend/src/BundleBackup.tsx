@@ -54,6 +54,14 @@ export function BundleBackup({ prefix, disabled }: { prefix: string; disabled: b
   return (
     <details className="bundle-backup" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>备份可编辑工程</summary>
+      <p className="asset-helper">
+        给自己或下一位制作者，不是给读者的成品。工程 ZIP
+        保留原文、声景私有依据与各版混音、候选和撤回录音、私人来源说明及已保存的制作意见。给读者请选「导出独立阅读器」。
+      </p>
+      <p className="asset-helper">
+        完整工程 ZIP 按解压后大小计算，上限 160
+        MB；撤回的录音及声景仍会占用空间。超过上限不会静默删减，请停止工作台后一起复制数据库和媒体所在的数据目录。
+      </p>
       {disabled ? (
         <p className="asset-helper">先保存修改或等当前操作结束，再检查备份。</p>
       ) : status.isFetching || status.isPending ? (

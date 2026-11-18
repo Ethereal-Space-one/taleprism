@@ -1,0 +1,101 @@
+:is(.passage-voice, .passage-soundscape) {
+  border: 1px solid var(--color-rule);
+  padding: 1rem;
+  margin: 1.1rem 0;
+}
+:is(.passage-voice, .passage-soundscape) summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+:is(.passage-voice, .passage-soundscape) p,
+:is(.passage-voice, .passage-soundscape) label,
+:is(.passage-voice, .passage-soundscape) blockquote {
+  margin: 0.65rem 0;
+}
+:is(.passage-voice, .passage-soundscape) label {
+  display: grid;
+  gap: 0.35rem;
+}
+:is(.passage-voice, .passage-soundscape) fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+:is(.passage-voice, .passage-soundscape) label > input:not([type='checkbox']),
+:is(.passage-voice, .passage-soundscape) label > select {
+  max-width: 100%;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  background: var(--color-panel);
+}
+:is(.passage-voice, .passage-soundscape) audio {
+  width: min(100%, 460px);
+  display: block;
+  margin: 0.65rem 0;
+}
+:is(.passage-voice, .passage-soundscape) blockquote {
+  padding: 0.6rem 0.85rem;
+  border-left: 2px solid var(--color-accent);
+  font-family: var(--font-display);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 12rem;
+  overflow: auto;
+}
+.voice-credit {
+  display: flex !important;
+  align-items: start;
+}
+.voice-credit input {
+  flex-shrink: 0;
+  margin: 0.3rem 0.35rem 0 0;
+}
+.voice-candidate,
+.voice-stored,
+.voice-history {
+  border-top: 1px solid var(--color-rule);
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  overflow-wrap: anywhere;
+}
+.voice-actions,
+.studio-lane {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.voice-stored small {
+  display: block;
+}
+.studio-lane {
+  margin: 0.3rem 0 1rem;
+}
+.studio-lane button,
+:is(.passage-voice, .passage-soundscape) button {
+  white-space: normal;
+}
+.passage-soundscape textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  color: inherit;
+  background: var(--color-panel);
+  border: 1px solid var(--color-rule);
+  border-left: 2px solid var(--color-accent);
+  padding: 0.7rem;
+  font: inherit;
+  line-height: 1.65;
+}
+.sound-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.4rem;
+}
+.passage-soundscape small {
+  font-weight: normal;
+}

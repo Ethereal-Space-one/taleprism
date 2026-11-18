@@ -11,7 +11,7 @@ type Pack = {
   download_url?: string
   sha256?: string
 }
-type RestoredProject = Project & { restore_issues?: string[] }
+type RestoredProject = Project & { restore_issues?: string[]; restore_notices?: string[] }
 export function ProjectExchange({
   onCreated,
   guidedStart,
@@ -127,6 +127,16 @@ export function ProjectExchange({
       {restored && (
         <div role="status" aria-live="polite">
           <p>已恢复“{restored.filename}”。</p>
+          {!!restored.restore_notices?.length && (
+            <div>
+              <p>恢复说明（不是错误）</p>
+              <ul>
+                {restored.restore_notices.map((notice) => (
+                  <li key={notice}>{notice}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {!!restored.restore_issues?.length && (
             <>
               <p>工程仍有待修复内容，原方案与审核状态已保留。请修复并复核后再正式导出。</p>
