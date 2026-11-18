@@ -197,17 +197,50 @@ async function port() {
     sec = page.getByRole("region", { name: "逐幅动静审图" });
     await sec.getByText(/共 1 幅 · 未审 1/).waitFor();
     await sec.getByRole("button", { name: /逐幅动静审图/ }).click();
-    page.once("dialog", (d) => d.dismiss());
-    await sec.getByLabel("导入私有审图单 JSON").setInputFiles(worksheetFile);
-    const clonePrefix = "/api/projects/" + cloned.id;
-    assert.equal((await api(clonePrefix + "/plate-screening")).revision, 0);
-    page.once("dialog", (d) => d.accept());
-    await sec.getByLabel("导入私有审图单 JSON").setInputFiles(worksheetFile);
+    const cloneSheet = "/api/projects/" + cloned.id + "/plate-screening";
+    const importFile = sec.getByLabel("导入私有审图单 JSON");
+    const seenDialogs = [];
+    const importRequests = [];
+    let consent = false;
+    page.on("request", (r) => {
+      if (r.url() === base + cloneSheet + "/import" && r.method() === "POST")
+        importRequests.push({
+          consent,
+          exactCopy: r.postDataJSON().exact_copy,
+        });
+    });
+    // Keep the native subscription active across both async file reads. The
+    // observer only counts; the armed wait below is the sole dialog responder.
+    page.on("dialog", (d) => seenDialogs.push(d.type()));
+    for (const accept of [false, true]) {
+      const reply = page
+        .waitForEvent("dialog", { timeout: 12000 })
+        .then(async (d) => {
+          const expected =
+            d.type() === "confirm" &&
+            d.message().includes("确认是同一作品的还原副本");
+          if (accept && expected) {
+            consent = true;
+            await d.accept();
+          } else {
+            await d.dismiss();
+          }
+          assert.ok(expected, "expected the exact-copy restore confirmation");
+        });
+      // setInputFiles may resolve before File.text() and window.confirm().
+      await Promise.all([reply, importFile.setInputFiles(worksheetFile)]);
+      if (!accept) {
+        assert.deepEqual(seenDialogs, ["confirm"]);
+        assert.deepEqual(importRequests, []);
+        assert.equal((await api(cloneSheet)).revision, 0);
+      }
+    }
     await sec.getByText(/已核对全部绑定并合并私有审图单/).waitFor();
-    assert.equal(
-      (await api(clonePrefix + "/plate-screening")).report.counts.deferred,
-      1,
-    );
+    assert.deepEqual(seenDialogs, ["confirm", "confirm"]);
+    assert.deepEqual(importRequests, [{ consent: true, exactCopy: true }]);
+    const afterImport = await api(cloneSheet);
+    assert.equal(afterImport.revision, 1);
+    assert.equal(afterImport.report.counts.deferred, 1);
     assert.deepEqual(external, []);
     console.log(
       "PASS native Chromium: upload → accept → place actual image; draft export before screening; bound candidate no motion; private download; signature invalidated by editorial-only edit; exact-restore import requires consent.",
