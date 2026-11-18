@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 · Local candidate (not published)
+
+- Restore one source-bound, 12-second wind soundscape to Chibi (paragraph 12) and one 12-second rain soundscape to Last Light (paragraph 2). No dialogue, narration, score or changes to the other paragraphs. Existing shore and station picture motion are not new effects.
+- Keep all twelve curated Chibi image descriptions and the two reveal delays when an author imports the example project and exports their own reader. The 0.9.0 distributed reader had those decisions; the ordinary editable-project round trip lost them. A copy remains its own project, not the public book.
+- Add a book-specific handoff check: four delivered reading ZIPs and the actual unpatched exports of the two editable copies. A checksum alone cannot tell whether the right sound is at the right line. [Candidate notes](docs/RELEASE-v0.9.1.md) · [Verification](docs/VALIDATION-v0.9.1.md).
+
 ## 0.9.0 · Public preview (not stable)
 
 - Read at your pace: finite soundscapes, reviewed local image motion and exact-text echo folds arrive at their source passage. Cover and quiet reading stay quiet; pause, mute and reduced motion remain independent.

@@ -147,7 +147,7 @@ export function IllustrationEditor({
               plate={p}
               asset={assets.find((a) => a.id === p.image_asset_id)!}
               state={state}
-              content={content}
+              content={{ ...content, config: draft }}
               onChange={(motion) => patch(p.id, { motion })}
               onPendingChange={onPendingChange}
             />

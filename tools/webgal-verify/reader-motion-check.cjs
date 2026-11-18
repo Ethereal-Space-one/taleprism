@@ -25,8 +25,9 @@ try {
     const asset = r.imageAsset || 'fresh-upload-uuid'
     return {
       project: { canonical_sha256: r.canonicalHash },
+      blocks: [{ byte_start: 0, byte_end: 63, text: '第四十九回　七星壇諸葛祭風　三江口周瑜縱火' }],
       config: { illustrations: [{ id: r.plateId, image_asset_id: asset, after_byte: 63, title: 'title is not identity' }] },
-      media: { [asset]: { id: asset, type: 'image', sha256: r.imageHash, url: './media/image.png' } },
+      media: { [asset]: { id: asset, type: 'image', sha256: r.imageHash, width: r.width, height: r.height, url: './media/image.png' } },
     }
   }
   for (const recipe of recipes) {

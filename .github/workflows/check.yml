@@ -30,6 +30,7 @@ jobs:
           tools/build_content_pack.py tools/package_source.py tools/prepare_pages.py
           tools/build_chibi_demo.py tools/chibi_source.py tools/chibi_provenance.py tools/update_release_catalog.py
           tools/release_version.py tools/finalize_release.py tools/open_workbench.py
+          tools/check_edition_semantics.py tools/check_reading_upgrade.py tools/classic_example_sound.py tools/build_public_example_pairs.py
       - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
       - run: python3 tools/release_files.py --check
       - name: Verify workbench process ownership
@@ -74,7 +75,26 @@ jobs:
           --deselect=tests/test_reader.py::test_reader_change_during_packaging_never_publishes
           --deselect=tests/test_visual.py::test_illustration_budget_style_and_asset_integrity
       - run: npm --prefix frontend run test:reader
-      - name: Rebuild and verify both public examples
+      - name: Rebuild four readers, two editables, starter and source
         run: >-
           uv run --project backend --frozen python tools/build_release.py
           --chibi-source "$TALEPRISM_CHIBI_SOURCE" --output .release/ci
+      - name: Verify every final edition, including ordinary editable round trips
+        if: runner.os == 'Linux'
+        run: |
+          uv run --project backend --frozen python tools/check_edition_semantics.py --output .release/ci --report .release/ci/edition-acceptance.json
+          uv run --project backend --frozen python tools/check_reading_upgrade.py --output .release/ci --fetch-previous
+          uv run --project backend --frozen python tools/finalize_release.py --output .release/ci
+      - name: Record exact hosted release bytes and acceptance receipt
+        if: runner.os == 'Linux'
+        working-directory: .release/ci
+        run: |
+          sha256sum -c SHA256SUMS
+          printf 'HOSTED_COMMIT=%s\n' "$GITHUB_SHA"
+          cat SHA256SUMS
+          sha256sum SHA256SUMS edition-acceptance.json
+          for file in SHA256SUMS release-manifest.json edition-acceptance.json; do
+            printf 'TALEPRISM_HOSTED_%s_BASE64=' "$file"
+            base64 -w0 "$file"
+            printf '\n'
+          done

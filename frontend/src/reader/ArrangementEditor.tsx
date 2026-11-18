@@ -253,7 +253,7 @@ export function ArrangementEditor({
             plate={plate}
             asset={asset}
             state={state}
-            content={content}
+            content={{ ...content, config: draft }}
             onChange={(motion) =>
               update({
                 illustrations: draft.illustrations!.map((p) =>

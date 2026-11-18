@@ -13,11 +13,11 @@ import httpx
 
 from .exporter import REPO
 
-ARCHIVE_FILE = "taleprism-v0.9.0-last-light-project.zip"
+ARCHIVE_FILE = "taleprism-v0.9.1-last-light-project.zip"
 ARCHIVE_URL = (
-    "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/" + ARCHIVE_FILE
+    "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/" + ARCHIVE_FILE
 )
-ARCHIVE_SHA256 = "9f4b5b56067054dacdf3b606037ebd8e959e0d58cc194102277937605ae05e35"
+ARCHIVE_SHA256 = "64fdc898fd955c27f1ab1f602f63b773f1300c98c148bebb87330428f914f882"
 MAX_ARCHIVE_BYTES = 25_000_000
 DOWNLOAD_SECONDS = 45
 MAX_REDIRECTS = 3
@@ -79,7 +79,7 @@ def _download():
             follow_redirects=False,
             trust_env=False,
             timeout=httpx.Timeout(10, connect=8),
-            headers={"User-Agent": "Taleprism-public-sample/0.3.3", "Accept-Encoding": "identity"},
+            headers={"User-Agent": "Taleprism-public-sample/0.9.1", "Accept-Encoding": "identity"},
         ) as client:
             for hop in range(MAX_REDIRECTS + 1):
                 if time.monotonic() >= deadline:

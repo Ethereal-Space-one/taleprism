@@ -92,6 +92,54 @@ try {
   assert.equal(order[order.indexOf(fire.id) + 1], '未知黃蓋性命如何，且看下文分解。')
 
   const copy = () => JSON.parse(before)
+  // Same reviewed publication, as compiled by Production.apply in a restored editable copy.
+  // IDs are stable positions in that copy: never normalize them in the config or bookmark keys.
+  const { resolveReadingMotion, resolveEnvironmentMotion } = require(path.join(temp, 'reader/motion/recipes.js'))
+  const restored = copy()
+  restored.preview = true
+  for (const p of restored.config.illustrations) {
+    p.id = 'plan-' + p.id
+    Object.assign(restored.media[p.image_asset_id], {status:'accepted',width:1672,height:941})
+  }
+  const entries = resolvePlatePresentations(restored)
+  for (const p of plates) assert.deepEqual(entries.get('plan-' + p.id), model.get(p.id))
+  const applied = restored.config.illustrations[0]
+  assert.equal(resolveEnvironmentMotion(restored, applied)?.id,'river-overlook-shore-v1','ordinary author director sees the same recipe')
+  assert.equal(resolveReadingMotion(restored, applied)?.id,'river-overlook-shore-v1','normal reading preview sees the shoreline')
+  const fromRestore = () => JSON.parse(JSON.stringify(restored))
+  for(const change of [
+    d => { d.project.canonical_sha256 = 'another book' },
+    d => { d.config.illustrations[0].id = 'plan-plan-river-overlook' },
+    d => { d.config.illustrations[0].after_byte++ },
+    d => { d.media[applied.image_asset_id].sha256 = 'replacement bytes' },
+    d => { d.media[applied.image_asset_id].id = 'foreign asset' },
+    d => { d.media[applied.image_asset_id].status = 'rejected' },
+    d => { d.media[applied.image_asset_id].status = 'pending' },
+    d => { d.blocks[0].text = d.blocks[0].text.replace('周瑜','某人') },
+    d => { d.blocks[2].text += '三江口周瑜縱火' },
+    d => { d.config.illustrations.push({...d.config.illustrations[0],id:'river-overlook'}) },
+    d => { d.config.illustrations.push({...d.config.illustrations[0],id:'plan-river-overlook'}) },
+  ]) {
+    const d = fromRestore(); change(d); const p = d.config.illustrations[0]
+    assert.equal(resolvePlatePresentations(d).get(p.id).visualDescription, null, change.toString())
+    assert.equal(resolveReadingMotion(d,p),null,change.toString())
+    assert.equal(resolveEnvironmentMotion(d,p),null,change.toString())
+    if(d.config.illustrations.at(-1).id==='river-overlook'){
+      const other=d.config.illustrations.at(-1)
+      assert.equal(resolvePlatePresentations(d).get(other.id).visualDescription,null)
+      assert.equal(resolveEnvironmentMotion(d,other),null)
+    }
+  }
+  for(const motion of [null,{reviewed:false}]){
+    const d=fromRestore(), p=d.config.illustrations[0];p.motion=motion
+    assert.equal(resolveEnvironmentMotion(d,p),null)
+    assert.equal(resolveReadingMotion(d,p),null)
+    assert.equal(resolvePlatePresentations(d).get(p.id).visualDescription,model.get(plates[0].id).visualDescription)
+  }
+  const published=fromRestore(); published.preview=false
+  for(const asset of Object.values(published.media)) delete asset.status
+  assert.equal(resolveReadingMotion(published,published.config.illustrations[0])?.id,'river-overlook-shore-v1')
+
   function expectOriginal(data, id = wind.id, description = null) {
     const p = data.config.illustrations.find((item) => item.id === id)
     const actual = resolvePlatePresentations(data).get(id)

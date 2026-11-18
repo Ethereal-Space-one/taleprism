@@ -1,0 +1,242 @@
+{
+  "contract_version": 1,
+  "books": {
+    "chibi": {
+      "title": "赤壁",
+      "public_work_id": "fde5c24b-6a65-4fc4-9955-2bac34a9d958",
+      "source_sha256": "ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341",
+      "paragraphs": 67,
+      "illustrations": [
+        {
+          "id": "river-overlook",
+          "image_sha256": "e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07",
+          "after_byte": 63,
+          "display_after_byte": 63,
+          "description": "周瑜着绛袍、戴冠，侧身站在岩岸上，抿唇望向密集舰船；随从在他右后方，江面尚无火光。",
+          "motion": "wave-impact-backwash"
+        },
+        {
+          "id": "sickbed-dialogue",
+          "image_sha256": "fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834",
+          "after_byte": 1503,
+          "display_after_byte": 1503,
+          "description": "帐内两人近景。孔明在左侧微笑、直视周瑜；周瑜在右侧木床上半卧，蹙眉握被。枕被、铜灯和小杯位于床边。",
+          "motion": null
+        },
+        {
+          "id": "altar-assembly",
+          "image_sha256": "7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d",
+          "after_byte": 4304,
+          "display_after_byte": 4304,
+          "description": "三层土坛中央有通向坛顶的台阶。蓝灰道衣、长发的孔明在坛顶抬臂，执事分立四周，军士围列于外圈，坛周竖有旗帜。",
+          "motion": null
+        },
+        {
+          "id": "wind-in-tent",
+          "image_sha256": "d94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26",
+          "after_byte": 6014,
+          "display_after_byte": 6136,
+          "description": "无人帐内近景。左侧铜灯的火焰、红布和右侧浅色帐帘朝同一方向倾动，木桌上放着竹简。",
+          "motion": null
+        },
+        {
+          "id": "zhaoyun-arrow",
+          "image_sha256": "ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66",
+          "after_byte": 7359,
+          "display_after_byte": 7359,
+          "description": "赵云穿白甲、戴白羽冠，放箭后松开手指，望向追船；蓝袍孔明站在身后。右后方绳索断落、帆布垂下，前景可见桨手和船舷。",
+          "motion": null
+        },
+        {
+          "id": "orders-ensemble",
+          "image_sha256": "53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384",
+          "after_byte": 10567,
+          "display_after_byte": 10567,
+          "description": "孔明指向案面，张飞托腮坐在另一侧，关羽站在两人之间偏后；白甲赵云背身走向帐外，左侧另有随员。案上摆着木块、铜炉和竹简。",
+          "motion": null
+        },
+        {
+          "id": "huanggai-departure",
+          "image_sha256": "f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01",
+          "after_byte": 13993,
+          "display_after_byte": 13993,
+          "description": "白须黄盖穿褐甲、黄褐内衣，站在船上，一手持下垂的刀，另一手指挥。军士俯身捆扎草束与油瓮，船边挂有灯笼，船队尚未燃烧。",
+          "motion": null
+        },
+        {
+          "id": "caocao-watch",
+          "image_sha256": "11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465",
+          "after_byte": 14375,
+          "display_after_byte": 14375,
+          "description": "曹操着深袍、戴冠，留灰黑胡须，在木栏甲板上昂首背手；身后一名谋士抬手。江面来船尚未起火。",
+          "motion": null
+        },
+        {
+          "id": "fire-panorama",
+          "image_sha256": "a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3",
+          "after_byte": 15974,
+          "display_after_byte": 16035,
+          "description": "江面广角图。成排大船及岸上营地燃起烟火，桅杆密集；前景小舟上有舟子回头望向火场，人物身份未作标定。",
+          "motion": null
+        },
+        {
+          "id": "retreat-column",
+          "image_sha256": "e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1",
+          "after_byte": 19465,
+          "display_after_byte": 19465,
+          "description": "曹操衣袍沾泥，低头骑马走在队列中。前景军士互相搀扶，后方有辎重，队伍沿弯折的泥泞山路行进。",
+          "motion": null
+        },
+        {
+          "id": "zhangfei-ambush",
+          "image_sha256": "819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3",
+          "after_byte": 21528,
+          "display_after_byte": 21528,
+          "description": "浓须张飞穿深甲、红褐衣，骑马居高，长矛横在身前。曹操在右前方回身面对他，亲兵聚在身旁；两队之间可见谷口岩壁与道路。",
+          "motion": null
+        },
+        {
+          "id": "huarong-encounter",
+          "image_sha256": "5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac",
+          "after_byte": 24806,
+          "display_after_byte": 24806,
+          "description": "曹操在左侧欠身，手靠胸前，抬眼望向右侧关羽。关羽绿袍长须，竖刀肃立，身旁有红棕马。曹军衣装疲敝，关军排列有序，道路仍被挡住。",
+          "motion": null
+        }
+      ],
+      "map_entries": 3,
+      "presentations": 55,
+      "image_members": 18,
+      "soundscapes": [
+        {
+          "paragraph": 12,
+          "byte": 5183,
+          "duration": 12.0,
+          "description": "风声",
+          "sha256": "0423fa1337a7f0a0359954dcbe9ba5a0c803f5458213a1ba82da4d5960bd2f75"
+        }
+      ],
+      "narrations": [],
+      "dialogue_audio": [],
+      "echo": null
+    },
+    "last-light": {
+      "title": "末班灯",
+      "public_work_id": "2a036de9-32f1-4ad5-b9bd-f6f4d8d570ae",
+      "source_sha256": "1b2e65bfef863fa666d525aae620793d72038e0442ae4bb5a88f2e12ddbd5880",
+      "paragraphs": 9,
+      "illustrations": [
+        {
+          "id": "plan-arrival",
+          "image_sha256": "7bd8cc49a2a3dd412c876d6b20063c2496f2db4289a51937fa206e8c1060318f",
+          "after_byte": 526,
+          "display_after_byte": 526,
+          "description": "林遥刚到，陈伯仍在擦水；尚未交谈",
+          "motion": "rain-wet-ground"
+        },
+        {
+          "id": "plan-negotiation",
+          "image_sha256": "0022e65f8db155e965a01160247dd1a1baad1ee806e5c5fb3dd9d1fae080e2b3",
+          "after_byte": 1524,
+          "display_after_byte": 1524,
+          "description": "陈伯问灯入柜后谁来开，林遥收回指图的手开始追问",
+          "motion": null
+        },
+        {
+          "id": "plan-recording",
+          "image_sha256": "c731b90647a1812a59dfae6ded0078a21ea745c6af93fbc1ce884ba8f10ec524",
+          "after_byte": 3024,
+          "display_after_byte": 3024,
+          "description": "林遥说明记录的用途，陈伯终于坐下拿起铅笔",
+          "motion": null
+        }
+      ],
+      "map_entries": 0,
+      "presentations": 1,
+      "image_members": 4,
+      "soundscapes": [
+        {
+          "paragraph": 2,
+          "byte": 22,
+          "duration": 12.0,
+          "description": "细雨",
+          "sha256": "b56c5adaa50ad8f365bee1451a8d987d2bc58b62c7351781d9d48b0bbc5eca27"
+        }
+      ],
+      "narrations": [],
+      "dialogue_audio": [],
+      "echo": null
+    },
+    "the-door-left-open": {
+      "title": "留门",
+      "public_work_id": "93ea530c-d6a9-5ed8-8ffd-d40aa4742176",
+      "source_sha256": "8f65e32a101d626f7959b98a03ffed8ea3e349f3da827fc4da36aaf8f8ffc0f4",
+      "paragraphs": 4,
+      "illustrations": [
+        {
+          "id": "studio-first-illustration",
+          "image_sha256": "b9376efa6522951961c3d9b95e2feb02e9a511b3dca4d04733ce4724b8bcb6d1",
+          "after_byte": 236,
+          "display_after_byte": 236,
+          "description": "半落的卷门下，两只小黄靴背向而立，一只朝店内，一只朝街。右侧灰蓝路面拖着一条细长的车灯反光。",
+          "motion": "rain-wet-ground"
+        }
+      ],
+      "map_entries": 0,
+      "presentations": 0,
+      "image_members": 1,
+      "soundscapes": [
+        {
+          "paragraph": 2,
+          "byte": 104,
+          "duration": 12.0,
+          "description": "细雨中一辆车驶过",
+          "sha256": "f2ada82c195c893b8001baf9104d7187e8a136946e928fe6451863cc78250ce8"
+        }
+      ],
+      "narrations": [],
+      "dialogue_audio": [],
+      "echo": null
+    },
+    "the-margin": {
+      "title": "留白处",
+      "public_work_id": "4e7a7e2d-17e9-5930-93f7-45ccf1bd5e0a",
+      "source_sha256": "6aab83ff58fde9b69aebd054de1155ddd4968d42eaf29adc5f020166f4f9bc16",
+      "paragraphs": 6,
+      "illustrations": [
+        {
+          "id": "studio-first-illustration",
+          "image_sha256": "e6631fde837dd200d737e78fc4185055911c044b2382b91a38557698069c64f1",
+          "after_byte": 304,
+          "display_after_byte": 304,
+          "description": "斜光映在浅色墙上。矮木桌的桌面空着，角上有几滴旧墨；右前角没有桌腿，一蓝绿一赭红两册厚旧历书错开叠着，正好托住它。",
+          "motion": null
+        }
+      ],
+      "map_entries": 0,
+      "presentations": 0,
+      "image_members": 1,
+      "soundscapes": [
+        {
+          "paragraph": 6,
+          "byte": 529,
+          "duration": 12.0,
+          "description": "铅笔在纸上划过，随后静默",
+          "sha256": "8bd5e0bc72ccf01e543bfa0a0318c97cb7e9ca4dfebb7f586e2cd7d27eee0f50"
+        }
+      ],
+      "narrations": [],
+      "dialogue_audio": [],
+      "echo": {
+        "earlier": {
+          "paragraph": 2,
+          "quote": "你自己添个字"
+        },
+        "later": {
+          "paragraph": 5,
+          "quote": "轻轻推还给她"
+        }
+      }
+    }
+  }
+}

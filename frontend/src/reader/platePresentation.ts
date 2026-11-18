@@ -16,6 +16,7 @@ export type PlatePresentationRecipe = {
   canonicalHash: string
   plates: {
     id: string
+    appliedId?: string
     imageAsset: string
     imageHash: string
     sourceStart: number
@@ -31,6 +32,50 @@ export type PlatePresentationRecipe = {
 
 const utf8 = new TextEncoder()
 
+/** Read-only proof shared by the description/poem and shoreline consumers. */
+export function verifiedPlateEntry(
+  data: ReaderContent,
+  plate: ReaderIllustration,
+  recipe: PlatePresentationRecipe,
+) {
+  if (recipe.canonicalHash !== data.project.canonical_sha256) return null
+  const entries = recipe.plates.filter((r) => r.id === plate.id || r.appliedId === plate.id)
+  if (entries.length !== 1) return null
+  const entry = entries[0]
+  const same = data.config.illustrations?.filter(
+    (p) => p.id === entry.id || p.id === entry.appliedId,
+  )
+  const asset = data.media[plate.image_asset_id]
+  if (
+    same?.length !== 1 ||
+    same[0].id !== plate.id ||
+    plate.after_byte !== entry.sourceEnd ||
+    plate.image_asset_id !== entry.imageAsset ||
+    asset?.type !== 'image' ||
+    asset.id !== entry.imageAsset ||
+    asset.sha256 !== entry.imageHash ||
+    ('status' in asset && asset.status !== 'accepted')
+  )
+    return null
+  const sources = data.blocks.filter((b) => b.byte_end === entry.sourceEnd)
+  if (sources.length !== 1) return null
+  const source = sources[0]
+  if (
+    source.byte_start !== entry.sourceStart ||
+    utf8.encode(source.text).length !== source.byte_end - source.byte_start
+  )
+    return null
+  // A citation must occur once within the expected source block, never elsewhere.
+  const at = source.text.indexOf(entry.evidence)
+  if (
+    at < 0 ||
+    source.text.indexOf(entry.evidence, at + 1) >= 0 ||
+    data.blocks.some((b) => b !== source && b.text.includes(entry.evidence))
+  )
+    return null
+  return entry
+}
+
 /**
  * Curated presentation is opt-in for one exact public edition and reviewed image.
  * Source/config/evidence are never rewritten. Unknown or edited plates keep their
@@ -42,8 +87,6 @@ export function resolvePlatePresentations(
 ): ReadonlyMap<string, PlatePresentation> {
   const plates = data.config.illustrations || []
   const recipe = recipes.find((item) => item.canonicalHash === data.project.canonical_sha256)
-  const idCounts = new Map<string, number>()
-  for (const plate of plates) idCounts.set(plate.id, (idCounts.get(plate.id) || 0) + 1)
   const resolve = (plate: ReaderIllustration): PlatePresentation => {
     const sourceBlocks = data.blocks.filter((block) => block.byte_end === plate.after_byte)
     const source = sourceBlocks.length === 1 ? sourceBlocks[0] : undefined
@@ -56,25 +99,8 @@ export function resolvePlatePresentations(
         : plate.after_byte,
       visualDescription: null,
     }
-    const entry = recipe?.plates.find((item) => item.id === plate.id)
-    if (
-      !entry ||
-      idCounts.get(plate.id) !== 1 ||
-      !source ||
-      source.byte_start !== entry.sourceStart ||
-      source.byte_end !== entry.sourceEnd ||
-      utf8.encode(source.text).length !== source.byte_end - source.byte_start ||
-      plate.image_asset_id !== entry.imageAsset ||
-      data.media[plate.image_asset_id]?.sha256 !== entry.imageHash
-    )
-      return result
-    // Evidence must resolve once, inside the unchanged semantic anchor paragraph.
-    const occurrences = data.blocks.flatMap((block) => {
-      const first = block.text.indexOf(entry.evidence)
-      if (first < 0) return []
-      return block.text.indexOf(entry.evidence, first + 1) < 0 ? [block] : [block, block]
-    })
-    if (occurrences.length !== 1 || occurrences[0] !== source) return result
+    const entry = recipe && verifiedPlateEntry(data, plate, recipe)
+    if (!entry || !source) return result
     result.visualDescription = entry.visualDescription
     const display = entry.displayAfter
     if (!display || !source.text.endsWith(display.introduction)) return result

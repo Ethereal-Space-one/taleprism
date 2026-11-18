@@ -64,7 +64,9 @@ async function serve(site) {
     await page.waitForFunction(({byte,plate})=>{
       const r=document.querySelector('.reader-root')
       return Number(r.dataset.resumeByte)===byte && r.dataset.viewPlate===plate
-    },position)
+    // A legacy plate record can point to the paragraph start. Both old and new
+    // readers canonicalize it to its final UTF-8 character, preserving the image offset.
+    },{...position,byte:block.byte_end-Buffer.byteLength([...block.text].at(-1))})
     const image = page.locator('.reader-plate img').nth(6)
     await image.evaluate(e=>e.decode())
     const rect = await image.boundingBox()
@@ -76,6 +78,10 @@ async function serve(site) {
     assert.equal(saved.preferences.size,23)
     assert.equal(saved.marks.length,1)
     assert.equal(saved.marks[0].position.plate,plate.id)
+    assert.equal(saved.resume.byte,block.byte_end-Buffer.byteLength([...block.text].at(-1)))
+    assert.equal(saved.resume.plate,plate.id)
+    assert.ok(Math.abs(saved.resume.imageOffset-position.imageOffset)<0.01)
+    assert.equal(saved.marks[0].position.byte,saved.resume.byte)
     assert.deepEqual(errors,[])
     Object.assign(report,{passed:true,stable_public_identity:true,unchanged_source:true,old_image_resume:true,old_bookmark:true,preferences_preserved:true})
   } catch(e) {

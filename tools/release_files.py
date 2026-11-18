@@ -51,6 +51,8 @@ ROOT_FILES = (
     "docs/EXTERNAL_CHARACTER_REVIEW.md",
     "docs/RELEASING.md",
     "docs/ITERATION-HISTORY.md",
+    "docs/RELEASE-v0.9.1.md",
+    "docs/VALIDATION-v0.9.1.md",
     "docs/RELEASE-v0.9.0.md",
     "docs/VALIDATION-v0.9.0.md",
     "docs/RELEASE-v0.1.0.md",

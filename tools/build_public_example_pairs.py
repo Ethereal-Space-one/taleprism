@@ -1,11 +1,12 @@
-"""Build the 0.9.0 public example pairs, offline, from four official v0.3.3 archives.
+"""Build the 0.9.1 public example pairs, offline, from four official v0.3.3 archives.
 
 Download the four taleprism-v0.3.3-{chibi,last-light}-{reader,project}.zip assets
 from https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3.
 After npm --prefix frontend run build:
     uv run --project backend python tools/build_public_example_pairs.py --inputs OLD --output OUT
 Only named, hash-pinned public editions are accepted. No existing workspace, private
-edition, synthesis, user records, media generation, browser automation or upload.
+edition, external provider, voice synthesis, user records or upload. Only the two
+reviewed, hash-pinned procedural ambience recipes are rendered.
 """
 
 import argparse
@@ -19,6 +20,7 @@ from unittest.mock import patch
 
 from build_chibi_demo import pack, sync_reader_data
 from chibi_source import digest, encoded, read_zip, verify_inventory
+from classic_example_sound import SOUNDS
 from release_version import PREFIX, VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,8 +54,8 @@ LAST_LIGHT_CREDITS = {
     "continuity-review.json": "5cb20d934ae0f097d03ed110eccb62745f5b7ce4174ebdebb55639650a9e5787",
 }
 SOURCE_NOTE = {
-    "chibi": "赤壁 · v0.3.3 原文、27 张既有图片、55 段呈现及 12 个旧插图标记保留。无声音轨道。历史地图为阅读示意；作者最终美术复核未完成。",
-    "last-light": "末班灯 · v0.3.3 原文、3 幅插图及全部 6 张既有图片保留。此公开版本不含录音、声景或系统配音配置。旧制作记录中的音频描述不代表本包附带音频。",
+    "chibi": "赤壁 · v0.3.3 原文、27 张既有图片、55 段呈现及 12 个旧插图标记保留。第十二段「忽聽風聲響，旗旛轉動」有一次十二秒合成风声，其余段落不铺底。历史地图为阅读示意；作者最终美术复核未完成。",
+    "last-light": "末班灯 · v0.3.3 原文、3 幅插图及全部 6 张既有图片保留。第二段「傍晚的雨斜着落进站台」有一次十二秒合成细雨。没有车辆、朗读或系统配音；旧制作记录不代表本包有配音。",
 }
 RIGHTS = "阅读器代码的 MIT 许可不替代原文、图像或既有来源说明。\nThe software license does not change manuscript or artwork rights.\n"
 
@@ -101,15 +103,33 @@ def project_archive(example, files, mit, material):
         ),
         "Unexpected voice, audio or changed editable type",
     )
+    sound = SOUNDS[example]
+    source, original = files["source.utf8.txt"], files["original.txt"]
+    require(
+        digest(source) == PINS[example]["source"],
+        "Unexpected source for approved sound",
+    )
+    record, wav = sound.accepted_record(source, original)
+    require(
+        "reader_editorial" not in model["states"],
+        "Unexpected historical editorial state",
+    )
+    model["version"] = 6
+    model["records"]["soundscape_takes"] = [record]
+    model["states"]["reader_states"]["revision"] += 1
+    files["project.json"] = encoded(model)
+    files[sound.project_wav] = wav
     old = files["README.txt"]
     # The historical importer has a strict member allowlist. Keep all production
-    # records and media bytes unchanged; add the source/software notices to README.
+    # records and art; add one bound sound record/WAV and keep provenance in README.
     files["README.txt"] = (
         (
             f"Taleprism v{VERSION} · 公开可编辑示例 / Public editable example\n"
             + SOURCE_NOTE[example]
             + "\n从制作台导入此 ZIP，不是读者版。\n"
             + RIGHTS
+            + "声景由 Taleprism 程序合成，并非现场录音。此公开工程仅含该段已采用的声音，不含声景候选、撤回记录或私人制作意见。\n"
+            + "以下为 v0.3.3 历史随包说明；其中的无声说明只适用于当时的版本。\n"
         ).encode()
         + b"\n"
         + old
@@ -118,7 +138,11 @@ def project_archive(example, files, mit, material):
     )
     for name, raw in material.items():
         files["README.txt"] += ("\n\n=== " + name + " ===\n").encode() + raw
-    manifest["files"]["README.txt"] = digest(files["README.txt"])
+    # V6 requires truthful issue coverage of *this* public derivative, not a
+    # claim that anybody's separate workspace was reviewed or contained no issues.
+    manifest["editorial_count"] = 0
+    for name in ("project.json", "README.txt", sound.project_wav):
+        manifest["files"][name] = digest(files[name])
     files["manifest.json"] = encoded(manifest)
     return pack(files)
 
@@ -140,6 +164,28 @@ def cold_export(editable, directory):
         base = "/api/projects/" + result["id"]
         check = c.get(base + "/bundle")
         check.raise_for_status()  # full snapshot, structural/media validation, including fresh restore
+        matches = [
+            ex
+            for ex, spec in PINS.items()
+            if spec["source"] == result["canonical_sha256"]
+        ]
+        require(len(matches) == 1, "Not a pinned public sample source")
+        sound = SOUNDS[matches[0]]
+        roundtrip = read_zip(check.content)
+        restored_doc = json.loads(roundtrip["project.json"])
+        takes = restored_doc["records"].get("soundscape_takes", [])
+        require(
+            restored_doc["version"] == 6
+            and len(takes) == 1
+            and takes[0]
+            == sound.accepted_record(
+                roundtrip["source.utf8.txt"], roundtrip["original.txt"]
+            )[0]
+            and digest(roundtrip[sound.project_wav]) == sound.sha256
+            and not restored_doc["records"]["speech_takes"]
+            and "reader_editorial" not in restored_doc["states"],
+            "Ordinary project re-export did not retain the sole accepted sound",
+        )
         require(
             c.get(base + "/delivery").json()["records"] == [],
             "Unexpected final delivery claim",
@@ -196,9 +242,18 @@ def seal_reader(example, raw, previous, mit, material):
         d["project"] == before["project"] and d["project"]["id"] == p["work"],
         "Work identity changed",
     )
+    sound = SOUNDS[example]
+    require(
+        d["schema_version"] == 5 and before["schema_version"] == 3,
+        "Expected V5 sound edition",
+    )
+    require(
+        d["versions"]
+        == before["versions"]
+        | {"reader_revision": before["versions"]["reader_revision"] + 1},
+        "Revision drift",
+    )
     for key in (
-        "schema_version",
-        "versions",
         "characters",
         "presentations",
         "map",
@@ -213,7 +268,12 @@ def seal_reader(example, raw, previous, mit, material):
         require(
             block
             == historical
-            | {"source_gap_before": canonical[end : block["byte_start"]].decode()},
+            | {"source_gap_before": canonical[end : block["byte_start"]].decode()}
+            | (
+                {"soundscape": sound.cue}
+                if historical["byte_start"] == sound.start
+                else {}
+            ),
             "Original anchors or whitespace changed",
         )
         end = block["byte_end"]
@@ -227,11 +287,19 @@ def seal_reader(example, raw, previous, mit, material):
         plate["id"] = old["id"]
     require(d["config"] == before["config"], "Arrangement changed")
     require(
-        len(d["media"]) == p["media"] and d["media"].keys() == before["media"].keys(),
-        "Media set changed",
+        len(before["media"]) == p["media"]
+        and d["media"].keys() == before["media"].keys() | {sound.id}
+        and d["media"][sound.id] == sound.media
+        and digest(files[sound.reader_wav]) == sound.sha256
+        and [k for k in files if k.endswith(".wav")] == [sound.reader_wav]
+        and [
+            (b["byte_start"], b["byte_end"]) for b in d["blocks"] if b.get("soundscape")
+        ]
+        == [(sound.start, sound.end)],
+        "Unexpected media or approved sound projection",
     )
-    for aid, asset in d["media"].items():
-        old = before["media"][aid]
+    for aid, old in before["media"].items():
+        asset = d["media"][aid]
         require(
             asset["type"] in ("image", "figure")
             and asset["url"] == "./media/" + aid + ".png"
@@ -258,8 +326,15 @@ def seal_reader(example, raw, previous, mit, material):
             b"Last Light manuscript, artwork and generation records: storygal-source/samples/last-light/PROVENANCE.md.\n"
         )
     if "SHOWCASE.txt" in previous:
-        files["SHOWCASE.txt"] = previous["SHOWCASE.txt"].replace(
-            b"Taleprism v0.3.3 ", f"Taleprism v{VERSION} ".encode(), 1
+        history = previous["SHOWCASE.txt"].decode()
+        require("不含系统语音及任何音频配置" in history, "Unknown historical showcase")
+        files["SHOWCASE.txt"] = (
+            history.replace(
+                "不含系统语音及任何音频配置",
+                "本版仅在第十二段保留一次程序合成的风声；无系统配音",
+            )
+            .replace("Taleprism v0.3.3 ", f"Taleprism v{VERSION} ", 1)
+            .encode()
         )
     files["README.txt"] = (
         "Taleprism v" + VERSION + " · " + SOURCE_NOTE[example] + "\n\n"
@@ -291,7 +366,7 @@ def seal_reader(example, raw, previous, mit, material):
 
 
 def build(inputs, out):
-    require(VERSION == "0.9.0", "This frozen migration is for v0.9.0 only.")
+    require(VERSION == "0.9.1", "This frozen migration is for v0.9.1 only.")
     targets = [
         out / f"{PREFIX}-{e}-{k}.zip" for e in PINS for k in ("reader", "project")
     ]
@@ -337,7 +412,11 @@ def build(inputs, out):
                 material = credits(ex)
                 project = project_archive(ex, prior("project"), mit, material)
                 built, story = seal_reader(
-                    ex, cold_export(project, tmp / ex), prior("reader"), mit, material
+                    ex,
+                    cold_export(project, tmp / ex),
+                    prior("reader"),
+                    mit,
+                    material,
                 )
                 for kind, raw in (("project", project), ("reader", built)):
                     name = f"{PREFIX}-{ex}-{kind}.zip"
@@ -359,7 +438,15 @@ def build(inputs, out):
                     "original_sha256": pins["source"],
                     "paragraphs": len(story["blocks"]),
                     "illustrations": pins["plates"],
-                    "media": pins["media"],
+                    "media": pins["media"] + 1,
+                    "unchanged_images": pins["media"],
+                    "accepted_sound": {
+                        "id": SOUNDS[ex].id,
+                        "byte_start": SOUNDS[ex].start,
+                        "sha256": SOUNDS[ex].sha256,
+                    },
+                    "editable_schema": 6,
+                    "reader_schema": 5,
                     "clean_project_import_and_reexport": True,
                     "prior_media_and_source_preserved": True,
                     "system_audio_included": False,

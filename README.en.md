@@ -4,19 +4,25 @@
 
 **[Read Chibi (Red Cliffs) online](https://ethereal-space-one.github.io/taleprism/) · [Download Chibi for offline reading](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [Download The Door Left Open and hear the rain](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 public preview and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [中文](README.md)
 
+**Which version has the wind?** The public links above still open **0.9.0**: its Chibi shore illustration can move, but the book has no audio track. The **local 0.9.1 candidate** adds wind at one Chibi passage and rain at one Last Light passage. Neither the published ZIPs nor the current website has been replaced.
+
 ## The classical showcase: Chibi, a battle map that doesn't give away the ending
 
 ![Chibi: raising the wind at the altar and the fire attack on the river](examples/chibi/cover.png)
 
 In chapters 49 and 50 of *Romance of the Three Kingdoms*, commanders shift allegiance and fleets change position. A map drawn with hindsight would reveal the retreat before the reader reaches the battle. Here, the three stages of the map, faction ties and chains of cause and effect unfold with the text. Read back and later outcomes disappear again. Browse the illustrations you have reached without opening the whole chapter's gallery.
 
-Twelve illustrations follow eight principal characters. The maker's plan tracks who has seen what and which boat an object belongs on; a change of camera angle doesn't erase the previous scene. This edition uses no voices or ambient soundtrack. To see how it works, [open the editable Chibi project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) alongside its [shot and continuity notes (Chinese)](examples/chibi/README.md).
+Twelve illustrations follow eight principal characters. The maker's plan tracks who has seen what and which boat an object belongs on; a change of camera angle doesn't erase the previous scene. The public 0.9.0 edition uses no voices or ambient soundtrack. To see how it works, [open the editable Chibi project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip) alongside its [shot and continuity notes (Chinese)](examples/chibi/README.md).
+
+**In the 0.9.1 candidate, listen for the flags.** Only paragraph 12 of 67 has a soundscape: twelve seconds of synthesized wind at 「忽聽風聲響，旗旛轉動」. For a shortcut, open the candidate reader, choose **搜索** (Search) in the reading toolbar, search for `旗旛轉動`, select the hit, then choose **听此处声景 · 风声** at the end of the paragraph. Searching or going back does not replay cues you skipped. Reading forward normally encounters the cue in place. The shore waves on the first illustration already worked in 0.9.0; the wind does not animate the other eleven illustrations.
 
 ## The modern showcase: The Door Left Open
 
 A cobbler has lowered the shutter halfway. A pair of small yellow boots sits on the threshold. The first paragraph is silent. Reach the second and rain strikes the metal awning; a car passes the mouth of the lane, closest at six seconds. Only the wet road on the right of the illustration moves. The boots and the dry threshold stay still. When the rain stops in the story, the reader doesn't play it again as a closing theme.
 
 [The Door Left Open](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip) is the short introduction to 0.9's passage-timed design. A smaller experiment, [The Margin](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-margin-reader.zip), takes a different approach: a still life stays still, an earlier sentence returns in a fold, and a few pencil strokes give way to silence. Both downloads are readers, not editable backups.
+
+The 0.9.1 candidate for the editable tutorial *Last Light* uses rain alone, not a passing car. Search for `傍晚的雨` and choose **听此处声景 · 细雨** at the second paragraph. The first illustration keeps its existing station-rain motion. See the [repair notes and book-by-book acceptance criteria](docs/RELEASE-v0.9.1.md).
 
 ## Open a book and set its pace
 

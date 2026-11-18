@@ -3,12 +3,14 @@ import type { PlatePresentationRecipe } from '../platePresentation'
 // Descriptions retain only observable content from the checked-in per-image
 // observations in examples/chibi/visual-review-v0.2.0.json (2026-11-12).
 // No new visual inspection, historical certification, or creator approval is
-// implied. Asset hashes prevent applying these words to replacement artwork.
+// implied. Each appliedId is the concrete ID in the reviewed editable edition;
+// it is not an instruction to strip a prefix from arbitrary project IDs.
 export const chibiPlatePresentation = {
   canonicalHash: 'ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341',
   plates: [
     {
       id: 'river-overlook',
+      appliedId: 'plan-river-overlook',
       imageAsset: 'da59592b-3675-45ae-aefe-867b01d0a2e3',
       imageHash: 'e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07',
       sourceStart: 0,
@@ -19,6 +21,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'sickbed-dialogue',
+      appliedId: 'plan-sickbed-dialogue',
       imageAsset: 'eb1e632b-c841-4062-9013-20f3e33c6e01',
       imageHash: 'fc5edfb4d06e649857d3fb8a81426d5c8d21f89b92c3559154564a971ce22834',
       sourceStart: 993,
@@ -29,6 +32,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'altar-assembly',
+      appliedId: 'plan-altar-assembly',
       imageAsset: 'c6d54ad9-b541-4806-af07-adaf5c0023b0',
       imageHash: '7a8d75214742e019ad5d1f3cd4f6c911072206914d1f355156e95826228cea8d',
       sourceStart: 3737,
@@ -39,6 +43,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'wind-in-tent',
+      appliedId: 'plan-wind-in-tent',
       imageAsset: '8ad2b717-eb50-404c-9900-516cc67a53d0',
       imageHash: 'd94c85341910a67e5c370fc73afa62548ac3e38aede66f4316b562dd68676b26',
       sourceStart: 5183,
@@ -56,6 +61,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'zhaoyun-arrow',
+      appliedId: 'plan-zhaoyun-arrow',
       imageAsset: '941e1827-aa61-4962-adeb-6369a467fb3b',
       imageHash: 'ce1932d0dc651358c4008f4062a43500f6bfda835e15825194982fc089a21f66',
       sourceStart: 6936,
@@ -66,6 +72,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'orders-ensemble',
+      appliedId: 'plan-orders-ensemble',
       imageAsset: 'c743ca42-f9a9-4ada-ad94-bfcc09cd8ba6',
       imageHash: '53bc3298a02e19f7ecd3a536ed3a368efc89e6af6ef3c805a1f6fb769782e384',
       sourceStart: 10264,
@@ -76,6 +83,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'huanggai-departure',
+      appliedId: 'plan-huanggai-departure',
       imageAsset: 'a7cf7f7f-b014-4a70-8c79-cd52f58b6ca7',
       imageHash: 'f0dde43b8e6292bb078459bf1eb6849786114d79dde3b513e19eee9c437b3f01',
       sourceStart: 13435,
@@ -86,6 +94,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'caocao-watch',
+      appliedId: 'plan-caocao-watch',
       imageAsset: '7acccf3b-78ba-4e97-9951-0f9de0065d69',
       imageHash: '11592169a5a84050a52097d97483fd466243a7955421d7872730f981b7fe7465',
       sourceStart: 14000,
@@ -96,6 +105,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'fire-panorama',
+      appliedId: 'plan-fire-panorama',
       imageAsset: '1132535c-26bc-4091-9870-28e1aa358e33',
       imageHash: 'a3cf3ae81de4c220dcdf17e085dc990d87ba7b1466a07da57269fe6fd01b8fd3',
       sourceStart: 15383,
@@ -110,6 +120,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'retreat-column',
+      appliedId: 'plan-retreat-column',
       imageAsset: '95601ac3-c747-47f1-a69a-542665f76a87',
       imageHash: 'e2c3682aa503160ab1d8986c21009d7225b87ed47540df7f62c9e782aa5accc1',
       sourceStart: 19063,
@@ -120,6 +131,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'zhangfei-ambush',
+      appliedId: 'plan-zhangfei-ambush',
       imageAsset: '761dbfea-aaeb-4488-8c74-38c21cd6145f',
       imageHash: '819c4d09a870c14d38a0635d94bc0efc47401c426e6307c3fbd28f85d6183dc3',
       sourceStart: 21033,
@@ -130,6 +142,7 @@ export const chibiPlatePresentation = {
     },
     {
       id: 'huarong-encounter',
+      appliedId: 'plan-huarong-encounter',
       imageAsset: '53b3c1af-7fa1-4d44-b78e-700290d86561',
       imageHash: '5bfbee208326df5a891fe80d24a2f311734f13c9351d187a3f9e290c8545e0ac',
       sourceStart: 24263,

@@ -4,19 +4,25 @@
 
 **[在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载《赤壁》离线读本](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-reader.zip) · [下载《留门》，听街上的雨](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)** · [v0.9.0 公开预览与全部下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.0) · [English](README.en.md)
 
+**手上的版本有风声吗？** 上面的主入口和下载都指向已公开的 **0.9.0**：《赤壁》的江岸能动，但没有音轨。下文的 **0.9.1 本地候选**另加一处风声，以及《末班灯》的一处站台雨声；没有替换已发布的 ZIP，也不在当前网页上。
+
 ## 古典主展：《赤壁》把战局留在读者读到的那一刻
 
 ![《赤壁》封面：七星坛祭风与三江口火攻](examples/chibi/cover.png)
 
 《三国演义》第四十九、五十回里，人会换营，船会移位。地图若一开始就画出撤军路线，等于把结局印在了第一页。这里的三阶段地图、阵营关系和事件因果随原文进度展开；向前读才看见新局势，回读时收起后文的结果。可以看已经读到的图，不必先打开整章图集。
 
-十二幅情境插图安放在具体段落，八位主要人物有各自的立场。人物在上一幅图看见了什么、上过哪条船，不能因为下一幅换了机位就当作没发生。这个版本不加配音或背景声，靠原句、人物与图版把战局说清。想看编排怎么做的，可以[导入《赤壁》可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip)，对照[镜头与连续性记录](examples/chibi/README.md)。
+十二幅情境插图安放在具体段落，八位主要人物有各自的立场。人物在上一幅图看见了什么、上过哪条船，不能因为下一幅换了机位就当作没发生。0.9.0 读本靠原句、人物与图版把战局说清，没有配音或背景声。想看编排怎么做的，可以[导入《赤壁》可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-chibi-project.zip)，对照[镜头与连续性记录](examples/chibi/README.md)。
+
+**试 0.9.1 候选：只听旗动，不是全章配乐。** 67 段里，只有第 12 段「忽聽風聲響，旗旛轉動」有十二秒合成风声。想直接试？打开候选阅读包，在正文工具栏选「搜索」，查 `旗旛轉動`，点结果，再到该段末点「听此处声景 · 风声」。搜索跳转或回看不会补播；正常向前读到该段才会自动演绎。江岸首图的浪早在 0.9.0 就有，风声不表示其他十一幅图也会动。
 
 ## 现代主展：《留门》只让街上的雨动起来
 
 修鞋铺的卷门放到一半，门槛上留着一双小黄靴。第一段没有声音；读到第二段，才听见雨落在铁篷上，一辆车从巷口驶过。十二秒里，第六秒车最近。图上的雨线只落在右侧湿路，靴子和干门槛始终不动。结尾雨停，声音也没有理由再来。
 
 [《留门》阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-door-left-open-reader.zip)最适合试 0.9 的「随文演绎」。另一个小实验[《留白处》](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.0/taleprism-v0.9.0-the-margin-reader.zip)反而让静物画始终静止：读到后段，折页才带回前文的一句话；末段只有几笔铅笔声。两本都只发读本，不附可编辑项目。
+
+在可编辑教程《末班灯》的 **0.9.1 候选**里，第二段「傍晚的雨斜着落进站台」只加细雨，没有过车。用同样的方法搜 `傍晚的雨`，点该段的「听此处声景 · 细雨」即可试听；第一幅《檐下初见》原有的局部雨效保留。两本候选的原文、图版和安静段落仍各就各位。[本次修订与逐本验收目标](docs/RELEASE-v0.9.1.md)
 
 ## 怎么读？封面不响，正文不替你翻页
 

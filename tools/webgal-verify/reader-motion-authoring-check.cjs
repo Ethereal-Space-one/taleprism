@@ -91,7 +91,7 @@ try {
     const assetId=r.imageAsset || 'upload'
     const p={id:r.plateId,image_asset_id:assetId,after_byte:r.afterByte}
     const d={project:{canonical_sha256:r.canonicalHash},config:{illustrations:[p]},preview:false,
-      blocks:[{byte_end:r.afterByte}],media:{[assetId]:{id:assetId,type:'image',width:r.width,height:r.height,sha256:r.imageHash}}}
+      blocks:[{byte_start:0,byte_end:r.afterByte,text:'第四十九回　七星壇諸葛祭風　三江口周瑜縱火'}],media:{[assetId]:{id:assetId,type:'image',width:r.width,height:r.height,sha256:r.imageHash}}}
     assert.equal(resolveReadingMotion(d,p),r,'exact bound legacy rain and wave are eligible')
     p.after_byte++;d.blocks[0].byte_end++
     assert.equal(resolveReadingMotion(d,p),null,'moving a legacy plate invalidates automatic timing')

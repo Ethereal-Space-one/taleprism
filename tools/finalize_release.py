@@ -16,6 +16,31 @@ def digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def require_editions(output, commit, artifacts):
+    """Seal the exact tested bytes, never a static-only probe or a stale pass."""
+    path = output / "edition-acceptance.json"
+    try:
+        report = json.loads(path.read_bytes())
+    except (FileNotFoundError, ValueError) as exc:
+        raise ValueError(
+            "Run the full edition gate with --report " + str(path)
+        ) from exc
+    if (
+        not isinstance(report, dict)
+        or report.get("schema") != 1
+        or report.get("mode") != "release"
+        or report.get("static_only") is not False
+        or report.get("source_commit") != commit
+        or report.get("zip_sha256") != artifacts
+        or sorted(report.get("cold_exports") or []) != ["chibi", "last-light"]
+        or not report.get("browser_version")
+        or not report.get("results")
+    ):
+        raise ValueError(
+            "Full browser evidence does not match this commit and eight artifacts."
+        )
+
+
 def finalize(output):
     output = Path(output).resolve()
     if subprocess.check_output(
@@ -93,6 +118,12 @@ def finalize(output):
             "example": None,
         }
     )
+    require_editions(output, commit, {a["file"]: a["sha256"] for a in records})
+    manifest["checks"]["edition_semantics"] = {
+        "status": "passed",
+        "scope": "four delivered readers and two ordinary editable imports/re-exports",
+        "contract_sha256": digest((ROOT / "tools/edition-contract.json").read_bytes()),
+    }
     manifest.update(commit=commit, artifacts=records)
     manifest_path = output / "release-manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")

@@ -3,9 +3,6 @@
 import argparse
 import hashlib
 import json
-import os
-import subprocess
-import sys
 import tempfile
 import urllib.request
 from pathlib import Path
@@ -24,7 +21,7 @@ def starter_entries():
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
         "docs/快速上手.md",
-        "docs/RELEASE-v0.9.0.md",
+        f"docs/RELEASE-v{VERSION}.md",
     }
     prefixes = (
         "prompts/",
@@ -40,7 +37,7 @@ def starter_entries():
         if n in roots or n.startswith(prefixes)
     }
     files["taleprism/README.md"] = (
-        """# Taleprism 0.9.0 · Prompt starter
+        f"""# Taleprism {VERSION} · Prompt starter
 从 [八套提示模板](prompts/README.md)、[三镜头教程](examples/last-light/README.md) 或 [创意实验](examples/reading-lab/README.md) 开始。无需安装软件即可阅读这些文本。
 模板中的文字只是制作示例。作者决定是否采用；独立阅读器不收录工作备份。软件与素材许可分别见 LICENSE、THIRD_PARTY_NOTICES.md 与各示例的来源说明。
 This starter contains templates, schemas and public tutorial material. Download the source to run the workbench, or a reader ZIP to read offline. No accounts or model service are required for reading.
@@ -120,9 +117,35 @@ def main():
                 fetch_public_inputs(src)
             pairs(src, out)
     data = json.loads((out / "public-example-pairs.json").read_bytes())
-    for a in data["artifacts"]:
-        if digest((out / a["file"]).read_bytes()) != a["sha256"]:
-            raise ValueError("Frozen project/reader changed")
+    # A sidecar must not authorize other paths or its own substituted inputs.
+    catalog = json.loads((ROOT / "samples/content-packs/catalog.json").read_bytes())
+    expected = {
+        f"{PREFIX}-{e['id']}-{kind}.zip": (
+            e["id"],
+            kind,
+            (e if kind == "project" else e["reader"])["sha256"],
+        )
+        for e in catalog
+        if e["id"] in {"chibi", "last-light"}
+        for kind in ("project", "reader")
+    }
+    records = data["artifacts"]
+    if (
+        len(expected) != 4
+        or len(records) != 4
+        or {a["file"] for a in records} != set(expected)
+    ):
+        raise ValueError("Expected both classic public reader/editable pairs.")
+    for a in records:
+        raw = (out / a["file"]).read_bytes()
+        if (
+            (a["example"], a["kind"], a["sha256"]) != expected[a["file"]]
+            or len(raw) != a["bytes"]
+            or digest(raw) != a["sha256"]
+        ):
+            raise ValueError(
+                "Frozen project/reader or its catalog pin changed: " + a["file"]
+            )
     docs = encounters(out)
     starter = build_starter(out)
     pack = {
@@ -150,20 +173,6 @@ def main():
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
     )
     package_source(out / (PREFIX + "-source.zip"))
-    if (
-        args.chibi_source
-        and os.getenv("GITHUB_ACTIONS") == "true"
-        and sys.platform.startswith("linux")
-    ):
-        subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "tools/check_public_preview.py"),
-                "--output",
-                str(out),
-            ],
-            check=True,
-        )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 

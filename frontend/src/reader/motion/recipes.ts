@@ -1,3 +1,5 @@
+import { chibiPlatePresentation } from '../graphs/chibiPlatePresentation'
+import { verifiedPlateEntry } from '../platePresentation'
 import type { IllustrationMotion, ReaderContent, ReaderIllustration } from '../../reader-types'
 
 export type Point = readonly [number, number]
@@ -6,6 +8,8 @@ type Binding = {
   id: string
   canonicalHash: string
   plateId: string
+  /** A fixed public recipe may share the reviewed Chibi edition's two plate identities. */
+  reviewedChibiPlate?: true
   /** The reviewed source boundary, required for automatic presentation. */
   afterByte?: number
   imageAsset?: string
@@ -51,6 +55,7 @@ export const environmentMotionRecipes: readonly EnvironmentMotionRecipe[] = [
     id: 'river-overlook-shore-v1',
     canonicalHash: 'ad97df377de9a9f5f2680253666ec6d9a6d2b8be055ee94a92643a4b16043341',
     plateId: 'river-overlook',
+    reviewedChibiPlate: true,
     afterByte: 63,
     imageAsset: 'da59592b-3675-45ae-aefe-867b01d0a2e3',
     imageHash: 'e615364cdee1f0fad4236afbf44aa1d5b0bd338cba14acaa01c2cf2506042c07',
@@ -372,7 +377,13 @@ export function resolveEnvironmentMotion(
   if (!plate || data.config.illustrations?.filter((p) => p.id === plate.id).length !== 1)
     return null
   const asset = data.media[plate.image_asset_id]
-  if (!asset || asset.type !== 'image' || asset.id !== plate.image_asset_id) return null
+  if (
+    !asset ||
+    asset.type !== 'image' ||
+    asset.id !== plate.image_asset_id ||
+    ('status' in asset && asset.status !== 'accepted')
+  )
+    return null
   // Explicit static or an unreviewed/invalid authored draft must never fall back to a demo.
   if (Object.prototype.hasOwnProperty.call(plate, 'motion')) {
     const m = plate.motion
@@ -393,7 +404,12 @@ export function resolveEnvironmentMotion(
       (r) =>
         validMotionRecipe(r) &&
         r.canonicalHash === data.project.canonical_sha256 &&
-        r.plateId === plate.id &&
+        (r.reviewedChibiPlate
+          ? r.afterByte === plate.after_byte &&
+            r.width === asset.width &&
+            r.height === asset.height &&
+            verifiedPlateEntry(data, plate, chibiPlatePresentation)?.id === r.plateId
+          : r.plateId === plate.id) &&
         (!r.imageAsset || r.imageAsset === asset.id) &&
         (r.imageHash === asset.sha256 || r.normalizedImageHashes?.includes(asset.sha256)),
     ) || null

@@ -72,3 +72,9 @@ New reading JSON may contain a verified original whitespace gap before each bloc
 
 ## Private 0.7.0: finite local soundscapes
 Only reader payloads with an accepted paragraph soundscape move to v5; other editions do not acquire a synthetic track. Editable projects with actual soundscape history use v6, retain private evidence, decisions, audio and timeline choices, and restore their exact WAVs. The book needs no synthesizer at runtime. Independent narration, dialogue and reviewed picture motion continue to work. WebGAL warns that paragraph soundscapes are omitted. Previous readers remain intact; use the current workbench to edit the new project ZIPs.
+
+## 0.9.1 local candidate: source-bound edition decisions
+
+The 0.9.0 Chibi reader correctly presented the curated illustration descriptions and two poem-safe reveal points. Importing its editable example created a new project ID as intended, but the ordinary reader export from that copy did not reproduce all twelve image descriptions or the two later reveal points. These decisions are not equivalent to changing the image file or its original source attachment. The candidate preserves the decisions across the import/export path without giving a new editable project the public reader’s identity.
+
+The candidate Chibi and Last Light pairs carry one accepted, finite paragraph soundscape apiece, using the existing editable v6 / reading-data v5 support. No automatic retrofit is performed on an old reader ZIP. The Door Left Open and The Margin continue as reader-only works. [Candidate comparison](RELEASE-v0.9.1.md).

@@ -29,7 +29,17 @@ def main():
     parser.add_argument(
         "--archive", type=Path, help="Verify a local candidate instead of downloading"
     )
+    parser.add_argument(
+        "--retain-archive",
+        type=Path,
+        help="Save the validated ZIP outside the Pages root for the browser acceptance gate.",
+    )
     args = parser.parse_args()
+    if args.retain_archive and (
+        args.retain_archive.resolve().is_relative_to(args.output.resolve())
+        or args.retain_archive.exists()
+    ):
+        parser.error("--retain-archive needs a new path outside the Pages root")
     spec = reader_spec(example=args.example)
     if args.archive:
         raw = args.archive.read_bytes()
@@ -65,6 +75,10 @@ def main():
         if any(args.output.iterdir()):
             raise ValueError("Use an empty Pages output directory")
         z.extractall(args.output)
+    if args.retain_archive:
+        args.retain_archive.parent.mkdir(parents=True, exist_ok=True)
+        with args.retain_archive.open("xb") as dst:
+            dst.write(raw)
     print("Pinned reader and all contained files verified.")
 
 
