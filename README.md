@@ -2,6 +2,19 @@
 
 **保留小说的每一个字，让读者在读到时看清局势、听见街声。** Taleprism 是一座本地制作台，也是一种不必安装的读本。图、声、动效都有原文里的落点；段落不需要它们时，页面就只有文字。
 
+## 用自己的小说开始
+
+**[下载 AI 创作入门包（Prompt Starter）](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-prompt-starter.zip)**。第一次只下载这一个，不需要源码、读本或示例工程。
+
+1. **解压，交给 Agent。** 在解压后含 `prompts/` 的文件夹中放一份你有权使用的章节副本，如 `chapter.txt`。用 Codex 打开这个文件夹作为本地项目，或在这个目录启动 Claude Code。只有聊天上传功能时，上传 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和章节副本，不用上传整个 ZIP。
+2. **先做一页，不改原文。** 发下面这句话。第一轮会先得到一份可审的镜头计划，不是制作台导入文件。
+
+   > 用 Taleprism 帮我做这章的第一组镜头。先读 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和 `chapter.txt`。原文不改，只选 1–3 个能帮助理解的插图位置。逐项列出段落、逐字引文、画面要表达什么、不能提前揭示什么；推断另列。输出 Markdown，等我确认再生图。
+
+3. **确认后再成书。** 确认镜头后，让 Agent 继续做可直接提交的生图提示词。用支持生图的工具出图；想做可分享读本时，再把原 TXT 和成图导入 Taleprism 制作台、挂到原段落并导出 Reader ZIP。
+
+[完整 Agent 手顺](prompts/START-HERE.md#中文手顺) · [本地制作台安装与回填](docs/快速上手.md) · [Release 附件怎么选](docs/RELEASE-v0.9.2.md#下载只选你需要的包)
+
 **[在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [下载《赤壁》离线读本](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-reader.zip) · [下载《留门》，听街上的雨](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-door-left-open-reader.zip)** · [v0.9.2 下载与版本说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.2) · [English](README.en.md)
 
 **先听一处，不用等整章。** 在线或离线打开《赤壁》，正文搜 `旗旛轉動`，点结果，再点该段末的「听此处声景 · 风声」。只有这段有风声。

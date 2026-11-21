@@ -2,6 +2,19 @@
 
 **Keep every word of the story. Let a map explain a battle or a passing car break the quiet at the moment the text calls for it.** Taleprism is a local authoring workbench and a standalone reader. A passage that needs no sound or picture stays on the page as prose.
 
+## Start with your own novel
+
+**[Download the AI Author Starter (Prompt Starter)](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-prompt-starter.zip)**. This is the only download needed to begin with your agent.
+
+1. **Extract and hand it to your agent.** Put an authorized copy of one chapter, e.g. `chapter.txt`, beside `prompts/`. Open that folder as a local project in Codex or launch Claude Code from it. For a chat-only tool, attach `prompts/01-source.md`, `prompts/03-shot-plan.md`, and the chapter file rather than uploading the ZIP.
+2. **Ask for a first pass.** Copy the message below. You will get an editable shot brief, not a workbench import.
+
+   > Use Taleprism for this chapter. Read `prompts/01-source.md`, `prompts/03-shot-plan.md`, and `chapter.txt` first. Keep the original unchanged. Pick just one to three places where an illustration would help. For each, give the paragraph, exact quote, visual purpose, and what must not be revealed yet. Label inference separately. Return Markdown and stop for my review before generating anything.
+
+3. **Make an edition after review.** Ask for image prompts after approving the brief. Use an image-capable tool to make the art. For a shareable reader, bring the original TXT and approved images into the workbench, place each at its paragraph, and export a Reader ZIP.
+
+[Full agent walkthrough](prompts/START-HERE.md#english-walkthrough) · [Workbench setup (Chinese)](docs/快速上手.md) · [Which release file to download](docs/RELEASE-v0.9.2.md#which-download-do-i-need)
+
 **[Read Chibi (Red Cliffs) online](https://ethereal-space-one.github.io/taleprism/) · [Download Chibi for offline reading](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-reader.zip) · [Download The Door Left Open and hear the rain](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-door-left-open-reader.zip)** · [v0.9.2 release and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.2) · [中文](README.md)
 
 **Hear the wind without waiting for the whole chapter.** Open Chibi online or from the offline ZIP. Search the text for `旗旛轉動`, select the result, then choose **听此处声景 · 风声** at the end of the paragraph. This is the only wind cue in the book.

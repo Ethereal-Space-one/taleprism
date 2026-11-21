@@ -45,6 +45,7 @@ def starter_entries():
     }
     files["taleprism/README.md"] = (
         f"""# Taleprism {VERSION} · Prompt starter
+自己有小说？先看 [用自己的小说开始 / Bring your own novel](prompts/START-HERE.md)，解压后把一章原文和模板交给自己的 Agent。
 从 [八套提示模板](prompts/README.md)、[三镜头教程](examples/last-light/README.md)、[创意实验](examples/reading-lab/README.md) 或 [逐幅动静审图](docs/PLATE-SCREENING.md) 开始。无需安装软件即可阅读这些文本。
 模板中的文字只是制作示例。作者决定是否采用；独立阅读器不收录工作备份。软件与素材许可分别见 LICENSE、THIRD_PARTY_NOTICES.md 与各示例的来源说明。
 源代码、测试与可执行工具不在此入门包内；如需打开教程里的源码链接，请使用同版本[完整源码](https://github.com/Ethereal-Space-one/taleprism/tree/v{VERSION})。
