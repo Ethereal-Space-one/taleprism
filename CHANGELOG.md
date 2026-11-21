@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3 · A simpler download, from your novel or ours
+
+- Put the Agent starter first, with a copyable first request and separate paths for folder-based and upload-only tools.
+- Bundle Chibi and Last Light as one ZIP per work: open `Reader/index.html` to read or import the included `Project.zip` to edit.
+- The standalone reader bytes, editable project archives, workbench runtime, older release downloads, and public Pages deployment do not change. This is a distribution preview. [Download guide](docs/DOWNLOADS.md) · [Release notes](docs/RELEASE-v0.9.3.md).
+
 ## 0.9.2 · An editorial decision for every placed illustration
 
 - The workbench pairs each actual illustration with the text available at its place in the story. Formal sign-off requires a reasoned decision: keep still, propose supported motion, or defer an effect the tools cannot make. Draft exports remain available; a proposal never turns on animation.

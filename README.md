@@ -4,7 +4,7 @@
 
 ## 用自己的小说开始
 
-**[下载 AI 创作入门包（Prompt Starter）](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-prompt-starter.zip)**。第一次只下载这一个，不需要源码、读本或示例工程。
+**[下载 AI 创作入门包（Prompt Starter）](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)**。第一次只下载这一个，不需要源码、读本或示例工程。
 
 1. **解压，交给 Agent。** 在解压后含 `prompts/` 的文件夹中放一份你有权使用的章节副本，如 `chapter.txt`。用 Codex 打开这个文件夹作为本地项目，或在这个目录启动 Claude Code。只有聊天上传功能时，上传 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和章节副本，不用上传整个 ZIP。
 2. **先做一页，不改原文。** 发下面这句话。第一轮会先得到一份可审的镜头计划，不是制作台导入文件。
@@ -15,9 +15,9 @@
 
 [完整 Agent 手顺](prompts/START-HERE.md#中文手顺) · [本地制作台安装与回填](docs/快速上手.md) · [作品与发布附件](docs/DOWNLOADS.md)
 
-**[在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [作品与下载](docs/DOWNLOADS.md) · [English](README.en.md)**
+**[v0.9.3 · 发布与下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.3) · [在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [作品与下载](docs/DOWNLOADS.md) · [English](README.en.md)**
 
-以后下载可编辑示例时，按作品选包，不必分别找读本和工程。新版作品包内双击 `Reader/index.html` 就能读；想拆解制作，再把同包的 `Project.zip` 导入制作台。已公开的旧版下载仍保留在[作品索引](docs/DOWNLOADS.md)。
+可编辑示例现在按作品下载，不必分别找读本和工程。新版作品包内双击 `Reader/index.html` 就能读；想拆解制作，再把同包的 `Project.zip` 导入制作台。已公开的旧版下载仍保留在[作品索引](docs/DOWNLOADS.md)。
 
 **先听一处，不用等整章。** 在线或离线打开《赤壁》，正文搜 `旗旛轉動`，点结果，再点该段末的「听此处声景 · 风声」。只有这段有风声。
 

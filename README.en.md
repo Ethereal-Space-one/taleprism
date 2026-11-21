@@ -4,7 +4,7 @@
 
 ## Start with your own novel
 
-**[Download the AI Author Starter (Prompt Starter)](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-prompt-starter.zip)**. This is the only download needed to begin with your agent.
+**[Download the AI Author Starter (Prompt Starter)](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)**. This is the only download needed to begin with your agent.
 
 1. **Extract and hand it to your agent.** Put an authorized copy of one chapter, e.g. `chapter.txt`, beside `prompts/`. Open that folder as a local project in Codex or launch Claude Code from it. For a chat-only tool, attach `prompts/01-source.md`, `prompts/03-shot-plan.md`, and the chapter file rather than uploading the ZIP.
 2. **Ask for a first pass.** Copy the message below. You will get an editable shot brief, not a workbench import.
@@ -15,7 +15,7 @@
 
 [Full agent walkthrough](prompts/START-HERE.md#english-walkthrough) · [Workbench setup (Chinese)](docs/快速上手.md) · [Works and release downloads](docs/DOWNLOADS.md#works-and-downloads)
 
-**[Read Chibi online](https://ethereal-space-one.github.io/taleprism/) · [Works and downloads](docs/DOWNLOADS.md#works-and-downloads) · [中文](README.md)**
+**[v0.9.3 release and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.3) · [Read Chibi online](https://ethereal-space-one.github.io/taleprism/) · [Works and downloads](docs/DOWNLOADS.md#works-and-downloads) · [中文](README.md)**
 
 Choose an editable example by title, not by file type. In a new work bundle, open `Reader/index.html` directly to read. To make changes, import the matching `Project.zip` from that same bundle into the workbench. Previously published downloads remain available in the [works index](docs/DOWNLOADS.md#works-and-downloads).
 

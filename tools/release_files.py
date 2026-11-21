@@ -54,6 +54,7 @@ ROOT_FILES = (
     "docs/RELEASING.md",
     "docs/ITERATION-HISTORY.md",
     "docs/RELEASE-v0.9.2.md",
+    "docs/RELEASE-v0.9.3.md",
     "docs/VALIDATION-v0.9.2.md",
     "docs/RELEASE-v0.9.1.md",
     "docs/VALIDATION-v0.9.1.md",
