@@ -1,62 +1,55 @@
 # Taleprism
 
-**保留小说的每一个字，让读者在读到时看清局势、听见街声。** Taleprism 是一座本地制作台，也是一种不必安装的读本。图、声、动效都有原文里的落点；段落不需要它们时，页面就只有文字。
+**小说一个字不动。读到哪里，画面和声音就到哪里。**
 
-## 用自己的小说开始
+[**在线读《赤壁》 →**](https://ethereal-space-one.github.io/taleprism/)　·　[**用自己的小说开始 →**](#用自己的小说先做一页)
 
-**[下载 AI 创作入门包（Prompt Starter）](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)**。第一次只下载这一个，不需要源码、读本或示例工程。
+![《赤壁》读本原封面：暮色江岸，人物望向江面](docs/media/chibi-cover.webp)
 
-1. **解压，交给 Agent。** 在解压后含 `prompts/` 的文件夹中放一份你有权使用的章节副本，如 `chapter.txt`。用 Codex 打开这个文件夹作为本地项目，或在这个目录启动 Claude Code。只有聊天上传功能时，上传 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和章节副本，不用上传整个 ZIP。
-2. **先做一页，不改原文。** 发下面这句话。第一轮会先得到一份可审的镜头计划，不是制作台导入文件。
+*《赤壁》 · 实际读本封面*
 
-   > 用 Taleprism 帮我做这章的第一组镜头。先读 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和 `chapter.txt`。原文不改，只选 1–3 个能帮助理解的插图位置。逐项列出段落、逐字引文、画面要表达什么、不能提前揭示什么；推断另列。输出 Markdown，等我确认再生图。
+## 一处画面，一处声音
 
-3. **确认后再成书。** 确认镜头后，让 Agent 继续做可直接提交的生图提示词。用支持生图的工具出图；想做可分享读本时，再把原 TXT 和成图导入 Taleprism 制作台、挂到原段落并导出 Reader ZIP。
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/media/chibi-wind-in-tent.webp" alt="《赤壁》风先入帐：帐帘与布尾掀起，灯火照亮案前" width="100%"><br>
+<strong>《赤壁》 · 风先入帐</strong><br>
+读到旗旛转动，才听见这一阵风。
+</td>
+<td width="50%" valign="top">
+<img src="docs/media/the-door-left-open.webp" alt="《留门》修鞋铺外，黄色小靴留在干门槛上" width="100%"><br>
+<strong>《留门》 · 街雨落在门外</strong><br>
+黄靴不动，雨和车声只经过这一段。
+</td>
+</tr>
+</table>
 
-[完整 Agent 手顺](prompts/START-HERE.md#中文手顺) · [本地制作台安装与回填](docs/快速上手.md) · [作品与发布附件](docs/DOWNLOADS.md)
+《赤壁》的战区地图、阵营关系和事件脉络随正文展开，回读时也收起后文的结果。想直接体验声景，打开《赤壁》搜 `旗旛轉動`，点该段末的「听此处声景 · 风声」。这是一处合成风声，不是整章背景乐；正常向前阅读才会触发自动演绎。「风先入帐」是随后出场的静图，不把声音冒充动画。
 
-**[v0.9.3 · 发布与下载](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.3) · [在线读《赤壁》](https://ethereal-space-one.github.io/taleprism/) · [作品与下载](docs/DOWNLOADS.md) · [English](README.en.md)**
+《留门》把雨线留在图的右侧湿路，干门槛和靴子不动。你也可以用「安静阅读」手动体验，或随时暂停、静音；开启系统「减少动态效果」时，插图保持静止。
 
-可编辑示例现在按作品下载，不必分别找读本和工程。新版作品包内双击 `Reader/index.html` 就能读；想拆解制作，再把同包的 `Project.zip` 导入制作台。已公开的旧版下载仍保留在[作品索引](docs/DOWNLOADS.md)。
+## 用自己的小说，先做一页
 
-**先听一处，不用等整章。** 在线或离线打开《赤壁》，正文搜 `旗旛轉動`，点结果，再点该段末的「听此处声景 · 风声」。只有这段有风声。
+1. **只下一包。** [下载 AI 创作入门包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)，解压后在含 `prompts/` 的目录放入一章原文，例如 `chapter.txt`。用 Codex 或 Claude Code 打开这个目录；只能上传附件时，交给它原文和下面两份模板即可。
+2. **先让 Agent 给一页镜头方案，不急着生图。** 把这句话交给它：
 
-## 古典主展：《赤壁》把战局留在读者读到的那一刻
+   > 用 Taleprism 处理这一章。先读 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和 `chapter.txt`，或对应附件。原文一个字不改，只选 1–3 处适合插图的段落。每处列出段落、逐字引文、画面要让读者看懂什么、不能提前揭示什么；推断另列。输出 Markdown，等我确认再生图。
 
-![《赤壁》封面：七星坛祭风与三江口火攻](examples/chibi/cover.png)
+3. **确认后再成书。** 用你选的图片工具出图。要分享成品时才打开制作台，把原 TXT 和成图放到对应段落，试读后导出独立读本。
 
-《三国演义》第四十九、五十回里，人会换营，船会移位。地图若一开始就画出撤军路线，等于把结局印在了第一页。这里的三阶段地图、阵营关系和事件因果随原文进度展开；向前读才看见新局势，回读时收起后文的结果。可以看已经读到的图，不必先打开整章图集。
+入门包不是插件，也不需要 Taleprism 密钥。图片、配音或模型服务由你自己选择。[更完整的 Agent 手顺](prompts/START-HERE.md#中文手顺)
 
-十二幅情境插图安放在具体段落，八位主要人物有各自的立场。人物在上一幅图看见了什么、上过哪条船，不能因为下一幅换了机位就当作没发生。正文不靠配音讲解，图版也不配整章背景乐。想看编排怎么做的，可以[从《赤壁》作品入口获取可编辑工程](docs/DOWNLOADS.md#赤壁--chibi)，对照[镜头与连续性记录](examples/chibi/README.md)。
+## 拆开一部成品，或者做自己的
 
-**第十二段，让旗动有声。** 67 段里，只有第 12 段「忽聽風聲響，旗旛轉動」有十二秒合成风声。搜索跳转或回看不会补播；正常向前读到该段才会自动演绎。江岸首图的浪早在 0.9.0 就有，风声不表示其他十一幅图也会动。
+**《赤壁》**适合看群像、战局和章节编排；**《末班灯》**适合跟着三镜头练习人物、机位和道具连续性。两部作品各一个 ZIP：解压后打开 `Reader/index.html` 试读，或把同包的 `Project.zip` 导入制作台继续做。《留门》《留白处》是只读示例。
 
-0.9.2 制作台新增[逐幅动静审图](docs/PLATE-SCREENING.md)：每张实际成图都审，不要求每张都动。[四书、17 张入书图版的复审](examples/plate-screening/README.md)保留了做或不做的原文理由；12 幅留静，2 幅延期，3 幅沿用原本就有的动效，没有给读本新加动画。[这版改了什么](docs/RELEASE-v0.9.2.md)。
+想装本地制作台，下载源码包并在解压目录运行 `./start.sh`（需 Python 3.11+、uv、Node.js 22.12+ 和 npm，首次安装需联网）。之后运行 `./run.sh`，macOS 也可以双击「打开Taleprism.command」。
 
-## 现代主展：《留门》只让街上的雨动起来
+**[所有作品与下载](docs/DOWNLOADS.md)**　·　[制作台安装与详细手顺](docs/快速上手.md)
 
-修鞋铺的卷门放到一半，门槛上留着一双小黄靴。第一段没有声音；读到第二段，才听见雨落在铁篷上，一辆车从巷口驶过。十二秒里，第六秒车最近。图上的雨线只落在右侧湿路，靴子和干门槛始终不动。结尾雨停，声音也没有理由再来。
+## 不必让每幅画都动
 
-[《留门》阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-door-left-open-reader.zip)最适合试 0.9 的「随文演绎」。另一个小实验[《留白处》](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-margin-reader.zip)反而让静物画始终静止：读到后段，折页才带回前文的一句话；末段只有几笔铅笔声。两本都只发读本，不附可编辑项目。
+每张成图都对照原句审查，留静也是决定。收尾时可让 AI 在声音、影像或呈现方式上再提一个点子；「都不加」也算完成。只有作者采用的安排会进入读本，读者阅读时不会调用 AI。分享用读本，继续制作请另存可编辑工程。
 
-在[《末班灯》读本](docs/DOWNLOADS.md#末班灯--last-light)里，第二段「傍晚的雨斜着落进站台」只加细雨，没有过车。用同样的方法搜 `傍晚的雨`，点该段的「听此处声景 · 细雨」即可试听；第一幅《檐下初见》原有的局部雨效保留。[本次修订与逐本验收](docs/RELEASE-v0.9.1.md)
-
-## 怎么读？封面不响，正文不替你翻页
-
-1. **完整解压 → 打开 `Reader/index.html`（新版作品包）或 `index.html`（旧版独立读本）。**保留旁边的素材文件夹，不要在 ZIP 预览里打开。不需要终端、网络、制作台或模型密钥。
-2. 选「开始阅读」，已经采用的声景读到时响一次，图在作者选定的位置出现；只有另行复核的局部动效才动。若浏览器拦住第一次声音，点阅读器内的提示即可，不必放宽系统权限。
-3. 选「安静阅读」就改为手动体验。正文可暂停自动演绎；「静音」关整部作品的声音，但保留画与折页。系统开启「减少动态效果」时，图保持静止。段落朗读仍需点听，人物对白另有设置。
-
-**在线与离线，读的是同一本。** **0.9.2** 随附的《赤壁》读本与 **0.9.1** 是同一份文件。在线入口无需下载；想断网阅读，就从作品索引取得离线包并完整解压。以前下载的 ZIP 不会自动更新。《留门》和《留白处》仍为离线读本。
-
-## 做自己的读本：先选原句，再决定做不做
-
-从「用自己的图文开始」导入 TXT。给一段原文放上一张自己有权使用的画，检查底图、定好位置，这就已经能导出。需要听见什么时，再导入一段获许可的朗读，或编排短声景；听完、确认采用，才进入读本。要让画动，就在实际图上圈出雨区或岸线，预览、复核，而非让整幅画都动。
-
-制作收尾的 **One More Thing** 默认收起：可从声音、影像或呈现方式中选一项，看看是否有值得尝试的提案；「都不加」也是完成。本机规则不是模型；主动请求外部模型时会先确认正文与接口。只有作者采用的安排才交给读者，阅读时不会调用 AI。**分享用 Reader，续作用工程备份**；后者可能包含未用素材、注释和审校历史。
-
-第一次制作可跟[《末班灯》三镜头教程](examples/last-light/README.md)。运行本地工作台需 Python 3.11+、[uv](https://docs.astral.sh/uv/getting-started/installation/)、Node.js 22.12+ 和 npm；在源码中含 `start.sh` 的目录执行 `./start.sh`，依提示打开本机地址。首次安装需要联网，之后在同目录用 `./run.sh`。工作台界面为中文，无原生 Windows 启动器。
-
-[快速上手](docs/快速上手.md) · [八个制作提示词](prompts/README.md) · [公开复现实验](examples/reading-lab/README.md) · [逐版迭代记录](docs/ITERATION-HISTORY.md) · [本版实测与边界](docs/VALIDATION-v0.9.2.md) · [贡献指南](CONTRIBUTING.md)
-
-代码及提示词采用 [MIT](LICENSE)。作品、媒体、依赖的[来源与许可](THIRD_PARTY_NOTICES.md)另列；请同时保留读本附带的说明。
+[v0.9.3 发布说明](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.3)　·　[English](README.en.md)
