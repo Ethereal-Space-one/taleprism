@@ -13,9 +13,11 @@
 
 3. **Make an edition after review.** Ask for image prompts after approving the brief. Use an image-capable tool to make the art. For a shareable reader, bring the original TXT and approved images into the workbench, place each at its paragraph, and export a Reader ZIP.
 
-[Full agent walkthrough](prompts/START-HERE.md#english-walkthrough) · [Workbench setup (Chinese)](docs/快速上手.md) · [Which release file to download](docs/RELEASE-v0.9.2.md#which-download-do-i-need)
+[Full agent walkthrough](prompts/START-HERE.md#english-walkthrough) · [Workbench setup (Chinese)](docs/快速上手.md) · [Works and release downloads](docs/DOWNLOADS.md#works-and-downloads)
 
-**[Read Chibi (Red Cliffs) online](https://ethereal-space-one.github.io/taleprism/) · [Download Chibi for offline reading](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-reader.zip) · [Download The Door Left Open and hear the rain](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-door-left-open-reader.zip)** · [v0.9.2 release and downloads](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.2) · [中文](README.md)
+**[Read Chibi online](https://ethereal-space-one.github.io/taleprism/) · [Works and downloads](docs/DOWNLOADS.md#works-and-downloads) · [中文](README.md)**
+
+Choose an editable example by title, not by file type. In a new work bundle, open `Reader/index.html` directly to read. To make changes, import the matching `Project.zip` from that same bundle into the workbench. Previously published downloads remain available in the [works index](docs/DOWNLOADS.md#works-and-downloads).
 
 **Hear the wind without waiting for the whole chapter.** Open Chibi online or from the offline ZIP. Search the text for `旗旛轉動`, select the result, then choose **听此处声景 · 风声** at the end of the paragraph. This is the only wind cue in the book.
 
@@ -25,7 +27,7 @@
 
 In chapters 49 and 50 of *Romance of the Three Kingdoms*, commanders shift allegiance and fleets change position. A map drawn with hindsight would reveal the retreat before the reader reaches the battle. Here, the three stages of the map, faction ties and chains of cause and effect unfold with the text. Read back and later outcomes disappear again. Browse the illustrations you have reached without opening the whole chapter's gallery.
 
-Twelve illustrations follow eight principal characters. The maker's plan tracks who has seen what and which boat an object belongs on; a change of camera angle doesn't erase the previous scene. There is no running narration or chapter-long soundtrack. To see how it works, [open the editable Chibi project](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-chibi-project.zip) alongside its [shot and continuity notes (Chinese)](examples/chibi/README.md).
+Twelve illustrations follow eight principal characters. The maker's plan tracks who has seen what and which boat an object belongs on; a change of camera angle doesn't erase the previous scene. There is no running narration or chapter-long soundtrack. To see how it works, [get the editable Chibi project from its work entry](docs/DOWNLOADS.md#赤壁--chibi) alongside its [shot and continuity notes (Chinese)](examples/chibi/README.md).
 
 **Listen for the flags in paragraph twelve.** Only paragraph 12 of 67 has a soundscape: twelve seconds of synthesized wind at 「忽聽風聲響，旗旛轉動」. Searching or going back does not replay cues you skipped. Reading forward normally encounters the cue in place. The shore waves on the first illustration already worked in 0.9.0; the wind does not animate the other eleven illustrations.
 
@@ -37,11 +39,11 @@ A cobbler has lowered the shutter halfway. A pair of small yellow boots sits on 
 
 [The Door Left Open](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-door-left-open-reader.zip) is the short introduction to 0.9's passage-timed design. A smaller experiment, [The Margin](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-the-margin-reader.zip), takes a different approach: a still life stays still, an earlier sentence returns in a fold, and a few pencil strokes give way to silence. Both downloads are readers, not editable backups.
 
-The [Last Light reader](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/taleprism-v0.9.2-last-light-reader.zip), also available as an editable tutorial, uses rain alone, not a passing car. Search for `傍晚的雨` and choose **听此处声景 · 细雨** at the second paragraph. The first illustration keeps its existing station-rain motion. See the [repair notes and book-by-book acceptance criteria](docs/RELEASE-v0.9.1.md).
+The [Last Light reader](docs/DOWNLOADS.md#末班灯--last-light), also available as an editable tutorial, uses rain alone, not a passing car. Search for `傍晚的雨` and choose **听此处声景 · 细雨** at the second paragraph. The first illustration keeps its existing station-rain motion. See the [repair notes and book-by-book acceptance criteria](docs/RELEASE-v0.9.1.md).
 
 ## Open a book and set its pace
 
-1. **Download a Reader ZIP → extract it fully → open `index.html` in that folder.** Keep the assets beside the HTML. Don't open the HTML in a ZIP preview. Reading needs no terminal, network, workbench or model key.
+1. **Extract the ZIP fully, then open `Reader/index.html` (new work bundle) or `index.html` (standalone reader).** Keep the assets beside the HTML. Don't open the HTML in a ZIP preview. Reading needs no terminal, network, workbench or model key.
 2. The cover stays silent. Choose **开始阅读** (Start reading): an adopted soundscape can play once at its passage, and a picture appears where the author placed it. Only separately reviewed motion can animate. If your browser blocks the first sound, use the prompt inside the reader; don't change browser permissions.
 3. **安静阅读** (Quiet reading) leaves the cues for you to try manually. Pause automatic cues while reading, or choose **静音** (Mute) to silence the book without hiding art or folds. System reduced motion keeps illustrations still. Passage narration is click-to-play; character dialogue retains its own settings. Nothing turns the page for you.
 

@@ -2,6 +2,45 @@
 
 A GitHub prerelease is not a stable release or a Pages rollout. Use an ordinary review branch from the verified public main; never import an unrelated private Git history or replace an existing tag. The [iteration history](ITERATION-HISTORY.md) is the public record of the intervening work.
 
+## Next preview: one download per work
+
+Build the candidate distribution without changing the existing v0.9.2 build, tag,
+downloads or Pages deployment. The new Release copy should lead with the first
+download, then group the two complete works and show the workbench last.
+
+| What the visitor wants | New release attachment |
+| --- | --- |
+| Bring my novel to an AI agent | `taleprism-agent-starter.zip` |
+| Read or edit Chibi | `taleprism-chibi-work.zip` |
+| Read or edit Last Light | `taleprism-last-light-work.zip` |
+| Install the local workbench | `taleprism-workbench-source.zip` |
+
+Each work ZIP has a bilingual `README.md`, the expanded `Reader/` (open
+`Reader/index.html`), and an intact `Project.zip` (import into the workbench).
+There is no extra reader ZIP to unpack. The work ZIP is not an import target.
+The two [reader-only works](DOWNLOADS.md#仅试读--reader-only) stay in the works
+index at their existing published URLs. Put `candidate-manifest.json` and
+`SHA256SUMS` under a separate verification heading; GitHub adds its own
+automatic source snapshots.
+
+Obtain the four unchanged v0.9.2 Chibi and Last Light reader/project ZIPs from
+the [published release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.2),
+or the exact matching outputs of the historical builder below. Build in a
+separate output directory; the bundler checks the fixed input digests.
+
+```sh
+python3 tools/build_distribution_candidate.py --inputs /path/to/v0.9.2-zips --output .release/distribution
+(cd .release/distribution && shasum -a 256 -c SHA256SUMS)
+```
+
+Before a separately authorized release, validate the exact new downloads: extract
+each work once, open the bundled reader offline, import only its `Project.zip`
+into a fresh store, and verify original text, placed art and paragraph soundscape
+in the default re-export. A structural or static check is not a browser pass.
+Test the Agent starter from its own README and source setup from a clean directory.
+Bind the reviewed candidate to its exact commit, do not overwrite a published
+tag or replace old attachments, and do not deploy Pages as a side effect.
+
 ## 0.9.2 local build: review every plate without changing the books
 
 Use a clean output directory, install the locked dependencies and rebuild the reader; do not replace any 0.9.0 file. Download the four original v0.3.3 Chibi/Last Light project/reader ZIPs from the [historical public release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.3.3). The exact two accepted sounds regenerate locally; private projects or audio downloads are not inputs.
