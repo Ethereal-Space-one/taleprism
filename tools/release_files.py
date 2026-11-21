@@ -44,7 +44,6 @@ ROOT_FILES = (
     "engine/LICENSE-MPL-2.0.txt",
     "docs/快速上手.md",
     "docs/DOWNLOADS.md",
-    "docs/media/taleprism-cover.svg",
     "docs/ARCHITECTURE.md",
     "docs/PLATE-SCREENING.md",
     "docs/人物视觉导演标准.md",
