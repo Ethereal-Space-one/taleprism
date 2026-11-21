@@ -46,6 +46,7 @@ ROOT_FILES = (
     "docs/DOWNLOADS.md",
     "docs/media/PROVENANCE.md",
     "docs/media/chibi-cover.webp",
+    "docs/media/taleprism-chibi-title.webp",
     "docs/media/chibi-wind-in-tent.webp",
     "docs/media/the-door-left-open.webp",
     "docs/ARCHITECTURE.md",

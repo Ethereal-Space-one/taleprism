@@ -1,4 +1,4 @@
-# Taleprism
+# ![Taleprism](docs/media/taleprism-chibi-title.webp)
 
 **Keep every word of the novel. Let pictures and sound arrive at the passage where they belong.**
 

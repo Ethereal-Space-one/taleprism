@@ -1,4 +1,4 @@
-# Taleprism
+# ![Taleprism](docs/media/taleprism-chibi-title.webp)
 
 **以原文为底，让插图、声景与图解随叙事展开。**
 
