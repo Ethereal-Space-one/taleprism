@@ -9,6 +9,7 @@ import unittest
 import warnings
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import build_distribution_candidate as candidate
@@ -95,7 +96,6 @@ class CandidateTests(unittest.TestCase):
             ["a/./b"],
             [r"a\b"],
             ["C:/drive"],
-            ["NUL.txt"],
             ["bad."],
             ["bad "],
             ["file:stream"],
@@ -115,6 +115,57 @@ class CandidateTests(unittest.TestCase):
             info.external_attr = (typ | 0o644) << 16
             with self.assertRaises(ValueError):
                 candidate.safe_files(zipped([(info, b"outside")]))
+
+    def test_windows_reserved_members_rejected_on_any_platform(self):
+        for name in [
+            "NUL.txt",
+            "cloud/cOn/image.png",
+            "media/com¹.jpg",
+            "LPT9",
+            "PRN .txt",
+        ]:
+            with (
+                self.subTest(name=name),
+                self.assertRaisesRegex(ValueError, "Unsafe member"),
+            ):
+                candidate.safe_files(zipped([(name, b"x")]))
+        names = ["media/concept.png", "COM10.txt", "data/辅助.md"]
+        files = dict.fromkeys(names, b"safe")
+        self.assertEqual(candidate.safe_files(zipped(files.items())), files)
+
+    def test_windows_reserved_uses_ntpath_when_pathlib_method_is_absent(self):
+        with (
+            patch.object(
+                candidate,
+                "ntpath",
+                SimpleNamespace(isreserved=lambda p: p == "NUL.txt"),
+            ),
+            patch.object(candidate, "PureWindowsPath", return_value=object()) as legacy,
+        ):
+            with self.assertRaisesRegex(ValueError, "Unsafe member"):
+                candidate.safe_files(zipped([("NUL.txt", b"x")]))
+            self.assertEqual(
+                candidate.safe_files(zipped([("index.html", b"x")])),
+                {"index.html": b"x"},
+            )
+            legacy.assert_not_called()
+
+    def test_windows_reserved_falls_back_without_ntpath_api(self):
+        accepted = SimpleNamespace(is_reserved=lambda: False)
+        rejected = SimpleNamespace(is_reserved=lambda: True)
+        with (
+            patch.object(candidate, "ntpath", SimpleNamespace()),
+            patch.object(
+                candidate, "PureWindowsPath", side_effect=[rejected, accepted]
+            ) as legacy,
+        ):
+            with self.assertRaisesRegex(ValueError, "Unsafe member"):
+                candidate.safe_files(zipped([("NUL.txt", b"x")]))
+            self.assertEqual(
+                candidate.safe_files(zipped([("index.html", b"x")])),
+                {"index.html": b"x"},
+            )
+            self.assertEqual(legacy.call_count, 2)
 
     def test_broken_reader_inventory(self):
         files = synthetic_reader()

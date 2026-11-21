@@ -4,6 +4,8 @@ permissions:
   contents: read
 jobs:
   core:
+    env:
+      UV_PYTHON: "3.12"
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +23,8 @@ jobs:
           node-version: '22'
           package-manager-cache: false
       - run: uv sync --project backend --frozen
+      - name: Check the release Python
+        run: uv run --project backend --frozen python -c "import sys; print(sys.version); assert sys.version_info[:2] == (3, 12)"
       - run: npm --prefix frontend ci --no-audit --no-fund
       - run: npm --prefix frontend run build
       - name: Lint backend and release tools
@@ -34,9 +38,9 @@ jobs:
           tools/screen_plates.py tools/check_plate_studies.py tools/check_example_screening_transfer.py
           tools/check_edition_semantics.py tools/check_reading_upgrade.py tools/classic_example_sound.py tools/build_public_example_pairs.py
       - run: uv run --project backend --frozen python tools/export_prompt_kit.py --check
-      - run: python3 tools/release_files.py --check
+      - run: uv run --project backend --frozen python tools/release_files.py --check
       - name: Test distribution bundle structure and archive safety
-        run: python3 -m unittest discover -s tools -p test_distribution_candidate.py -v
+        run: uv run --project backend --frozen python -m unittest discover -s tools -p test_distribution_candidate.py -v
       - name: Verify workbench process ownership
         run: uv run --project backend --frozen pytest backend/tests/test_launcher_v02.py
       - name: Install public WebGAL export test dependencies
@@ -45,7 +49,7 @@ jobs:
           npm --prefix tools/webgal-verify ci --omit=dev --no-audit --no-fund
       - name: Download the pinned public Chibi v0.1 reader
         run: |
-          chibi_url=$(python3 - <<'PY'
+          chibi_url=$(uv run --project backend --frozen python - <<'PY'
           import json
           from pathlib import Path
 
@@ -92,10 +96,9 @@ jobs:
           uv run --project backend --frozen python tools/check_plate_studies.py --output .release/ci --report .release/ci/plate-screening-acceptance.json
           uv run --project backend --frozen python tools/finalize_release.py --output .release/ci
       - name: Verify the separate four-download distribution candidate
-        if: runner.os == 'Linux'
         run: |
-          python3 tools/build_distribution_candidate.py --inputs .release/ci --output .release/distribution
-          (cd .release/distribution && sha256sum -c SHA256SUMS)
+          uv run --project backend --frozen python tools/build_distribution_candidate.py --inputs .release/ci --output .release/distribution
+          (cd .release/distribution && shasum -a 256 -c SHA256SUMS)
       - name: Record exact hosted release bytes and acceptance receipt
         if: runner.os == 'Linux'
         working-directory: .release/ci

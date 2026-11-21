@@ -26,10 +26,12 @@ automatic source snapshots.
 Obtain the four unchanged v0.9.2 Chibi and Last Light reader/project ZIPs from
 the [published release](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.2),
 or the exact matching outputs of the historical builder below. Build in a
-separate output directory; the bundler checks the fixed input digests.
+separate output directory; the bundler checks the fixed input digests. CI uses
+Python 3.12 for both package tests and actual candidate builds on Ubuntu and macOS.
 
 ```sh
-python3 tools/build_distribution_candidate.py --inputs /path/to/v0.9.2-zips --output .release/distribution
+uv sync --project backend --frozen --python 3.12
+uv run --project backend --frozen --python 3.12 python tools/build_distribution_candidate.py --inputs /path/to/v0.9.2-zips --output .release/distribution
 (cd .release/distribution && shasum -a 256 -c SHA256SUMS)
 ```
 

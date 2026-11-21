@@ -9,6 +9,7 @@ Requires Python 3.11+ and a clean Git checkout with an up-to-date public invento
 import argparse
 import hashlib
 import io
+import ntpath
 import os
 import stat
 import subprocess
@@ -97,6 +98,15 @@ def checked_input(folder, slug, kind):
     return raw, {"file": name, "url": f"{BASE}/{name}", "sha256": digest}
 
 
+def windows_reserved(part):
+    # The ZIP must also be safe to extract on Windows, even when built on macOS
+    # or Linux. ntpath.isreserved arrived in 3.13; pathlib's method is gone in 3.15.
+    check = getattr(ntpath, "isreserved", None)
+    if check is not None:
+        return check(part)
+    return PureWindowsPath(part).is_reserved()
+
+
 def safe_files(raw):
     """Do not extract input files. Reject names/aliases that are unsafe on other OSes."""
     files = read_zip(raw)  # limits, CRCs, traversal, duplicates, symlinks, encryption
@@ -112,7 +122,7 @@ def safe_files(raw):
                 or any(
                     any(ord(c) < 32 or c in '<>:"|?*' for c in part)
                     or part.endswith((" ", "."))
-                    or PureWindowsPath(part).is_reserved()
+                    or windows_reserved(part)
                     for part in parts
                 )
             ):
