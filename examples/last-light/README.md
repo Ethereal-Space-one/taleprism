@@ -2,7 +2,7 @@
 
 目标：理解一篇小说如何经过人物表演、场景设定、逐图检查，成为可连续阅读的作品。无须安装制作台即可使用本教程。[English](README.en.md)
 
-[离线阅读包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-reader.zip) · [可编辑工程](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-last-light-project.zip) · [模板起步包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.1/taleprism-v0.9.1-prompt-starter.zip) · [八个模板 0.2.1](../../prompts/README.md)
+[《末班灯》作品与下载](../../docs/DOWNLOADS.md#末班灯--last-light) · [带自己的小说开始](../../prompts/START-HERE.md#中文手顺) · [八个模板](../../prompts/README.md)
 
 **0.9.1 第二段有雨声。** 搜 `傍晚的雨`，点结果后到该段末点「听此处声景 · 细雨」。这是十二秒合成细雨，不加车辆或人声。第一幅《檐下初见》原有的局部雨效和三幅图都保留。旧 0.9.0 ZIP 只有画面雨效，没有段落声音。[版本说明](../../docs/RELEASE-v0.9.1.md)。
 

@@ -198,6 +198,7 @@ def build(inputs, output):
         out.mkdir()
         files = starter_entries()
         files["taleprism/README.md"] = STARTER_README.encode()
+        files["taleprism/README.en.md"] = STARTER_README.encode()
         files["taleprism/docs/DOWNLOADS.md"] = (ROOT / "docs/DOWNLOADS.md").read_bytes()
         if "taleprism/prompts/START-HERE.md" not in files:
             raise ValueError("Agent walkthrough missing from starter inventory")

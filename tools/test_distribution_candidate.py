@@ -209,6 +209,9 @@ class CandidateTests(unittest.TestCase):
                     "prompts/START-HERE.md", z.read("taleprism/README.md").decode()
                 )
                 self.assertIn("taleprism/docs/DOWNLOADS.md", z.namelist())
+                self.assertEqual(
+                    z.read("taleprism/README.md"), z.read("taleprism/README.en.md")
+                )
             (self.src / "taleprism-v0.9.2-last-light-project.zip").write_bytes(
                 b"invalid"
             )
