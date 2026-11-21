@@ -1,0 +1,189 @@
+name: Publish Taleprism v0.9.3 preview
+on:
+  push:
+    branches: ['release/v0.9.3']
+permissions: {}
+concurrency:
+  group: taleprism-one-shot-v0.9.3
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'Ethereal-Space-one/taleprism' &&
+      github.ref == 'refs/heads/release/v0.9.3' &&
+      github.event.created == true && github.event.deleted == false
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      notes_base64: ${{ steps.notes.outputs.base64 }}
+      target_sha: ${{ steps.target.outputs.sha }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Bind this run to the reviewed candidate
+        id: target
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          target="$(git rev-parse HEAD^)"
+          test "$(git rev-list --parents -n 1 HEAD)" = "$GITHUB_SHA $target"
+          test "$(git rev-list --parents -n 1 "$target")" = \
+            "$target 9c75919ddedfb44c080f8a7af5cc30ba32b9175e"
+          test "$(git rev-parse "$target^{tree}")" = 9b6f05165216d275fb3896b621c9a4b37401af36
+          test "$(git diff --name-status "$target" HEAD)" = $'A\t.github/workflows/release-v0.9.3.yml'
+          test -z "$(git diff --name-only 9c75919ddedfb44c080f8a7af5cc30ba32b9175e "$target" -- .github/workflows)"
+          ref="refs/heads/release-candidate/v0.9.3"
+          test "$(git ls-remote --exit-code origin "$ref")" = "$(printf '%s\t%s' "$target" "$ref")"
+          test "$(git ls-remote --exit-code origin refs/heads/main)" = \
+            "$(printf '%s\t%s' 9c75919ddedfb44c080f8a7af5cc30ba32b9175e refs/heads/main)"
+          git checkout --detach "$target"
+          printf 'TARGET_SHA=%s\n' "$target" >> "$GITHUB_ENV"
+          printf 'sha=%s\n' "$target" >> "$GITHUB_OUTPUT"
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78
+        with:
+          python-version: '3.12'
+      - name: Build exactly the four candidate downloads and two verification files
+        shell: bash
+        run: |
+          export UV_PYTHON=3.12
+          inputs="$(mktemp -d)"
+          out="$RUNNER_TEMP/taleprism-v093-candidate"
+          base="https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2"
+          for work in chibi last-light; do
+            for kind in reader project; do
+              file="taleprism-v0.9.2-${work}-${kind}.zip"
+              curl --disable --fail --silent --show-error --location \
+                --proto '=https' --proto-redir '=https' --retry 2 \
+                --connect-timeout 15 --max-time 150 --output "$inputs/$file" "$base/$file"
+            done
+          done
+          uv run --project backend --frozen python tools/build_distribution_candidate.py \
+            --inputs "$inputs" --output "$out"
+          cd "$out"
+          sha256sum --check --strict SHA256SUMS
+          jq -e --arg commit "$TARGET_SHA" '.commit == $commit' candidate-manifest.json
+          expected=$'SHA256SUMS\ncandidate-manifest.json\ntaleprism-agent-starter.zip\ntaleprism-chibi-work.zip\ntaleprism-last-light-work.zip\ntaleprism-workbench-source.zip'
+          test "$(find . -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)" = "$expected"
+      - name: Require the exact head to pass checks on Ubuntu and macOS
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          endpoint="repos/$GITHUB_REPOSITORY/actions/workflows/check.yml/runs"
+          for attempt in $(seq 1 60); do
+            runs="$(gh api --method GET "$endpoint" -f head_sha="$TARGET_SHA" -f event=push -F per_page=20)"
+            run="$(jq -c --arg sha "$TARGET_SHA" --arg branch 'release-candidate/v0.9.3' \
+              '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == $branch and .event == "push")] | first // empty' <<<"$runs")"
+            if [[ -n "$run" && "$(jq -r .status <<<"$run")" == completed ]]; then
+              jq -e '.conclusion == "success"' <<<"$run"
+              run_id="$(jq -er '.id' <<<"$run")"
+              gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs" | jq -e '
+                [.jobs[] | select(.conclusion == "success") | .name] |
+                (index("core (macos-latest)") != null and index("core (ubuntu-latest)") != null)'
+              echo "Both platforms passed in GitHub Actions run $run_id."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for checks for $TARGET_SHA." >&2
+          exit 1
+      - name: Read reviewed release notes from this commit
+        id: notes
+        shell: bash
+        run: |
+          test -s docs/RELEASE-v0.9.3.md
+          printf 'base64=%s\n' "$(base64 -w0 docs/RELEASE-v0.9.3.md)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: taleprism-v0.9.3-verified-downloads
+          compression-level: 0
+          retention-days: 2
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/taleprism-v093-candidate/SHA256SUMS
+            ${{ runner.temp }}/taleprism-v093-candidate/candidate-manifest.json
+            ${{ runner.temp }}/taleprism-v093-candidate/taleprism-agent-starter.zip
+            ${{ runner.temp }}/taleprism-v093-candidate/taleprism-chibi-work.zip
+            ${{ runner.temp }}/taleprism-v093-candidate/taleprism-last-light-work.zip
+            ${{ runner.temp }}/taleprism-v093-candidate/taleprism-workbench-source.zip
+
+  publish:
+    needs: prepare
+    if: >-
+      github.repository == 'Ethereal-Space-one/taleprism' &&
+      github.ref == 'refs/heads/release/v0.9.3' &&
+      github.event.created == true && github.event.deleted == false
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: taleprism-v0.9.3-verified-downloads
+          path: ${{ runner.temp }}/taleprism-v093-candidate
+      - name: Verify draft assets before publishing the new prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES_BASE64: ${{ needs.prepare.outputs.notes_base64 }}
+          TARGET_SHA: ${{ needs.prepare.outputs.target_sha }}
+        run: |
+          tag=v0.9.3
+          repo="repos/$GITHUB_REPOSITORY"
+          out="$RUNNER_TEMP/taleprism-v093-candidate"
+          names=(SHA256SUMS candidate-manifest.json taleprism-agent-starter.zip taleprism-chibi-work.zip taleprism-last-light-work.zip taleprism-workbench-source.zip)
+          expected="$(printf '%s\n' "${names[@]}" | LC_ALL=C sort)"
+          test "$(find "$out" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)" = "$expected"
+          (cd "$out"; sha256sum --check --strict SHA256SUMS)
+          [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          jq -e --arg commit "$TARGET_SHA" '.commit == $commit' "$out/candidate-manifest.json"
+
+          # These read-only queries must succeed; a network error must not be mistaken for absence.
+          gh api "$repo/git/matching-refs/tags/$tag" | jq -e --arg ref "refs/tags/$tag" 'all(.[]; .ref != $ref)'
+          taken="$(gh api --paginate "$repo/releases?per_page=100" | jq -r --arg tag "$tag" '.[] | select(.tag_name == $tag) | .id')"
+          test -z "$taken" || { echo "Refusing to replace an existing Release." >&2; exit 1; }
+
+          notes="$(printf '%s' "$NOTES_BASE64" | base64 --decode)"
+          test -n "$notes"
+
+          draft="$(gh api --method POST "$repo/releases" -f tag_name="$tag" -f target_commitish="$TARGET_SHA" \
+            -f name="Taleprism v0.9.3 · Agent starter and complete works" -f body="$notes" \
+            -F draft=true -F prerelease=true -f make_latest=false)"
+          jq -e --arg tag "$tag" --arg sha "$TARGET_SHA" \
+            '.tag_name == $tag and .target_commitish == $sha and .draft and .prerelease and (.assets == [])' <<<"$draft"
+          id="$(jq -er '.id | numbers' <<<"$draft")"
+
+          for name in "${names[@]}"; do
+            curl --disable --fail --silent --show-error --proto '=https' --connect-timeout 15 --max-time 210 \
+              --header "Authorization: Bearer $GH_TOKEN" --header 'Content-Type: application/octet-stream' \
+              --data-binary "@$out/$name" \
+              "https://uploads.github.com/$repo/releases/$id/assets?name=$name" \
+              | jq -e --arg name "$name" '.name == $name and .state == "uploaded"'
+          done
+
+          assets="$(gh api "$repo/releases/$id/assets?per_page=20")"
+          test "$(jq -r '.[].name' <<<"$assets" | LC_ALL=C sort)" = "$expected"
+          retrieved="$(mktemp -d)"
+          for name in "${names[@]}"; do
+            asset="$(jq -er --arg name "$name" '.[] | select(.name == $name) | .id | numbers' <<<"$assets")"
+            gh api "$repo/releases/assets/$asset" -H 'Accept: application/octet-stream' > "$retrieved/$name"
+            cmp "$out/$name" "$retrieved/$name"
+          done
+          (cd "$retrieved"; sha256sum --check --strict SHA256SUMS)
+
+          # Reserve the exact new tag atomically: GitHub rejects creation if it exists.
+          # Only now do we make the checked draft public. Never patch an existing tag.
+          gh api "$repo/git/ref/heads/main" | jq -e '.object.sha == "9c75919ddedfb44c080f8a7af5cc30ba32b9175e"'
+          gh api "$repo/git/ref/heads/release-candidate/v0.9.3" | jq -e --arg sha "$TARGET_SHA" '.object.sha == $sha'
+          gh api --method POST "$repo/git/refs" -f ref="refs/tags/$tag" -f sha="$TARGET_SHA" \
+            | jq -e --arg sha "$TARGET_SHA" '.object.type == "commit" and .object.sha == $sha'
+          gh api --method PATCH "$repo/releases/$id" -F draft=false -F prerelease=true -f make_latest=false \
+            | jq -er --arg tag "$tag" 'select(.tag_name == $tag and (.draft | not) and .prerelease) | .html_url'
