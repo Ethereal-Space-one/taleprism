@@ -4,7 +4,7 @@ export function ReaderImageDisclosure({
   onConfirm,
 }: {
   onReturn: () => void
-  onStay: () => void
+  onStay?: () => void
   onConfirm: () => void
 }) {
   return (
@@ -17,7 +17,7 @@ export function ReaderImageDisclosure({
         <button className="reader-primary" onClick={onReturn}>
           返回正文
         </button>
-        <button onClick={onStay}>继续当前画面</button>
+        {onStay && <button onClick={onStay}>继续当前画面</button>}
         <button onClick={onConfirm}>查看全卷插图</button>
       </div>
     </section>

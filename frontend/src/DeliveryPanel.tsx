@@ -5,6 +5,7 @@ import { PlateScreening, usePlateScreening } from './PlateScreening'
 
 type Mode = 'text' | 'review' | 'speech' | 'visual' | 'delivery' | 'reader' | 'production'
 type Record = {
+  plate_timing_revision?: number
   plate_screening_revision?: number
   export_id: string
   reviewed_at: string
@@ -70,18 +71,39 @@ export function DeliveryPanel({
   const forReader = !job || job.kind === 'reader_export'
   const screening = usePlateScreening(projectId, forReader)
   const currentScreened =
-    !forReader || (!!screening.data?.report.ok && !screening.isError && !editing)
+    !forReader ||
+    (!!screening.data?.report.ok && screening.data.timing.ok && !screening.isError && !editing)
   const result = job?.result
-  const approvalKey = job ? job.id + ':' + (forReader ? screening.data?.revision : 'webgal') : null
+  const approvalKey = job
+    ? [
+        job.id,
+        ...(forReader
+          ? [
+              screening.data?.revision,
+              screening.data?.timing.revision,
+              screening.data?.reader_revision,
+            ]
+          : ['webgal']),
+      ].join(':')
+    : null
   const selected = approval.exportId === approvalKey ? approval.keys : []
   const record = data?.records.find((r) => r.export_id === job?.id)
+  const recordMatches =
+    !forReader ||
+    (record?.plate_screening_revision === screening.data?.revision &&
+      record?.plate_timing_revision === screening.data?.timing.revision)
   const save = useMutation({
     mutationFn: (notes: string) =>
       api(`/api/projects/${projectId}/exports/${job!.id}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...(forReader ? { screening_revision: screening.data?.revision } : {}),
+          ...(forReader
+            ? {
+                screening_revision: screening.data?.revision,
+                timing_revision: screening.data?.timing.revision,
+              }
+            : {}),
           checks: Object.fromEntries(selected.map((k) => [k, true])),
           notes,
         }),
@@ -194,28 +216,29 @@ export function DeliveryPanel({
                   <p>用于核对下载内容，不能代替事实或权利审核。</p>
                 </details>
               )}
-              {record &&
-                data.current_signoff &&
-                currentScreened &&
-                (!forReader || record.plate_screening_revision === screening.data?.revision) && (
-                  <p className="saved-note">
-                    ✓ 此导出版本已有人工复核记录 ·{' '}
-                    {new Date(record.reviewed_at).toLocaleString('zh-CN')}
-                    {record.notes && ` · ${record.notes}`}
-                  </p>
-                )}
-              {record &&
-                !data.stale &&
-                (!data.current_signoff ||
-                  (forReader && record.plate_screening_revision !== screening.data?.revision)) && (
-                  <p>此导出有历史人工记录，但未签核当前制作状态与审图单。</p>
-                )}
+              {record && data.current_signoff && currentScreened && recordMatches && (
+                <p className="saved-note">
+                  ✓ 此导出版本已有人工复核记录 ·{' '}
+                  {new Date(record.reviewed_at).toLocaleString('zh-CN')}
+                  {record.notes && ` · ${record.notes}`}
+                </p>
+              )}
+              {record && !data.stale && (!data.current_signoff || !recordMatches) && (
+                <p>此导出有历史人工记录，但未签核当前制作状态与审图单。</p>
+              )}
               <form
                 className="delivery-review"
                 key={job!.id}
                 onSubmit={(e) => {
                   e.preventDefault()
-                  save.mutate(String(new FormData(e.currentTarget).get('notes') || ''))
+                  if (
+                    currentScreened &&
+                    !busy &&
+                    !save.isPending &&
+                    !data.stale &&
+                    selected.length === checks.length
+                  )
+                    save.mutate(String(new FormData(e.currentTarget).get('notes') || ''))
                 }}
               >
                 <h3>记录本版本人工复核</h3>
@@ -260,7 +283,9 @@ export function DeliveryPanel({
                   {save.isPending ? '正在记录…' : '保存人工复核记录'}
                 </button>
                 {forReader && !currentScreened && (
-                  <p>本版尚不能正式签核：请完成上方逐幅动静审图并处理冲突。</p>
+                  <p>
+                    本版仍可试读，尚不能正式签核。请在上方「逐幅审图」确认出场时机、完成动静判断，并保存未提交的输入。
+                  </p>
                 )}
                 {data.stale && <p className="error">制作状态已变，请先导出当前版本。</p>}
               </form>

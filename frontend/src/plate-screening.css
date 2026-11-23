@@ -1,52 +1,222 @@
+/* A reading spread, not a dashboard: show one original paragraph and one actual
+   image at a time. Intrinsic columns also stack inside narrow studio sidebars. */
 .plate-screening {
-  margin: 1.3rem 0;
-  padding: 1rem 1.2rem;
-  border: 1px solid var(--line, #bbc6bd);
-  border-radius: 0.5rem;
+  min-width: 0;
+  margin: 1.25rem 0;
+  padding: clamp(1rem, 2.6vw, 1.65rem);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  overflow-wrap: anywhere;
 }
 .plate-screening h3 {
-  margin-top: 0;
+  margin: 0;
 }
 .plate-screening h3 button {
-  font: inherit;
+  padding: 0;
+  border: 0;
+  font: 650 1.25rem var(--font-display);
   color: inherit;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.plate-screening h3 button span {
+  color: var(--color-muted);
+  font: 0.8rem var(--font-body);
+}
+.plate-screening :is(p, details, figcaption, textarea, select, input, label, button, fieldset) {
+  min-width: 0;
+}
+.plate-screening :is(button, summary) {
+  white-space: normal;
+}
+.plate-screening .screening-helper,
+.plate-screening summary {
+  color: var(--color-muted);
+  font-size: 0.85rem;
 }
 .plate-screening .screening-count {
-  font-weight: 650;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  margin: 0.2rem 0;
+}
+.plate-screening summary {
+  cursor: pointer;
+  padding: 0.55rem 0;
 }
 .plate-screening .screening-entry,
 .plate-screening .screening-files {
   margin-top: 1rem;
-  border-top: 1px solid var(--line, #bbc6bd);
-  padding-top: 1rem;
+  border-top: 1px solid var(--color-rule);
+  padding-top: 0.7rem;
+}
+.plate-screening .screening-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: end;
+}
+.plate-screening .screening-picker label {
+  flex: 1 1 17rem;
+}
+.plate-screening .screening-picker button {
+  align-self: end;
+  margin: 0.45rem 0;
+}
+.plate-screening .screening-lenses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+  margin: 0.4rem 0 1rem;
+  border-bottom: 1px solid var(--color-rule);
+}
+.plate-screening .screening-lenses button {
+  padding: 0.4rem 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--color-muted);
+}
+.plate-screening .screening-lenses [aria-pressed='true'] {
+  box-shadow: inset 0 -2px var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 650;
+}
+.plate-screening .screening-spread {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  align-items: start;
+  gap: clamp(0.8rem, 2vw, 1.5rem);
+  margin: 0.8rem 0 1.25rem;
+}
+.plate-screening .screening-prose {
+  padding: clamp(0.9rem, 2vw, 1.4rem);
+  border-left: 2px solid var(--color-accent);
+  background: var(--color-paper);
+  min-width: 0;
+}
+.plate-screening .screening-kicker {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-family: var(--font-body);
+}
+.plate-screening blockquote,
+.plate-screening .original-paragraph {
+  margin: 0.55rem 0 0;
+  white-space: pre-wrap;
+  font: 1.12rem/1.9 var(--font-display);
+  overflow-wrap: anywhere;
+  max-height: 26rem;
+  overflow-y: auto;
 }
 .plate-screening figure {
-  margin: 1rem 0;
+  margin: 0;
+  min-width: 0;
 }
 .plate-screening figure img {
+  width: 100%;
+  max-height: 25rem;
   display: block;
-  max-height: 32rem;
-  max-width: 100%;
   object-fit: contain;
+  background: var(--color-soft);
+  border-radius: var(--radius-sm);
 }
-.plate-screening blockquote {
-  margin: 0.5rem 0 1rem;
-  padding: 0.7rem 1rem;
-  border-left: 3px solid currentColor;
+.plate-screening figcaption {
+  display: grid;
+  line-height: 1.6;
   white-space: pre-wrap;
+  font-size: 0.9rem;
+}
+.plate-screening figcaption .screening-kicker {
+  margin-top: 0.5rem;
 }
 .plate-screening fieldset {
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.plate-screening legend {
+  font: 600 1.08rem/1.55 var(--font-display);
+  padding: 0;
 }
 .plate-screening label {
   display: grid;
   gap: 0.3rem;
-  margin: 0.65rem 0;
-  max-width: 52rem;
+  margin: 0.45rem 0;
 }
-.plate-screening textarea,
-.plate-screening select {
+.plate-screening :is(textarea, select, input[type='file']) {
   max-width: 100%;
   width: 100%;
+}
+.plate-screening :is(textarea, select) {
+  font: inherit;
+  padding: 0.5rem 0.7rem;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+}
+.plate-screening textarea {
+  resize: vertical;
+}
+.plate-screening .timing-form {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+.plate-screening .timing-form fieldset {
+  width: 100%;
+}
+.plate-screening .timing-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
+  margin: 0.6rem 0;
+}
+.plate-screening .timing-options label {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-rule);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  margin: 0;
+  cursor: pointer;
+}
+.plate-screening .timing-options label:has(:checked) {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.plate-screening .timing-options input {
+  accent-color: var(--color-accent);
+}
+.plate-screening :is(.screening-use-quote, .screening-secondary) {
+  padding-inline: 0;
+  border: 0;
+  color: var(--color-accent);
+  font-size: 0.85rem;
+}
+.plate-screening .screening-files button,
+.plate-screening form button[type='submit'] {
+  margin-block: 0.35rem;
+}
+.plate-screening > [role='status']:last-child {
+  margin-top: 0.5rem;
+}
+
+.plate-screening .screening-original {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  justify-self: start;
+  min-height: 44px;
+  font-size: 0.87rem;
+  white-space: normal;
+}
+.plate-screening .screening-original small {
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
 }

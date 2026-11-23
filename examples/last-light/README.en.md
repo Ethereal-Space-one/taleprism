@@ -2,7 +2,7 @@
 
 Make a readable scene from fiction without changing its text. [中文](README.md) · [Last Light work and downloads](../../docs/DOWNLOADS.md#末班灯--last-light) · [Bring your own novel](../../prompts/START-HERE.md#english-walkthrough)
 
-No workbench installation is needed for the prompt route. Keep the starter folders together and open [the prompt templates](../../prompts/README.md). The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
+No workbench installation is needed for the prompt route. For the image exercise, extract the [v0.9.3 AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip), keep its folders together and open [the prompt templates](../../prompts/README.md). The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
 
 ## Story and files
 
@@ -33,6 +33,8 @@ Use [03](../../prompts/03-shot-plan.md) with budget 3:
 1. After P01: establish the station, Lin holding a survey tube and Chen wiping water. No Xiao Man, bicycle or bread.
 2. After P03: the question changes their relationship. The plan lies on the bench; Lin starts listening. No recording or resolution yet.
 3. After P06: Chen starts writing; Xiao Man and her bicycle have arrived in P05. Show tentative cooperation, not a preservation guarantee.
+
+**A bell is not an entrance.** P02 lets us hear a bicycle bell; it does not identify the rider. P04 names Xiao Man in a memory, not on the platform. Only in P05 does she push the bicycle into the station. The P03 illustration, caption, alt text and any recorded voices must not place her there early. This exercise does not add a bell sound to the published edition.
 
 The camera remains fixed deliberately. This example verifies continuity at that camera, not arbitrary reverse shots or a reconstructed 3D location.
 
@@ -71,7 +73,7 @@ Attach `negotiation-v2.png` first as EDIT TARGET / previous checked frame, and `
 
 ![Recording](../../samples/last-light/recording-v2.png)
 
-The candidate omitted the bicycle basket. Use [08](../../prompts/08-repair.md) to add only an empty front basket: the bread has already moved onto the bench. Protect faces, poses, geometry and every unrelated prop. Inspect the whole repaired frame; sending a correction is not proof that it worked.
+P06 literally ends with Chen picking up the pencil. Bringing its tip to the page is artistic staging, not evidence that any particular words have already been written. The candidate omitted the bicycle basket. Use [08](../../prompts/08-repair.md) to add only an empty front basket: the bread has already moved onto the bench. Protect faces, poses, geometry and every unrelated prop. Inspect the whole repaired frame; sending a correction is not proof that it worked.
 
 ## 7. Review and record honestly
 
@@ -81,8 +83,8 @@ For the overall workflow comparison, see [old negotiation](../../samples/last-li
 
 ## 8. Share the reading result
 
-For a finished reader, install the [workbench](../../README.en.md), import the source, review characters, fill the direction plan, upload/accept pictures, record continuity checks and apply the plan. Export an independent reader ZIP. Serve the extracted directory over HTTP; do not double-click its HTML file.
+For a finished reader, install the [workbench (Chinese setup guide)](../../docs/快速上手.md), import the source, review characters, fill the direction plan, upload/accept pictures, record continuity checks and apply the plan. Export a draft reader. Read forward from the P02 bell through P03: do the actual picture, caption, alt text or sounds introduce a person who is not there yet? At P06 a signature stamp or cheering would imply an approval that never occurs. After checking the actual edition, share only the whole Reader ZIP; keep private notes and the editable backup separately.
 
-To inspect the supplied editable project, download the Release file ending in `last-light-project.zip`, then use the left sidebar's **示例与工程 → 导入可编辑工程**. Each import creates a new project. Reader and editable-project ZIPs have different purposes. The public sample excludes macOS-generated demonstration audio. Voice production is optional and requires listening and acceptance; cloud OpenAI speech has not been live-validated.
+To read or edit the supplied edition, download the [v0.9.3 Last Light work bundle](../../docs/DOWNLOADS.md#末班灯--last-light) and extract it once. Open `Reader/index.html` in a desktop browser, no server needed. To edit, choose **示例与工程 → 手动导入与原文练习 → 导入可编辑工程** and select the included `Project.zip`, still zipped, not the outer bundle. Each import creates a new project. The short rain cue is synthesized ambience, not a macOS voice recording. Voice production is optional and requires listening and acceptance; cloud OpenAI speech has not been live-validated.
 
 The workbench UI is currently Chinese. External-user usability has not yet been validated. Report the exact step where you get stuck; never submit API keys or an entire copyrighted novel merely to report a problem.

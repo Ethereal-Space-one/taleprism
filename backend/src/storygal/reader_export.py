@@ -37,6 +37,22 @@ def read_runtime(build):
         ) from None
 
 
+def require_current_plate_runtime(archive):
+    """Signing current placed art/copy against an older renderer would compare different views.
+
+    Old drafts remain valid, openable archives. Only signing an illustrated edition needs this.
+    """
+    current = read_runtime(REPO / "frontend/dist/reader")
+    try:
+        with zipfile.ZipFile(archive) as z:
+            for name, blob in current.items():
+                with z.open("assets/" + name) as f:
+                    if hashlib.file_digest(f, "sha256").digest() != hashlib.sha256(blob).digest():
+                        raise ValueError("读本呈现版本已变，请重新导出后签核；旧读本仍可打开。")
+    except (zipfile.BadZipFile, KeyError, OSError) as exc:
+        raise ValueError("无法核对已导出读本的呈现版本，请重新导出后签核。") from exc
+
+
 def export_reader(reader, pid, jid):
     store = reader.store
     content = reader.content(pid, strict=True)

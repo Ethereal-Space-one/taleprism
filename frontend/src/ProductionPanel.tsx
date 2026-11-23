@@ -194,7 +194,7 @@ function Editor({
         )
       }
       setDirty(false)
-      setMessage(action === 'apply' ? '已应用到画卷阅读。请到「独立阅读器 → 逐幅动静审图」对照实图与原文，再预览。' : '方案已保存。')
+      setMessage(action === 'apply' ? '已应用到画卷阅读。请到「独立阅读器 → 逐幅审图」对照实图与原文，再预览。' : '方案已保存。')
       await refresh()
     },
   })

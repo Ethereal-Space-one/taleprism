@@ -5,6 +5,7 @@ import shutil
 
 from .exporter import BUNDLE, BUNDLE_HASH, ENGINE, REPO, assert_versions
 from .production import Production
+from .reader_export import require_current_plate_runtime
 from .review import ConflictError
 from .storage import now
 from .text import sha256
@@ -210,14 +211,6 @@ class Delivery:
                     (pid,),
                 )
             ]
-            row = (
-                db.execute(
-                    "SELECT revision FROM private_plate_screenings WHERE project_id=?", (pid,)
-                ).fetchone()
-                if self.screening
-                else None
-            )
-            sheet_revision = row[0] if row else 0
         ready = all(c["passed"] for c in checks)
         stale = bool(latest and any(latest["result"].get(k, 0) != v for k, v in versions.items()))
         # A technical preflight or a historical review predating the worksheet
@@ -230,12 +223,23 @@ class Delivery:
             and record.get("editorial_revision") != editorial["revision"]
         ):
             current_signoff = None
-        if (
-            current_signoff
-            and reader_export
-            and record.get("plate_screening_revision") != sheet_revision
-        ):
-            current_signoff = None
+        if current_signoff and reader_export and self.screening:
+            # Inspect the current plate state once. A curated accessibility description /
+            # display boundary can change even with no private or reader edit.
+            try:
+                sheet = self.screening.state(pid)
+                timing = sheet["timing"]
+                if (
+                    not sheet["report"]["ok"]
+                    or not timing["ok"]
+                    or sheet["reader_revision"] != versions["reader_revision"]
+                    or record.get("plate_screening_revision") != sheet["revision"]
+                    or record.get("plate_timing_revision") != timing["revision"]
+                    or record.get("plate_timing_binding") != timing["inventory_binding"]
+                ):
+                    current_signoff = None
+            except (ValueError, OSError, KeyError):
+                current_signoff = None
         return {
             "ready": ready,  # Legacy key: technical export readiness only.
             "ready_for_export": ready,
@@ -249,7 +253,7 @@ class Delivery:
             "tasks": jobs[:12],
         }
 
-    def accept(self, pid, eid, checks, notes, screening_revision=None):
+    def accept(self, pid, eid, checks, notes, screening_revision=None, timing_revision=None):
         if set(checks) != REVIEW_CHECKS or not all(v is True for v in checks.values()):
             raise ValueError("请明确完成全部五项复核；没有使用的音频或图页也应核实为无。")
         job = self.completed(pid, eid)
@@ -285,10 +289,19 @@ class Delivery:
         if screening:
             if screening_revision is not None and screening["revision"] != screening_revision:
                 raise ConflictError("审图单已更新，请重新读取后再签核。")
+            timing = screening["timing"]
+            if timing_revision is not None and timing["revision"] != timing_revision:
+                raise ConflictError("揭示时机判断已更新，请重新读取后再签核。")
             if not screening["report"]["ok"]:
                 raise ValueError(
                     "逐幅动静审图尚未完成或有冲突；先核对实图和原文。普通试读、导出不受影响。"
                 )
+            if not timing["ok"]:
+                raise ValueError(
+                    "插图揭示时机尚未逐幅通过。请核对当前实图、图题和替代说明；草稿导出不受影响。"
+                )
+            if timing["counts"]["total"]:
+                require_current_plate_runtime(archive)
         record = {
             "editorial_revision": editorial["revision"],
             "export_id": eid,
@@ -301,12 +314,15 @@ class Delivery:
         }
         if screening:
             record["plate_screening_revision"] = screening["revision"]
+            record["plate_timing_revision"] = timing["revision"]
+            record["plate_timing_binding"] = timing["inventory_binding"]
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             if screening:
                 self.screening.check_versions(
                     db, pid, screening["revision"], screening["reader_revision"]
                 )
+                self.screening.check_timing_version(db, pid, timing["revision"])
             row = db.execute(
                 "SELECT revision FROM reader_editorial WHERE project_id=?", (pid,)
             ).fetchone()

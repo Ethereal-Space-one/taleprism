@@ -13,7 +13,7 @@ try {
     [
       '--module', 'commonjs', '--target', 'ES2022', '--jsx', 'react-jsx',
       '--strict', '--skipLibCheck', '--outDir', temp,
-      ...['platePresentation.ts', 'model.ts', 'ReaderPlate.tsx'].map((name) =>
+      ...['platePresentation.ts', 'imageBrowsing.ts', 'model.ts', 'ReaderPlate.tsx'].map((name) =>
         path.join(root, 'frontend/src/reader', name),
       ),
     ],
@@ -21,7 +21,14 @@ try {
   )
   assert.equal(compile.status, 0, compile.stdout + compile.stderr)
   fs.symlinkSync(path.join(root, 'frontend/node_modules'), path.join(temp, 'node_modules'), 'dir')
+  const { chibiPlatePresentation } = require(path.join(temp, 'reader/graphs/chibiPlatePresentation.js'))
+  assert.deepEqual(
+    chibiPlatePresentation,
+    JSON.parse(fs.readFileSync(path.join(root, 'backend/src/storygal/chibi_plate_presentation.json'), 'utf8')),
+    'author-review presentation data must match the Reader’s curated presentation data',
+  )
   const { resolvePlatePresentations } = require(path.join(temp, 'reader/platePresentation.js'))
+  const { galleryAtPosition, openImageVisit, requestImage } = require(path.join(temp, 'reader/imageBrowsing.js'))
   const { readRecord, validPosition, search } = require(path.join(temp, 'reader/model.js'))
   const { ReaderPlate } = require(path.join(temp, 'reader/ReaderPlate.js'))
   const React = require(path.join(root, 'frontend/node_modules/react'))
@@ -73,6 +80,17 @@ try {
   assert.equal(model.get(fire.id).disclosureByte, 16035)
   assert.equal(model.get(wind.id).sourceByte, 6011)
   assert.equal(model.get(fire.id).sourceByte, 15971)
+  // Both curated poem delays must protect the actual gallery AND lightbox, not just inline layout.
+  for (const [plate, attachment, display] of [[wind, 6014, 6136], [fire, 15974, 16035]]) {
+    assert.equal(plate.after_byte, attachment)
+    const boundary = model.get(plate.id).disclosureByte
+    for (const [at, reached] of [[attachment, false], [display - 1, false], [display, true], [display + 1, true]]) {
+      assert.equal(galleryAtPosition(plates, model, at).includes(plate), reached, `${plate.id}: gallery at ${at}`)
+      const visit = requestImage(openImageVisit(null, at), plate.image_asset_id, boundary, plate.id)
+      assert.equal(visit.plate, reached ? plate.id : null, `${plate.id}: expanded art at ${at}`)
+      assert.equal(visit.pendingPlate, reached ? null : plate.id)
+    }
+  }
   assert.deepEqual(
     plates.filter((p) => model.get(p.id).displayAfterByte !== p.after_byte).map((p) => p.id),
     [wind.id, fire.id],

@@ -107,8 +107,8 @@ async function port() {
     await page.getByRole("button", { name: "接受这张底图" }).click();
     await page.getByLabel("放在此段之后").selectOption({ index: 2 });
     await page.getByRole("button", { name: /放置静图/ }).click();
-    let sec = page.getByRole("region", { name: "逐幅动静审图" });
-    await sec.getByText(/共 1 幅 · 未审 1/).waitFor();
+    let sec = page.getByRole("region", { name: "逐幅审图", exact: true });
+    await sec.getByText(/时机：未审 1/).waitFor();
     const before = await api(prefix + "/reader");
     assert.equal(before.config.illustrations[0].motion, null);
     // No decisions gate the regular reader export.
@@ -116,7 +116,7 @@ async function port() {
       .getByRole("button", { name: "导出独立阅读器", exact: true })
       .click();
     await page.getByRole("link", { name: "下载阅读器 ↓" }).waitFor();
-    await sec.getByRole("button", { name: /逐幅动静审图/ }).click();
+    await sec.getByRole("button", { name: /逐幅审图/ }).click();
     assert.equal(
       await sec.getByRole("img").evaluate((e) => e.naturalWidth),
       128,
@@ -125,7 +125,14 @@ async function port() {
       await sec.locator("blockquote").innerText(),
       "圆形水面反射微光。",
     );
-    await sec.getByLabel("动静选择").selectOption("motion");
+    const timing = sec.getByRole("form", { name: "本幅出场时机" });
+    await timing.getByRole("radio", { name: "需要调整" }).check();
+    await timing.getByLabel("原文短引").fill("圆形水面反射微光");
+    await timing.getByLabel("判断理由").fill("PRIVATE_TIMING_FIXTURE: 暂待核对同段实图。");
+    await timing.getByRole("button", { name: "保存时机判断" }).click();
+    await sec.getByText(/需调整 1/).waitFor();
+    await sec.getByRole("button", { name: "动静选择", exact: true }).click();
+    await sec.getByRole("combobox", { name: "动静选择" }).selectOption("motion");
     await sec.getByLabel("候选动效类型").selectOption("wave-impact-backwash");
     const answers = [
       "圆形水面反射微光",
@@ -147,6 +154,7 @@ async function port() {
     );
     assert.deepEqual((await api(prefix + "/reader")).config, before.config);
     const download = page.waitForEvent("download");
+    await sec.getByText("动静审图单 · 备份与导入", { exact: true }).click();
     await sec.getByRole("button", { name: /下载私有审图单/ }).click();
     const worksheetFile = path.join(TMP, "worksheet.json");
     await (await download).saveAs(worksheetFile);
@@ -160,14 +168,25 @@ async function port() {
       .getByRole("button", { name: "交付检查" })
       .click();
     const delivery = page.getByRole("region", { name: "交付检查" });
-    await delivery.getByRole("button", { name: "保存人工复核记录" }).waitFor();
+    const sign = delivery.getByRole("button", { name: "保存人工复核记录" });
+    await sign.waitFor();
     const cbs = delivery.locator(".delivery-review input[type=checkbox]");
     for (let i = 0; i < 5; i++) await cbs.nth(i).check();
-    await delivery.getByRole("button", { name: "保存人工复核记录" }).click();
+    assert.equal(await sign.isDisabled(), true, "需要调整 must block formal sign-off");
+    sec = delivery.getByRole("region", { name: "逐幅审图", exact: true });
+    await sec.getByRole("button", { name: /逐幅审图/ }).click();
+    const signTiming = sec.getByRole("form", { name: "本幅出场时机" });
+    await signTiming.getByRole("radio", { name: "此处可出场" }).check();
+    await signTiming.getByLabel("原文短引").fill("圆形水面反射微光");
+    await signTiming.getByLabel("判断理由").fill("作者核对实图和读者看到的文字，两者没有越过此段。");
+    await signTiming.getByRole("button", { name: "保存时机判断" }).click();
+    await sec.getByText(/已确认 1/).waitFor();
+    // A changed review may clear the five final checks to demand a new explicit review.
+    for (let i = 0; i < 5; i++) await cbs.nth(i).check();
+    await sign.click();
     await delivery.getByText(/此导出版本已有人工复核记录/).waitFor();
-    sec = delivery.getByRole("region", { name: "逐幅动静审图" });
-    await sec.getByRole("button", { name: /逐幅动静审图/ }).click();
-    await sec.getByLabel("动静选择").selectOption("deferred");
+    await sec.getByRole("button", { name: "动静选择", exact: true }).click();
+    await sec.getByRole("combobox", { name: "动静选择" }).selectOption("deferred");
     await sec
       .getByLabel("哪些部分动或不动？")
       .fill("反光收拢目前不支持，保留静图。");
@@ -194,9 +213,12 @@ async function port() {
       .getByRole("navigation", { name: "工作台视图" })
       .getByRole("button", { name: "独立阅读器", exact: true })
       .click();
-    sec = page.getByRole("region", { name: "逐幅动静审图" });
+    sec = page.getByRole("region", { name: "逐幅审图", exact: true });
+    await sec.getByText(/时机：未审 1/).waitFor();
+    await sec.getByRole("button", { name: /逐幅审图/ }).click();
+    await sec.getByRole("button", { name: "动静选择", exact: true }).click();
     await sec.getByText(/共 1 幅 · 未审 1/).waitFor();
-    await sec.getByRole("button", { name: /逐幅动静审图/ }).click();
+    await sec.getByText("动静审图单 · 备份与导入", { exact: true }).click();
     const cloneSheet = "/api/projects/" + cloned.id + "/plate-screening";
     const importFile = sec.getByLabel("导入私有审图单 JSON");
     const seenDialogs = [];
@@ -241,9 +263,10 @@ async function port() {
     const afterImport = await api(cloneSheet);
     assert.equal(afterImport.revision, 1);
     assert.equal(afterImport.report.counts.deferred, 1);
+    assert.equal(afterImport.timing.counts.unchecked, 1, "motion-only restore never inherits timing");
     assert.deepEqual(external, []);
     console.log(
-      "PASS native Chromium: upload → accept → place actual image; draft export before screening; bound candidate no motion; private download; signature invalidated by editorial-only edit; exact-restore import requires consent.",
+      "PASS native Chromium: placement, draft export, timing blocks and author clears formal sign-off, motion independent, private worksheet, stale signature, deliberate exact-restore import and new timing review.",
     );
   } finally {
     if (browser) await browser.close();

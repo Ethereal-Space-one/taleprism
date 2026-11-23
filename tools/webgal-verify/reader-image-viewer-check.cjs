@@ -127,6 +127,11 @@ const server = http.createServer(async (req, res) => {
         await pan(`${width}x${height} plate ${i}`)
         if (i < dimensions.length - 1) {
           await page.getByRole('button', { name: '下一幅', exact: true }).click()
+          if (cases === 0) {
+            // The first visit to another placement is protected in ordinary books too.
+            await page.getByRole('heading', { name: '后面的插图尚未读到', exact: true }).waitFor()
+            await page.getByRole('button', { name: '查看全卷插图', exact: true }).click()
+          }
           await fit(`${width}x${height}: new plate resets zoom and scroll`)
         } else {
           await page.getByRole('button', { name: '恢复完整画面', exact: true }).click()
@@ -160,15 +165,16 @@ const server = http.createServer(async (req, res) => {
     await page.getByRole('button', { name: '设置', exact: true }).click()
     await page.getByRole('button', { name: /^本章画卷/ }).click()
     assert.equal(await page.locator('.reader-art-dialog.reader-image-dialog').count(), 0, 'gallery is not constrained by viewer-only layout')
+    assert.ok(await page.locator('.reader-gallery-item').count() < dimensions.length, 'ordinary gallery starts with only reached plates')
+    await page.getByRole('button', { name: '查看全章画卷（含后文）', exact: true }).click()
     assert.equal(await page.locator('.reader-gallery-item').count(), dimensions.length)
     await page.locator('.reader-gallery-item').first().getByRole('button').first().click()
     await fit('gallery opens fit viewer')
     await page.getByRole('button', { name: '关闭面板', exact: true }).click()
-    await page.locator('.reader-gallery').waitFor()
+    await page.getByRole('heading', { name: '全章画卷含后文画面与标题', exact: true }).waitFor()
     assert.equal(await page.locator('.reader-root').getAttribute('data-resume-byte'), resume, 'gallery navigation preserves reading position')
-    // The gallery entry is gated by the existing exact-edition resolver, not
-    // a filename/title guess. A split-view fixture isolates gallery requests
-    // from legitimate inline/stage loading.
+    // The same placed-art rule also holds for the curated edition. This fixture
+    // isolates gallery requests from legitimate inline/stage loading.
     const raw = fs.readFileSync(path.join(root, 'samples/sanguo-chibi/三國演義_第049-050回_赤壁.txt'))
     const text = raw.toString('utf8')
     const chibiBlocks = Array.from(text.matchAll(/[^\r\n]+/g), (m, i) => {
@@ -243,12 +249,13 @@ const server = http.createServer(async (req, res) => {
     await page.getByRole('button', { name: '关闭面板', exact: true }).click()
     await protectedGallery('return from expanded art')
     await page.goForward()
-    await page.locator('.reader-expanded-image').evaluate(img => img.decode())
-    assert.equal(await page.locator('.reader-gallery-controls > span').textContent(), '后文火船样张', 'Forward restores the explicitly selected asset')
-    await page.getByRole('button', { name: '下一幅', exact: true }).click()
     await page.getByRole('heading', { name: '后面的插图尚未读到', exact: true }).waitFor()
-    assert.equal(await page.locator('.reader-gallery-controls > span').textContent(), '后文火船样张', 'Forward does not revive unrestricted whole-gallery permission')
-    await page.getByRole('button', { name: '继续当前画面', exact: true }).click()
+    assert.equal(await page.locator('dialog .reader-expanded-image').count(), 0, 'Forward cannot mount an unread asset before renewed consent')
+    assert.equal(await page.locator('dialog').getByText('后文火船样张', { exact: true }).count(), 0)
+    assert.equal(await page.locator('dialog .reader-gallery-controls').count(), 0)
+    await page.getByRole('button', { name: '查看全卷插图', exact: true }).click()
+    await page.locator('.reader-expanded-image').evaluate(img => img.decode())
+    assert.equal(await page.locator('.reader-gallery-controls > span').textContent(), '后文火船样张', 'renewed consent opens the originally selected placement')
     await page.keyboard.press('Escape')
     await protectedGallery('Back from restored viewer')
     await page.keyboard.press('Escape')

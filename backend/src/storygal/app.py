@@ -112,6 +112,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
         checks: dict[str, bool]
         notes: str = Field(default="", max_length=2000)
         screening_revision: int | None = Field(default=None, ge=0)
+        timing_revision: int | None = Field(default=None, ge=0)
 
     @app.get("/api/projects/{pid}/delivery")
     def delivery_state(pid: str):
@@ -119,7 +120,9 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
 
     @app.post("/api/projects/{pid}/exports/{eid}/review")
     def delivery_review(pid: str, eid: str, body: DeliveryReview):
-        return delivery.accept(pid, eid, body.checks, body.notes, body.screening_revision)
+        return delivery.accept(
+            pid, eid, body.checks, body.notes, body.screening_revision, body.timing_revision
+        )
 
     @app.exception_handler(ValueError)
     async def invalid(_request, exc):

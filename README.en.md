@@ -34,9 +34,9 @@ In *The Door Left Open*, only the wet road on the right moves. The dry threshold
 1. **Download one package.** Get the [AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip), extract it, and add a chapter such as `chapter.txt` beside `prompts/`. Open the folder in Codex or Claude Code. In an upload-only chat, attach the chapter and the two templates below.
 2. **Ask for a brief, not finished images.** Send this to your agent:
 
-   > Use Taleprism for this chapter. Read `prompts/01-source.md`, `prompts/03-shot-plan.md`, and `chapter.txt`, or the matching attachments. Keep the source unchanged. Pick one to three places where an illustration would help. For each, give the paragraph, exact quote, what the image helps a reader understand, and what it must not reveal yet. Separate inference from fact. Return Markdown and stop for my review before generating images.
+   > Use Taleprism for this chapter. Read `prompts/01-source.md`, `prompts/03-shot-plan.md`, and `chapter.txt`, or the matching attachments. Keep the source unchanged. Pick up to three places where an illustration would help; leave a slot empty if none fits. For each, give the placement and exact quote: what can be seen or heard now, and which later line permits the detail you are withholding? For a continuation, name the last selected frame, what stays and why anything changes. Separate inference from fact. Return Markdown and stop for my review before generating images.
 
-3. **Make an edition when you’re ready.** Use your chosen image tool after reviewing the brief. To share a book, bring the original TXT and approved art into the workbench, place images at their passages, preview, and export a standalone reader.
+3. **Make an edition when you’re ready.** Use your chosen image tool after reviewing the brief. To share a book, bring the original TXT and approved art into the workbench, place images at their passages, and read in from a paragraph earlier. Check the caption, alt text and sound there too. Share the finished reader, not your private spoiler notes.
 
 The starter isn't a plugin and doesn't require a Taleprism key. External services are your choice. [Full agent walkthrough](prompts/START-HERE.md#english-walkthrough)
 

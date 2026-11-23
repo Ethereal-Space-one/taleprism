@@ -3,6 +3,8 @@
 import hashlib
 import io
 import json
+import posixpath
+import re
 import stat
 import tempfile
 import unittest
@@ -11,6 +13,7 @@ import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from urllib.parse import urldefrag
 
 import build_distribution_candidate as candidate
 
@@ -50,6 +53,23 @@ class CandidateTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.src = self.root / "inputs"
         self.src.mkdir()
+
+    def test_first_work_walkthrough_links_exist_in_the_portable_starter(self):
+        # A repo-relative link can work online but strand a first-time author
+        # who extracted only the starter. Check the actual included entries.
+        files = candidate.starter_entries()
+        for page in (
+            "taleprism/prompts/START-HERE.md",
+            "taleprism/examples/last-light/README.md",
+            "taleprism/examples/last-light/README.en.md",
+        ):
+            for link in re.findall(r"\]\(([^)]+)\)", files[page].decode()):
+                path, _ = urldefrag(link)
+                if not path or path.startswith(("https://", "http://")):
+                    continue
+                target = posixpath.normpath(posixpath.join(posixpath.dirname(page), path))
+                with self.subTest(page=page, target=target):
+                    self.assertIn(target, files.keys())
 
     def test_reader_exact_and_project_unchanged(self):
         files = synthetic_reader()

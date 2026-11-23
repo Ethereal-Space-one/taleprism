@@ -1,6 +1,6 @@
 {
-  "version": "0.2.2",
-  "sha256": "debbedd56e07aa99041b755926e36fe7cfd5679d3928802f8366ee90e95c0191",
+  "version": "0.2.3",
+  "sha256": "1d01c77bb4eb2a16e04dc349c5b3784fd9fe643b8e465c4d741bcd3c3740fdb2",
   "templates": [
     "01-source",
     "02-character",

@@ -18,7 +18,7 @@ try {
   assert.equal(compile.status, 0, compile.stdout + compile.stderr)
   fs.symlinkSync(path.join(root, 'frontend/node_modules'), path.join(temp, 'node_modules'), 'dir')
   const {
-    openImageVisit, requestImage, confirmImageDisclosure, cancelImageDisclosure, galleryAtPosition,
+    openImageVisit, restoreImageVisit, placedImage, requestImage, confirmImageDisclosure, cancelImageDisclosure, galleryAtPosition,
   } = require(path.join(temp, 'reader/imageBrowsing.js'))
   const { ReaderImageDisclosure } = require(path.join(temp, 'reader/ReaderImageDisclosure.js'))
   const React = require(path.join(temp, 'node_modules/react'))
@@ -34,14 +34,13 @@ try {
       return { text: m[0], byte_start, byte_end: byte_start + Buffer.byteLength(m[0]) }
     }),
   }
-  const protectFuture = !!resolveStoryGraph(fixture)
-  assert.equal(protectFuture, true, 'the existing exact-edition graph is the only feature gate')
+  assert.ok(resolveStoryGraph(fixture), 'historical curated edition has a graph')
   const record = { resume: { byte: 0, offset: 0 }, furthest: 0, marks: [{ id: 'bookmark' }] }
   const before = JSON.stringify(record)
   const original = Object.freeze(openImageVisit('first', record.resume.byte))
   let visit = original
   // Original repro: eight Next clicks at 0% must not quietly reach the fire image.
-  for (let i = 0; i < 8; i++) visit = requestImage(visit, 'second', 500, protectFuture)
+  for (let i = 0; i < 8; i++) visit = requestImage(visit, 'second', 500)
   assert.equal(visit.asset, 'first')
   assert.equal(visit.pending, 'second')
   assert.equal(visit.whole, false)
@@ -49,46 +48,46 @@ try {
   visit = cancelImageDisclosure(visit)
   assert.equal(visit.pending, null)
   assert.equal(visit.asset, 'first')
-  visit = confirmImageDisclosure(requestImage(visit, 'second', 500, protectFuture))
+  visit = confirmImageDisclosure(requestImage(visit, 'second', 500))
   assert.equal(visit.asset, 'second')
   assert.equal(visit.whole, true)
-  for (let i = 3; i <= 9; i++) visit = requestImage(visit, `image-${i}`, i * 500, protectFuture)
+  for (let i = 3; i <= 9; i++) visit = requestImage(visit, `image-${i}`, i * 500)
   assert.equal(visit.asset, 'image-9', 'one deliberate confirmation permits the rest of this visit')
   assert.equal(visit.pending, null)
   assert.equal(visit.boundary, 0, 'disclosure is never reading progress')
   assert.equal(JSON.stringify(record), before, 'resume, furthest and bookmarks are untouched')
 
   visit = openImageVisit('first', 1000)
-  visit = requestImage(visit, 'second', 500, true)
+  visit = requestImage(visit, 'second', 500)
   assert.equal(visit.asset, 'second', 'already reached next images need no confirmation')
   assert.equal(visit.whole, false)
-  visit = requestImage(visit, 'third', 1000, true)
+  visit = requestImage(visit, 'third', 1000)
   assert.equal(visit.asset, 'third', 'the exact display boundary counts as reached')
-  visit = requestImage(visit, 'later', 1001, true)
+  visit = requestImage(visit, 'later', 1001)
   assert.equal(visit.asset, 'third')
   assert.equal(visit.pending, 'later')
   // A relocated plate uses its later display boundary, not its earlier evidence anchor.
-  visit = requestImage(openImageVisit('first', 6014), 'relocated', Math.max(6014, 6136), true)
+  visit = requestImage(openImageVisit('first', 6014), 'relocated', Math.max(6014, 6136))
   assert.equal(visit.asset, 'first')
   assert.equal(visit.pending, 'relocated')
-  visit = requestImage(openImageVisit('inline-current', 6011), 'earlier', 3000, true)
-  visit = requestImage(visit, 'inline-current', 6136, true)
+  visit = requestImage(openImageVisit('inline-current', 6011), 'earlier', 3000)
+  visit = requestImage(visit, 'inline-current', 6136)
   assert.equal(visit.asset, 'inline-current', 'the initially visible inline plate remains revisitable')
 
   for (const boundary of [0, 1000]) {
     visit = openImageVisit('first', boundary)
     assert.equal(visit.whole, false, 'exit/reopen and Back/Forward begin a new bounded visit')
-    assert.equal(requestImage(visit, 'future', 2000, true).asset, 'first')
+    assert.equal(requestImage(visit, 'future', 2000).asset, 'first')
   }
-  visit = requestImage(openImageVisit('gallery-item', 0, true), 'last', 30000, true)
+  visit = requestImage(openImageVisit('gallery-item', 0, true), 'last', 30000)
   assert.equal(visit.asset, 'last', 'the explicitly whole-chapter gallery remains unrestricted')
   const custom = { ...fixture, project: { canonical_sha256: 'other-edition' } }
   assert.equal(resolveStoryGraph(custom), null)
-  visit = requestImage(openImageVisit('first', 0), 'future', 2000, !!resolveStoryGraph(custom))
-  assert.equal(visit.asset, 'future', 'unsupported books keep their existing free browsing')
+  visit = requestImage(openImageVisit('first', 0), 'future', 2000)
+  assert.equal(visit.pending, 'future', 'ordinary books also protect the next unread plate')
   for (const byte of [NaN, Infinity, -1]) {
-    assert.equal(requestImage(openImageVisit('first', 0), 'unknown', byte, true).asset, 'first')
-    assert.equal(requestImage(openImageVisit('first', byte), 'later', 1, true).asset, 'first')
+    assert.equal(requestImage(openImageVisit('first', 0), 'unknown', byte).asset, 'first')
+    assert.equal(requestImage(openImageVisit('first', byte), 'later', 1).asset, 'first')
   }
 
   const calls = []
@@ -124,6 +123,28 @@ try {
   for (const boundary of [NaN, Infinity, -1, 0.5]) assert.deepEqual(ids(boundary), [])
   assert.equal(plates.length, 4, 'filtering never mutates the production array')
 
+  const shared = [
+    { id: 'early', image_asset_id: 'lamp', title: '窗边的灯', description: '' },
+    { id: 'late', image_asset_id: 'lamp', title: '她已归来', description: '窗边的灯终于熄灭。' },
+  ]
+  const opening = openImageVisit('lamp', 100, false, 'early')
+  assert.equal(placedImage(opening, shared), shared[0])
+  let later = requestImage(opening, 'lamp', 200, 'late')
+  assert.equal(later.pendingPlate, 'late', 'the same pixel bytes do not disclose a later caption')
+  assert.equal(placedImage(later, shared), shared[0], 'pending lightbox still belongs to the earlier placement')
+  assert.equal(placedImage(cancelImageDisclosure(later), shared), shared[0])
+  later = confirmImageDisclosure(later)
+  assert.equal(placedImage(later, shared), shared[1], 'after consent use the clicked placement, not first matching image')
+  assert.equal(placedImage(openImageVisit('lamp', 100), shared), undefined, 'stage-only art never borrows plate copy')
+  assert.equal(placedImage(openImageVisit('different-art', 100, false, 'early'), shared), undefined)
+  assert.equal(placedImage(requestImage(later, 'lamp', 99, 'early'), shared), shared[0])
+
+  const restored = restoreImageVisit('lamp', 'late', true, 100, 200)
+  assert.equal(restored.asset, null, 'history cannot silently restore whole-gallery pixels')
+  assert.equal(placedImage(restored, shared), undefined)
+  assert.equal(restored.pendingPlate, 'late')
+  assert.equal(placedImage(confirmImageDisclosure(restored), shared), shared[1])
+  assert.equal(restoreImageVisit('lamp', 'late', true, 200, 200).plate, 'late', 'reached target can reopen')
   // Render only the safe subtree before an intentional whole-gallery reveal.
   // No DOM, history, storage or network is needed for this focused model check.
   function button(tree, label) {
@@ -135,11 +156,11 @@ try {
     }
     return null
   }
-  function mountGallery(protectFuture, reachedCount = 1) {
+  function mountGallery(totalCount, reachedCount = 1) {
     let revealed = false, tree
     const original = React.useState
     const props = {
-      protectFuture, reachedCount,
+      totalCount, reachedCount,
       onCancel: () => calls.push('cancel-gallery'),
       children: whole => {
         calls.push(whole ? 'render-whole' : 'render-reached')
@@ -162,7 +183,7 @@ try {
     }
   }
   calls.length = 0
-  const gallery = mountGallery(protectFuture)
+  const gallery = mountGallery(2)
   for (const label of ['读到这里的画面', '1 幅', '全章画卷含后文画面与标题', '尚未读到的场景', '返回', '查看全章画卷（含后文）']) {
     assert.ok(gallery.html().includes(label))
   }
@@ -176,13 +197,13 @@ try {
   assert.ok(gallery.html().includes('后文火船'))
   assert.ok(gallery.html().includes('future-fire'), 'deliberate confirmation retains the whole gallery')
   assert.deepEqual(calls, ['render-reached', 'cancel-gallery', 'render-reached', 'render-whole'])
-  assert.ok(!mountGallery(true).html().includes('后文火船'), 'reentry and Back/Forward start protected')
-  assert.ok(mountGallery(false).html().includes('后文火船'), 'unsupported texts keep free browsing')
-  const empty = mountGallery(true, 0).html()
+  assert.ok(!mountGallery(2).html().includes('后文火船'), 'reentry and Back/Forward start protected')
+  assert.ok(!mountGallery(1).html().includes('全章画卷含后文'), 'no spoiler warning when every picture is reached')
+  const empty = mountGallery(2, 0).html()
   assert.ok(empty.includes('当前位置还没有可回看的插图'))
   assert.ok(!empty.includes('<img'), 'zero reached images creates no media subtree')
   assert.equal(JSON.stringify(record), before, 'gallery permission changes no progress, preferences or marks')
-  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, per-plate current-position gallery filtering, immediate safe subtree, zero-state, generic fallback and no pre-reveal future subtree passed.')
+  console.log('Image disclosure: repeated Next, reached/display boundaries, one visit-only confirmation, cancel/reopen, per-plate current-position gallery filtering, immediate safe subtree, zero-state, generic story protection, history permission expiry and no pre-reveal future subtree passed.')
 
 } finally {
   fs.rmSync(temp, { force: true, recursive: true })

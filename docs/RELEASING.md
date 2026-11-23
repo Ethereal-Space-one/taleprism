@@ -2,11 +2,18 @@
 
 A GitHub prerelease is not a stable release or a Pages rollout. Use an ordinary review branch from the verified public main; never import an unrelated private Git history or replace an existing tag. The [iteration history](ITERATION-HISTORY.md) is the public record of the intervening work.
 
-## Next preview: one download per work
+## Acceptance for an authoring-flow change
 
-Build the candidate distribution without changing the existing v0.9.2 build, tag,
-downloads or Pages deployment. The new Release copy should lead with the first
-download, then group the two complete works and show the workbench last.
+- Start as a new reader or author from the exact candidate README, Agent starter and work ZIP, not from an existing local workspace. Compare the linked revision and verify the packaged `Reader/index.html` and inner `Project.zip` separately. A draft that opens is not a signed edition.
+- Replay a short source in which the same correct quote can anchor either a faithful image or one containing a later reveal. Use actual images and inspect the Reader placement and public copy. Draft export and project restore should work before approval; a missing, disputed, or stale timing decision must block formal sign-off. Check that private notes do not appear in any archive member. Change the placed image, paragraph or reader-facing description to make sure confirmation cannot follow the wrong artifact.
+- If claiming phone support, test a cold offline open from a fully extracted work ZIP in iPhone Files separately from Safari over HTTPS. Record the opener and whether touch, text, art, and media work; a desktop narrow viewport does not count. For automatic sound, use two distinct accepted cues separated by enough text to scroll naturally. After any single needed activation, the second cue must start without a second tap. Check mute, quiet reading, and no replay on search jump separately. Log untested surfaces as untested.
+
+## 0.9.3 distribution layout: one download per work
+
+This is the layout used by the published v0.9.3 preview. To reproduce its
+historical attachments, use the exact v0.9.3 source. Like that release, any future
+preview should lead with the author starter, then group the two complete works
+and show the workbench last, without replacing older downloads or deploying Pages.
 
 | What the visitor wants | New release attachment |
 | --- | --- |

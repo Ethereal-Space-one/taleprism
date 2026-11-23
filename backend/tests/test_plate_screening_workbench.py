@@ -38,6 +38,23 @@ def decision(c, prefix, data, choice="still", **edits):
     return c.put(prefix + "/plate-screening/plate", json=body)
 
 
+def timing(c, prefix, data, status="clear", plate_id=None, **edits):
+    pid = plate_id or data["worksheet"]["plates"][0]["plate_id"]
+    return c.put(
+        prefix + "/plate-screening/timing",
+        json={
+            "revision": data["timing"]["revision"],
+            "reader_revision": data["reader_revision"],
+            "binding": data["timing"]["plates"][pid]["binding"],
+            "plate_id": pid,
+            "status": status,
+            "evidence": data["display"][pid]["paragraph"],
+            "reason": "合成回归夹具：已出现的场景，未透露后文。",
+            **edits,
+        },
+    )
+
+
 def apply(c, prefix, data, sheet, **opts):
     return c.post(
         prefix + "/plate-screening/import",
@@ -76,6 +93,7 @@ def test_current_signoff_tracks_sheet_not_export_bytes_and_never_upgrades_legacy
     assert r.load(pid) == initial_config
     assert decision(c, prefix, d).status_code == 409
     assert c.post(url, json=CHECKS | {"screening_revision": d["revision"]}).status_code == 409
+    assert timing(c, prefix, got).is_success
     record = c.post(url, json=CHECKS).json()
     assert record["plate_screening_revision"] == got["revision"]
     assert c.get(prefix + "/delivery").json()["current_signoff"] == record
@@ -185,6 +203,7 @@ def test_signoff_serializes_private_sheet_change(project, monkeypatch):
     assert save(project, config).is_success
     prefix = f"/api/projects/{pid}"
     d = decision(c, prefix, state(c, prefix)).json()
+    assert timing(c, prefix, d).is_success
     _, url = get_review_job(c, prefix)
     desk = c.app.state.delivery.screening
     original = desk.state

@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from test_plate_screening_workbench import timing
 
 # Reuse the synthetic, fully checked project; no cloud generation is involved.
 from test_reliability_integration import compiled as compiled  # noqa: PLC0414 -- pytest fixture
@@ -35,6 +36,9 @@ def separately_screen_synthetic_plates(compiled):
         )
         assert response.status_code == 200, response.text
         data = response.json()
+        # Synthetic test verdict, independent from standing still and the continuity checks.
+        assert timing(client, prefix, data, plate_id=r["plate_id"]).is_success
+        data = client.get(url).json()
 
 
 def review_records(client, pid):

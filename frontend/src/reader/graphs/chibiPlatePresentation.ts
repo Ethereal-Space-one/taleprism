@@ -2,6 +2,8 @@ import type { PlatePresentationRecipe } from '../platePresentation'
 
 // Descriptions retain only observable content from the checked-in per-image
 // observations in examples/chibi/visual-review-v0.2.0.json (2026-11-12).
+// The offline reader and editable workbench check the same definitions; the reader
+// presentation check compares this complete recipe with the packaged server JSON.
 // No new visual inspection, historical certification, or creator approval is
 // implied. Each appliedId is the concrete ID in the reviewed editable edition;
 // it is not an instruction to strip a prefix from arbitrary project IDs.

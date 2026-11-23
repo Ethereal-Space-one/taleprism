@@ -7,18 +7,20 @@ function focusWholeGallery(heading: HTMLHeadingElement | null) {
 
 /** Whole-gallery permission is local to this panel, never reading progress. */
 export function ReaderGalleryDisclosure({
-  protectFuture,
+  totalCount,
   reachedCount,
   onCancel,
   children,
 }: {
-  protectFuture: boolean
+  totalCount: number
   reachedCount: number
   onCancel: () => void
   children: (whole: boolean) => ReactNode
 }) {
   const [revealed, setRevealed] = useState(false)
-  if (!protectFuture) return children(true)
+  // All placed illustrations have a source boundary, even without a story graph.
+  // When nothing is ahead there is no consent to ask for or carry to the lightbox.
+  if (reachedCount === totalCount) return children(false)
   if (revealed)
     return (
       <section className="reader-gallery-full" aria-labelledby="reader-gallery-full-title">

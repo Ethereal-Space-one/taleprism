@@ -57,6 +57,8 @@ import { ReaderImageDisclosure } from './reader/ReaderImageDisclosure'
 import { ReaderGalleryDisclosure } from './reader/ReaderGalleryDisclosure'
 import {
   openImageVisit,
+  restoreImageVisit,
+  placedImage,
   galleryAtPosition,
   requestImage,
   confirmImageDisclosure,
@@ -112,7 +114,7 @@ type Screen = {
   view: Position
   visits: Position[]
   sound: AudioPoint
-  viewer?: { asset: string | null; whole: boolean }
+  viewer?: { asset: string | null; whole: boolean; plate?: string }
 }
 function EchoMargin({
   earlier,
@@ -266,7 +268,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
   useEffect(() => {
     setViewerZoom(false)
     imageViewport.current?.scrollTo(0, 0)
-  }, [viewerAsset])
+  }, [viewerAsset, imageVisit?.plate])
   useEffect(() => {
     if (imageVisit?.pending)
       dialog.current?.querySelector<HTMLElement>('#reader-image-disclosure-title')?.focus()
@@ -443,9 +445,9 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
     panel === 'gallery'
       ? galleryAtPosition(plates, platePresentations, imageBoundary(nav.view))
       : []
-  const expandedId = viewerAsset || presentation?.image_asset_id
+  const expandedId = imageVisit ? viewerAsset : presentation?.image_asset_id
   const expandedImage = media(expandedId)
-  const expandedPlate = plates.find((p) => p.image_asset_id === expandedId)
+  const expandedPlate = placedImage(imageVisit, plates)
   const expandedMotion = resolveEnvironmentMotion(data, expandedPlate)
   const expandedVisualDescription = expandedPlate
     ? platePresentations.get(expandedPlate.id)?.visualDescription
@@ -633,10 +635,18 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
       screen.current = s
       setStarted(s.started)
       setPanel(s.panel)
-      // Restoring an explicitly selected asset is safe; whole-view permission
-      // expires on leaving, including browser Back/Forward.
+      // Browser Forward may restore an old whole-gallery selection, but never the
+      // permission that once exposed its art, title or alt before its paragraph.
       setImageVisit(
-        s.panel === 'image' ? openImageVisit(s.viewer?.asset || null, imageBoundary(s.view)) : null,
+        s.panel === 'image'
+          ? restoreImageVisit(
+              s.viewer?.asset || null,
+              s.viewer?.plate || null,
+              !!s.viewer?.whole,
+              imageBoundary(s.view),
+              platePresentations.get(s.viewer?.plate || '')?.disclosureByte ?? -1,
+            )
+          : null,
       )
       setViewerZoom(false)
       navigate({ type: 'restore', position: s.view, visits: s.visits })
@@ -749,14 +759,24 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
     commit({ ...old, depth: old.depth + 1, panel: next, viewer })
     setImageVisit(
       next === 'image'
-        ? openImageVisit(viewer?.asset || null, imageBoundary(navRef.current.view), !!viewer?.whole)
+        ? openImageVisit(
+            viewer?.asset || null,
+            Math.max(
+              imageBoundary(navRef.current.view),
+              viewer?.plate && !viewer.whole
+                ? (platePresentations.get(viewer.plate)?.disclosureByte ?? -1)
+                : -1,
+            ),
+            !!viewer?.whole,
+            viewer?.plate,
+          )
         : null,
     )
     setViewerZoom(false)
     setPanel(next)
   }
-  function openImage(asset: string | null, whole = false) {
-    open('image', { asset, whole })
+  function openImage(asset: string | null, whole = false, plate?: string) {
+    open('image', { asset, whole, plate })
   }
   function browseImage(index: number) {
     const target = plates[index]
@@ -768,7 +788,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
         current || openImageVisit(expandedId || null, imageBoundary(navRef.current.view)),
         target.image_asset_id,
         threshold,
-        !!storyGraph,
+        target.id,
       ),
     )
   }
@@ -1458,7 +1478,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
                             onLoad={() => loaded(p.image_asset_id)}
                             onRetry={() => retryImage(p.image_asset_id)}
                             onError={() => failed(p.image_asset_id)}
-                            onOpen={() => openImage(p.image_asset_id)}
+                            onOpen={() => openImage(p.image_asset_id, false, p.id)}
                           />
                         ))}
                   </Fragment>
@@ -1654,7 +1674,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
           {panel === 'image' && expandedImage && (
             <>
               <ReaderExpandedImage
-                key={`${expandedImage.id}:${imageRequests[expandedImage.id]?.attempt || 0}`}
+                key={`${expandedPlate?.id || 'stage'}:${expandedImage.id}:${imageRequests[expandedImage.id]?.attempt || 0}`}
                 viewportRef={imageViewport}
                 src={expandedImage.url}
                 zoomed={viewerZoom}
@@ -1666,6 +1686,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
                 alt={
                   expandedVisualDescription ||
                   expandedPlate?.description ||
+                  expandedPlate?.title ||
                   presentation?.place_label ||
                   '当前画面'
                 }
@@ -1674,13 +1695,6 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
                 <p id="reader-expanded-description" className="reader-visually-hidden">
                   {expandedVisualDescription}
                 </p>
-              )}
-              {imageVisit?.pending && (
-                <ReaderImageDisclosure
-                  onReturn={close}
-                  onStay={() => setImageVisit((v) => (v ? cancelImageDisclosure(v) : v))}
-                  onConfirm={() => setImageVisit((v) => (v ? confirmImageDisclosure(v) : v))}
-                />
               )}
               <div className="reader-image-tools">
                 {companion?.soundscape && (
@@ -1722,6 +1736,17 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
               )}
             </>
           )}
+          {panel === 'image' && imageVisit?.pending && (
+            <ReaderImageDisclosure
+              onReturn={close}
+              onStay={
+                imageVisit.asset
+                  ? () => setImageVisit((v) => (v ? cancelImageDisclosure(v) : v))
+                  : undefined
+              }
+              onConfirm={() => setImageVisit((v) => (v ? confirmImageDisclosure(v) : v))}
+            />
+          )}
           {panel === 'image' && expandedId && (
             <ReaderImageRetry
               request={imageRequests[expandedId]}
@@ -1729,10 +1754,12 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
               onRetry={() => retryImage(expandedId)}
             />
           )}
-          {panel === 'image' && !expandedImage && <p>这幅画面暂不可用，正文与续读位置已保留。</p>}
+          {panel === 'image' && !expandedImage && !imageVisit?.pending && (
+            <p>这幅画面暂不可用，正文与续读位置已保留。</p>
+          )}
           {panel === 'gallery' && (
             <ReaderGalleryDisclosure
-              protectFuture={!!storyGraph}
+              totalCount={plates.length}
               reachedCount={reachedPlates.length}
               onCancel={close}
             >
@@ -1743,7 +1770,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
                     {(whole ? plates : reachedPlates).map((p) => (
                       <div className="reader-gallery-item" key={p.id}>
                         <button
-                          onClick={() => openImage(p.image_asset_id, whole)}
+                          onClick={() => openImage(p.image_asset_id, whole, p.id)}
                           aria-describedby={
                             platePresentations.get(p.id)?.visualDescription
                               ? `reader-gallery-description-${p.id}`

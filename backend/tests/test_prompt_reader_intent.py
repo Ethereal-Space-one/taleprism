@@ -1,6 +1,7 @@
 """Check portable render/metadata contracts; no model or visual scoring."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -116,7 +117,7 @@ def test_reader_intent_flows_from_numbered_source_to_manual_review(
 
 
 def test_prompt_version_is_independent_of_workspace_schema():
-    assert prompts.metadata()["version"] == "0.2.2"
+    assert prompts.metadata()["version"] == "0.2.3"
     assert "reader_intent" not in Shot.model_fields
     assert Plan(budget=0).shots == []
     assert [s["id"] for s in prompts.library()["stages"]] == [
@@ -139,3 +140,34 @@ def test_production_style_exports_still_render_without_manual_intent(stage):
     assert "When a reader_intent is supplied" in text
     assert "without inventing a missing brief" in text
     assert "only to its stated role" in text
+
+
+def test_last_light_handoff_uses_real_evidence_and_previous_frame_without_spoiler_copy():
+    """Checks the worked brief, not the final pixels, audio or a reader's experience."""
+    sample = Path(__file__).resolve().parents[2] / "samples" / "last-light"
+    lines = (sample / "source.txt").read_text().splitlines()
+    stages = {s["id"]: s for s in prompts.library()["stages"]}
+    rows = stages["03-shot-plan"]["example_output"]
+    assert [s["paragraph"] for s in rows] == ["P01", "P03", "P06"]
+    assert [s["continuity_brief"]["planned_previous"] for s in rows] == [
+        None,
+        "arrival-v1.png",
+        "negotiation-v2.png",
+    ]
+    for row in rows:
+        assert row["evidence"] in lines[int(row["paragraph"][1:])]
+        ref = row["continuity_brief"]["planned_previous"]
+        if ref:
+            assert (sample / ref).is_file()
+        assert row["continuity_brief"]["keep"] and row["continuity_brief"]["intentional_change"]
+        assert row["public_copy_draft"] != row["reader_intent"]["withhold"]
+    # A bell may be heard well before the rider enters. Don't copy private
+    # withhold notes into the public text of the two pre-entrance illustrations.
+    assert "自行车的铃声" in lines[2] and "小满推着自行车进了站台" in lines[5]
+    for row in rows[:2]:
+        assert "小满" in row["reader_intent"]["withhold"]
+        assert "小满" not in row["public_copy_draft"]
+    review = stages["07-review"]["example_output"]
+    assert review["creator_final_approval"] is False
+    for scope in ("earliest_exposure", "public_caption_and_alt", "actual_audio_and_label"):
+        assert review["reader_check_example"][scope] == "not_checked"

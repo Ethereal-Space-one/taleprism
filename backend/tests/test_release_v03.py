@@ -28,7 +28,7 @@ def test_application_version_matches_frontend_locks_and_health(tmp_path):
 
     assert TestClient(app).get("/api/health").json()["version"] == version
     prompt = json.loads((ROOT / "backend/src/storygal/prompt_library.json").read_text())
-    assert prompt["version"] == "0.2.2"
+    assert prompt["version"] == "0.2.3"
 
 
 @pytest.mark.parametrize("recipe_version,accepted", [("0.2.0", True), ("0.3.0", False)])

@@ -34,9 +34,9 @@
 1. **只下一包。** [下载 AI 创作入门包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)，解压后在含 `prompts/` 的目录放入一章原文，例如 `chapter.txt`。用 Codex 或 Claude Code 打开这个目录；只能上传附件时，交给它原文和下面两份模板即可。
 2. **先让 Agent 给一页镜头方案，不急着生图。** 把这句话交给它：
 
-   > 用 Taleprism 处理这一章。先读 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和 `chapter.txt`，或对应附件。原文一个字不改，只选 1–3 处适合插图的段落。每处列出段落、逐字引文、画面要让读者看懂什么、不能提前揭示什么；推断另列。输出 Markdown，等我确认再生图。
+   > 用 Taleprism 处理这一章。先读 `prompts/01-source.md`、`prompts/03-shot-plan.md` 和 `chapter.txt`，或对应附件。原文一个字不改，最多选三处适合插图的段落，没有合适的就留白。每处列出落点和逐字原句：现在能看见或听见什么？还不能揭示什么，要等到哪一句？续图注明上一幅选定的图、保持什么、这次为何改变；推断另列。输出 Markdown，等我确认再生图。
 
-3. **确认后再成书。** 用你选的图片工具出图。要分享成品时才打开制作台，把原 TXT 和成图放到对应段落，试读后导出独立读本。
+3. **确认后再成书。** 用你选的图片工具出图。要分享成品时才打开制作台，把原 TXT 和成图放到对应段落，从上一段读过落点，连图注、替代文字和声音一起检查。把定稿读本给读者，防剧透笔记留给作者，不放进读本。
 
 入门包不是插件，也不需要 Taleprism 密钥。图片、配音或模型服务由你自己选择。[更完整的 Agent 手顺](prompts/START-HERE.md#中文手顺)
 
