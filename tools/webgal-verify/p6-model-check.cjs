@@ -17,6 +17,7 @@ try {
       '--outDir',
       temp,
       path.join(root, 'frontend/src/reader/model.ts'),
+      path.join(root, 'frontend/src/studio/soundscape.ts'),
     ],
     { encoding: 'utf8' },
   )
@@ -66,8 +67,51 @@ try {
   assert.equal(m.search(data, '😀')[0].byte, 6)
   assert.deepEqual(m.search(data, 'absent'), [])
   assert.equal(m.normalizeContent(data).blocks[0].runs[0].byte_end, block.byte_end)
+  // A UTF-16 crop can land inside a supplementary character on BOTH edges.
+  // The preview is evidence: it must be a literal substring of the source.
+  const text = '😀' + 'a'.repeat(11) + '点' + 'b'.repeat(63) + '𠮷' + '尾'
+  const start = 100
+  const clip = { ...data, blocks: [{ ...block, text, byte_start: start, byte_end: start + Buffer.byteLength(text) }] }
+  const target = start + Buffer.byteLength('😀' + 'a'.repeat(11))
+  assert.equal(m.quoteAt(clip, target), text.slice(0, -1))
+  assert.equal(m.quoteAt(clip, target + 2), m.quoteAt(clip, target), 'continuation bytes do not advance the quote')
+  assert.equal(m.quoteAt(clip, clip.blocks[0].byte_end), m.quoteAt(clip, start), 'out-of-block positions agree with record recovery')
+  for (const limit of [45, 70]) {
+    const prefix = '甲'.repeat(limit - 1)
+    assert.equal(m.sourceQuote(prefix + '𠮷乙', 0, 0, limit), prefix + '𠮷', 'arrangement preview')
+  }
+  const mixed = '\ufeffaé中e\u0301👩🏽‍🚀𠮷'
+  let byte = 0, units = 0
+  for (const char of mixed) {
+    for (let b = 0; b < Buffer.byteLength(char); b++)
+      assert.deepEqual(m.textPointAtByte(mixed, byte + b), { byte, index: units })
+    for (let u = 0; u < char.length; u++) assert.equal(m.anchorByteAtCaret(mixed, units + u), byte)
+    assert.equal(m.sourceQuote(mixed, byte, 0, char.length), char)
+    byte += Buffer.byteLength(char)
+    units += char.length
+  }
+  assert.equal(m.anchorByteAtCaret(mixed, mixed.length), byte - Buffer.byteLength('𠮷'), 'end caret stays inside visible source')
+  const oldMark = { id: 'old', text: '\ud83d', position: { byte: target, offset: 0 } }
+  const healed = m.readRecord(clip, JSON.stringify({ version: 2, marks: [oldMark] })).marks[0]
+  assert.deepEqual(healed, { ...oldMark, text: m.quoteAt(clip, target) }, 'repair the old generated label, not its identity or address')
+  const largeMark = 'x'.repeat(2999) + '😀'
+  const loaded = m.readRecord(data, JSON.stringify({ marks: [{ id: 'big', text: largeMark }] }))
+  assert.equal(loaded.marks[0].text, 'x'.repeat(2999), 'strict local storage cap never splits the last scalar')
+  const { occurrences, selectedSoundEvidence } = require(path.join(temp, 'studio/soundscape.js'))
+  const repeated = '😀𠮷、😀𠮷。'
+  assert.deepEqual(occurrences(repeated, '😀𠮷'), [0, 5])
+  assert.deepEqual(occurrences('甲甲甲', '甲甲'), [0, 1], 'keep overlapping manual choices')
+  assert.deepEqual(occurrences(repeated, '\ud83d'), [], 'reject pasted half-emoji')
+  const selected = selectedSoundEvidence(repeated, 6, 8)
+  assert.deepEqual(selected, { text: '😀𠮷', occurrence: 2 }, 'both edges snap out and keep the second occurrence')
+  const chosenStart = occurrences(repeated, selected.text)[selected.occurrence - 1]
+  const chosenByte = m.byteLength(repeated.slice(0, chosenStart))
+  assert.equal(chosenByte, 11)
+  assert.equal(Buffer.from(repeated).subarray(chosenByte, chosenByte + m.byteLength(selected.text)).toString('utf8'), selected.text)
+  assert.equal(selectedSoundEvidence(repeated, 6, 6), null, 'collapsed carets cannot become evidence')
+  assert.equal(selectedSoundEvidence('😀'.repeat(301), 1, 601), null, 'enforce the cap after snapping')
   console.log(
-    'P6 state transitions, old-record migration, Unicode anchors and literal search passed.',
+    'P6 state transitions, old-record migration, Unicode byte/caret round trips, whole-scalar previews, sound evidence and literal search passed.',
   )
 } finally {
   fs.rmSync(temp, { recursive: true, force: true })

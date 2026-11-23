@@ -104,9 +104,10 @@ def visible_text(text: str) -> str:
 def build_units(data: bytes, limit: int = PAGE_CHARS) -> list[DisplayUnit]:
     if limit < 2:
         raise ValueError("显示容量过小。")
+    text = data.decode("utf-8")
     units: list[DisplayUnit] = []
     offset = 0
-    for line in re.findall(r"[^\r\n]*(?:\r\n|\r|\n|$)", data.decode("utf-8")):
+    for line in re.findall(r"[^\r\n]*(?:\r\n|\r|\n|$)", text):
         if not line:
             continue
         body = line.rstrip("\r\n")
@@ -114,6 +115,7 @@ def build_units(data: bytes, limit: int = PAGE_CHARS) -> list[DisplayUnit]:
         start = len(body) - len(body[bom:].lstrip(" \t\u3000"))
         stop = len(body.rstrip(" \t\u3000"))
         cursor = start
+        byte_start = offset + len(body[:start].encode("utf-8"))
         while cursor < stop:
             end = min(cursor + limit, stop)
             if end < stop:
@@ -124,17 +126,18 @@ def build_units(data: bytes, limit: int = PAGE_CHARS) -> list[DisplayUnit]:
                 if candidates:
                     end = candidates[-1]
             chunk = body[cursor:end]
-            byte_start = offset + len(body[:cursor].encode("utf-8"))
+            byte_end = byte_start + len(chunk.encode("utf-8"))
             units.append(
                 DisplayUnit(
                     id=len(units),
                     byte_start=byte_start,
-                    byte_end=byte_start + len(chunk.encode("utf-8")),
+                    byte_end=byte_end,
                     text=chunk,
                 )
             )
             cursor = end
+            byte_start = byte_end
         offset += len(line.encode("utf-8"))
-    if "".join(unit.text for unit in units) != visible_text(data.decode("utf-8")):
+    if "".join(unit.text for unit in units) != visible_text(text):
         raise ValueError("显示单元与原文内容不一致。")
     return units

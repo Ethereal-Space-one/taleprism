@@ -1,26 +1,15 @@
-import { byteLength, type Position } from './model'
+import { byteLength, textPointAtByte, utf16Boundary, type Position } from './model'
 
 function rangeAt(element: HTMLElement, byte: number) {
   const text = element.firstChild
   if (!text || text.nodeType !== Node.TEXT_NODE) return null
   const start = Number(element.dataset.sourceStart)
-  let offset = 0,
-    at = start
-  for (const c of text.textContent || '') {
-    if (at >= byte) break
-    at += byteLength(c)
-    offset += c.length
-  }
-  offset = Math.min(offset, Math.max(0, (text.textContent || '').length - 1))
+  const content = text.textContent || ''
+  if (!content) return null
+  const { index: offset } = textPointAtByte(content, byte - start)
   const range = document.createRange()
   range.setStart(text, offset)
-  range.setEnd(
-    text,
-    Math.min(
-      offset + (text.textContent!.codePointAt(offset)! > 0xffff ? 2 : 1),
-      text.textContent!.length,
-    ),
-  )
+  range.setEnd(text, offset + (content.codePointAt(offset)! > 0xffff ? 2 : 1))
   return range
 }
 export function restorePosition(root: HTMLElement, p: Position, focus = false) {
@@ -113,9 +102,11 @@ export function selectedExcerpt(root: HTMLElement, gaps?: Map<number, string>) {
     const node = span.firstChild
     if (!node || !chosen.intersectsNode(node)) continue
     const text = node.textContent || ''
-    const start = chosen.startContainer === node ? chosen.startOffset : 0
-    const end = chosen.endContainer === node ? chosen.endOffset : text.length
-    if (end <= start) continue
+    const from = chosen.startContainer === node ? chosen.startOffset : 0
+    const to = chosen.endContainer === node ? chosen.endOffset : text.length
+    if (to <= from) continue
+    const start = utf16Boundary(text, from),
+      end = utf16Boundary(text, to, 'ceil')
     const selectedStart = Number(span.dataset.sourceStart) + byteLength(text.slice(0, start))
     if (ranges.length && selectedStart > ranges[ranges.length - 1].end)
       texts.push(gaps?.get(selectedStart) ?? '\n')

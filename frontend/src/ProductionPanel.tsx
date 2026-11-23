@@ -248,8 +248,16 @@ function Editor({
         throw Error('旧版方案缺少项目与基础版本。请重新导出 AI 任务，原文件可保留作手工参考。')
       if (data.source_sha256 !== initial.source_sha256)
         throw Error('方案原文不匹配，请使用当前项目导出的任务。')
-      if (!data.plan || !Array.isArray(data.plan.shots))
-        throw Error('方案文件缺少 plan 或镜头列表，请按任务中的 schema 返回 JSON。')
+      if (
+        !data.plan ||
+        typeof data.plan.style !== 'string' ||
+        !Number.isInteger(data.plan.budget) ||
+        !Array.isArray(data.plan.shots) ||
+        !Array.isArray(data.plan.scenes)
+      )
+        throw Error(
+          'AI 方案不完整。请原样保留任务中的 style、budget，并返回 shots、scenes 两个列表。没有镜头或场景时请写 []，不要省略。',
+        )
       const validated = await api<Plan>(prefix + '/production/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

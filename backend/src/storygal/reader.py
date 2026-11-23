@@ -24,13 +24,20 @@ REPO = Path(__file__).resolve().parents[3]
 def paragraphs(raw: bytes) -> list[dict]:
     text = raw.decode("utf-8")
     result = []
+    previous_end = byte_offset = 0
     for match in re.finditer(r"[^\r\n]+", text):
         line = match.group()
+        # Only ASCII CR/LF can occur between matches, so their character
+        # count is also their byte count. Never re-encode the earlier lines.
+        byte_offset += match.start() - previous_end
+        line_start = byte_offset
+        byte_offset += len(line.encode("utf-8"))
+        previous_end = match.end()
         stripped = line.removeprefix("\ufeff") if match.start() == 0 else line
         body = stripped.strip(" \t\u3000")
         if not body:
             continue
-        start = len(text[: match.start()].encode()) + len(
+        start = line_start + len(
             line[: len(line) - len(stripped.lstrip(" \t\u3000"))].encode()
         )
         result.append(

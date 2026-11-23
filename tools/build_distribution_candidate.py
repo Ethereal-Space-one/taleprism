@@ -9,6 +9,7 @@ Requires Python 3.11+ and a clean Git checkout with an up-to-date public invento
 import argparse
 import hashlib
 import io
+import json
 import ntpath
 import os
 import stat
@@ -21,6 +22,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from build_release import starter_entries
 from chibi_source import LIMIT, read_zip, verify_inventory
 from package_source import EPOCH, document, package_source
+from package_source import MANIFEST as SOURCE_MANIFEST
 from release_files import ROOT, source_files, tracked_inventory
 
 BASE = "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2"
@@ -168,6 +170,64 @@ def work_files(slug, reader, project):
     }
 
 
+def verify_members(archive, expected, executable_suffixes):
+    """Check exact names, modes and bytes, not a digest of a possibly wrong wrapper."""
+    names = archive.namelist()
+    if len(names) != len(expected) or set(names) != set(expected):
+        raise ValueError(
+            "ZIP is missing files or contains unexpected members: "
+            + str(archive.filename)
+        )
+    for info in archive.infolist():
+        name = info.filename
+        mode = stat.S_IFREG | (0o755 if name.endswith(executable_suffixes) else 0o644)
+        if info.external_attr >> 16 != mode or info.file_size > LIMIT:
+            raise ValueError("Unexpected ZIP member mode or size: " + name)
+        with archive.open(info) as member:
+            if hashlib.file_digest(member, "sha256").hexdigest() != expected[name]:
+                raise ValueError("ZIP member differs from expected content: " + name)
+
+
+def verify_work_zip(path, slug, pinned_reader, project_sha256):
+    # Hash the official input archive directly, independently of the wrapper's assembly.
+    expected = {
+        "Project.zip": project_sha256,
+        "README.md": hashlib.sha256(work_readme(slug)).hexdigest(),
+    }
+    with zipfile.ZipFile(io.BytesIO(pinned_reader)) as ref:
+        for info in ref.infolist():
+            with ref.open(info) as original:
+                expected["Reader/" + info.filename] = hashlib.file_digest(
+                    original, "sha256"
+                ).hexdigest()
+    with zipfile.ZipFile(path) as archive:
+        verify_members(archive, expected, (".command",))
+
+
+def verify_source_zip(path, selected):
+    inventory = {name: hash_file(source) for name, source in selected}
+    manifest = "taleprism/" + SOURCE_MANIFEST
+    with zipfile.ZipFile(path) as archive:
+        if (
+            manifest not in archive.namelist()
+            or archive.getinfo(manifest).file_size > 4_000_000
+        ):
+            raise ValueError("Missing/oversized source manifest")
+        raw = archive.read(manifest)
+        doc = json.loads(raw)
+        if (
+            doc.get("format") != "storygal-source"
+            or doc.get("version") != 1
+            or doc.get("files") != inventory
+        ):
+            raise ValueError(
+                "Source manifest differs from the reviewed source inventory"
+            )
+        expected = {"taleprism/" + name: sha for name, sha in inventory.items()}
+        expected[manifest] = hashlib.sha256(raw).hexdigest()
+        verify_members(archive, expected, (".command", ".sh"))
+
+
 def hash_file(path):
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -213,15 +273,23 @@ def build(inputs, output):
         if "taleprism/prompts/START-HERE.md" not in files:
             raise ValueError("Agent walkthrough missing from starter inventory")
         write_zip(out / STARTER, files)
+        with zipfile.ZipFile(out / STARTER) as archive:
+            verify_members(
+                archive,
+                {n: hashlib.sha256(b).hexdigest() for n, b in files.items()},
+                (".command",),
+            )
         del files
         inputs_by_work = {}
         for slug in PINS:
             reader, r = checked_input(inputs, slug, "reader")
             project, p = checked_input(inputs, slug, "project")
             write_zip(out / work_name(slug), work_files(slug, reader, project))
+            verify_work_zip(out / work_name(slug), slug, reader, p["sha256"])
             inputs_by_work[slug] = {"reader": r, "project": p}
             del reader, project
         package_source(out / SOURCE)
+        verify_source_zip(out / SOURCE, source_files())
         (out / SOURCE).with_suffix(
             ".json"
         ).unlink()  # candidate has one shared manifest

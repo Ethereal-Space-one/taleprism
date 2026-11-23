@@ -71,6 +71,49 @@ try {
   assert.equal(migrated.marks.length, 1);
   assert.equal(migrated.preferences.size, 25);
   const positions = require(path.join(temp, "reader/position.js"));
+  // Exercise the DOM Range API, not a JS substring stand-in. Ranges may be set
+  // programmatically between UTF-16 halves even when the caret UI avoids this.
+  const { window } = new (require("jsdom").JSDOM)(
+    '<main><span data-source-start="0" data-source-end="5">A😀</span><em>not source</em><span data-source-start="7" data-source-end="12">𠮷Z</span></main>',
+  );
+  const d = window.document,
+    rootEl = d.querySelector("main");
+  Object.assign(global, {
+    window,
+    document: d,
+    Node: window.Node,
+    getComputedStyle: window.getComputedStyle,
+  });
+  const [first, last] = [...d.querySelectorAll("span")].map(
+    (e) => e.firstChild,
+  );
+  const selection = window.getSelection(),
+    range = d.createRange();
+  range.setStart(first, 2);
+  range.setEnd(last, 1);
+  selection.addRange(range);
+  assert.deepEqual(positions.selectedExcerpt(rootEl, new Map([[7, "\r\n"]])), {
+    text: "😀\r\n𠮷",
+    ranges: [
+      { start: 1, end: 5 },
+      { start: 7, end: 11 },
+    ],
+    position: { byte: 1, offset: 0 },
+  });
+  selection.collapse(first, 2);
+  assert.equal(positions.selectedExcerpt(rootEl), null);
+  let restored;
+  window.Range.prototype.getBoundingClientRect = function () {
+    restored = this.toString();
+    return { top: 0 };
+  };
+  positions.restorePosition(rootEl, { byte: 4, offset: 0 });
+  assert.equal(
+    restored,
+    "😀",
+    "restore an interior byte to the complete last scalar in its DOM run",
+  );
+  window.close();
   let artTop = 100,
     artHeight = 200;
   const art = {

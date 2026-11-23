@@ -8,7 +8,7 @@ import type {
   ReaderPresentation,
   ReaderState,
 } from '../reader-types'
-import { byteLength } from './model'
+import { anchorByteAtCaret, sourceQuote } from './model'
 import { MotionDirector } from './MotionDirector'
 import { useUnsavedWarning } from '../studio/leave'
 import { IllustrationEditor } from './IllustrationEditor'
@@ -171,16 +171,10 @@ export function ArrangementEditor({
   })
   const paragraph = state.paragraphs[paragraphIndex]
   const chars = review?.characters.filter((c) => c.status === 'confirmed') || []
-  function anchorQuote(byte: number) {
+  function anchorQuote(byte: number, after = 70, fallback = '原文边界') {
     const p = state.paragraphs.find((p) => p.byte_start <= byte && byte < p.byte_end)
-    return p
-      ? new TextDecoder()
-          .decode(new TextEncoder().encode(p.text).slice(byte - p.byte_start))
-          .slice(0, 70)
-      : '原文边界'
+    return p ? sourceQuote(p.text, byte - p.byte_start, 0, after) : fallback
   }
-  const source =
-    state.paragraphs.find((p) => p.byte_start <= anchor && p.byte_end > anchor)?.text || ''
   function update(next: Partial<ReaderConfig>) {
     editGeneration.current++
     setDraft((v) => ({ ...v, ...next }))
@@ -467,29 +461,14 @@ export function ArrangementEditor({
           onSelect={(e) =>
             setAnchor(
               paragraph.byte_start +
-                byteLength(e.currentTarget.value.slice(0, e.currentTarget.selectionStart)),
+                anchorByteAtCaret(e.currentTarget.value, e.currentTarget.selectionStart),
             )
           }
         />
       </label>
       <p>
         当前位置：
-        {source
-          ? new TextDecoder()
-              .decode(
-                new TextEncoder()
-                  .encode(source)
-                  .slice(
-                    Math.max(
-                      0,
-                      anchor -
-                        (state.paragraphs.find((p) => p.byte_start <= anchor && p.byte_end > anchor)
-                          ?.byte_start || 0),
-                    ),
-                  ),
-              )
-              .slice(0, 45)
-          : '段落边界'}
+        {anchorQuote(anchor, 45, '段落边界')}
       </p>
       <button disabled={!draft.scenes.length} onClick={add}>
         从这里变化

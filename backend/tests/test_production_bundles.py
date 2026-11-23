@@ -3,6 +3,7 @@ import io
 import json
 import zipfile
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -101,7 +102,12 @@ def test_plan_apply_and_task_export(setup):
 def external_return(c, pid, plan):
     task = c.get(f"/api/projects/{pid}/production/tasks?kind=plan").json()
     return {k: task[k] for k in ["project_id", "base_plan_revision", "source_sha256"]} | {
-        "plan": plan
+        "plan": {
+            **plan,
+            "budget": task["plan"]["budget"],
+            "style": task["plan"]["style"],
+            "scenes": plan.get("scenes", []),
+        }
     }
 
 
@@ -122,15 +128,143 @@ def test_external_plan_task_binds_project_source_and_exact_saved_plan(setup):
     assert "原样保留project_id、base_plan_revision、source_sha256" in task["instruction"]
 
 
+def model_returns(monkeypatch, answer):
+    # Exercise the real request/response adapter without contacting a provider.
+    monkeypatch.setattr(
+        "storygal.llm.model_settings",
+        lambda: ({"base_url": "https://model.invalid", "model": "fixture"}, "not-a-real-key"),
+    )
+    client = httpx.Client
+
+    def reply(request):
+        assert str(request.url) == "https://model.invalid/chat/completions"
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer)}}]
+            },
+        )
+
+    monkeypatch.setattr(
+        "storygal.production.httpx.Client",
+        lambda **kw: client(transport=httpx.MockTransport(reply), **kw),
+    )
+
+
+@pytest.mark.parametrize(
+    "kind", ["empty-object", "missing-shots", "missing-scenes", "budget", "style"]
+)
+def test_bad_ai_replacement_preserves_approved_plan_in_both_routes(setup, monkeypatch, kind):
+    c, pid, raw, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    assert save(c, pid, plan).is_success
+    before = c.post(prefix + "/conversation/approve", json={"revision": 1}).json()
+    assert before["plan"]["shots"][0]["status"] == "approved"
+    answer = external_return(c, pid, before["plan"])
+    if kind == "empty-object":
+        answer["plan"] = {}
+    elif kind.startswith("missing-"):
+        del answer["plan"][kind.removeprefix("missing-")]
+    elif kind == "budget":
+        answer["plan"]["budget"] += 1
+    else:
+        answer["plan"]["style"] = "模型擅自更改的画风"
+    assert c.post(prefix + "/validate", json=answer).status_code in {400, 422}
+    assert c.get(prefix).json() == before
+    model_returns(monkeypatch, {k: answer[k] for k in ("source_sha256", "plan")})
+    result = c.post(prefix + "/generate", json={"revision": before["revision"]})
+    assert result.status_code == 400, result.text
+    after = c.get(prefix).json()
+    assert (after["revision"], after["plan"]) == (before["revision"], before["plan"])
+    assert c.get(f"/api/projects/{pid}/source").content == raw
+
+
+def test_ai_cannot_replace_bind_or_unbind_a_scene_master_but_author_edits_can(setup, monkeypatch):
+    c, pid, raw, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    reader = c.app.state.reader
+    images = []
+    for color in ("teal", "red"):
+        out = io.BytesIO()
+        Image.new("RGB", (80, 45), color).save(out, "PNG")
+        asset = reader.upload(pid, reader.load(pid)[0], out.getvalue(), "scene", "fixture")
+        images.append(asset["id"])
+    scene = {"id": "street", "title": "街面", "reference_asset_id": images[0]}
+    before = save(c, pid, {**plan, "scenes": [scene]}).json()
+    answer = external_return(c, pid, before["plan"])
+    response = {k: answer[k] for k in ("source_sha256", "plan")}
+    model_returns(monkeypatch, response)
+    for scenes in (
+        [{k: v for k, v in scene.items() if k != "reference_asset_id"}],
+        [{**scene, "reference_asset_id": images[1]}],
+        [scene, {**scene, "id": "new-scene"}],
+    ):
+        answer["plan"]["scenes"] = scenes
+        for result in (
+            c.post(prefix + "/validate", json=answer),
+            c.post(prefix + "/generate", json={"revision": before["revision"]}),
+        ):
+            assert result.status_code == 400 and "场景母版" in result.json()["detail"]
+        after = c.get(prefix).json()
+        assert (after["revision"], after["plan"]) == (before["revision"], before["plan"])
+    assert c.get(f"/api/projects/{pid}/source").content == raw
+    answer["plan"]["scenes"] = [scene, {"id": "next", "title": "新场景"}]
+    assert c.post(prefix + "/validate", json=answer).is_success
+    accepted = c.post(prefix + "/generate", json={"revision": before["revision"]})
+    assert accepted.is_success, accepted.text
+    manual = accepted.json()
+    manual["plan"]["scenes"][0]["reference_asset_id"] = images[1]
+    assert save(c, pid, manual["plan"], manual["revision"]).is_success
+
+
+def test_zero_shot_decision_is_valid_with_an_explicit_empty_list(setup, monkeypatch):
+    c, pid, raw, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    assert save(c, pid, {**plan, "budget": 0, "shots": []}).is_success
+    before = c.get(prefix).json()
+    task = c.get(prefix + "/tasks?kind=plan").json()
+    schema = task["schema"]["properties"]["plan"]
+    assert set(schema["required"]) == {"style", "budget", "shots", "scenes"}
+    assert schema["properties"]["budget"]["const"] == 0
+    assert schema["properties"]["style"]["const"] == plan["style"]
+    answer = external_return(c, pid, before["plan"])
+    assert c.post(prefix + "/validate", json=answer).json() == before["plan"]
+    assert c.get(prefix).json() == before  # external candidates still require explicit save
+    model_returns(monkeypatch, {k: answer[k] for k in ("source_sha256", "plan")})
+    result = c.post(prefix + "/generate", json={"revision": before["revision"]})
+    assert result.is_success, result.text
+    assert result.json()["revision"] == before["revision"] + 1
+    assert result.json()["plan"] == before["plan"]
+    assert c.get(f"/api/projects/{pid}/source").content == raw
+
+
+def test_online_quiet_candidate_does_not_clear_shots_but_author_can_adopt_it(setup, monkeypatch):
+    c, pid, raw, plan = setup
+    prefix = f"/api/projects/{pid}/production"
+    assert save(c, pid, plan).is_success
+    before = c.post(prefix + "/conversation/approve", json={"revision": 1}).json()
+    assert before["plan"]["shots"][0]["status"] == "approved"
+    answer = external_return(c, pid, {**before["plan"], "shots": []})
+    model_returns(monkeypatch, {k: answer[k] for k in ("source_sha256", "plan")})
+    result = c.post(prefix + "/generate", json={"revision": before["revision"]})
+    assert result.status_code == 400 and "现有镜头已保留" in result.json()["detail"]
+    candidate = c.post(prefix + "/validate", json=answer)
+    assert candidate.is_success and candidate.json()["shots"] == []
+    assert c.get(prefix).json()["plan"] == before["plan"]
+    assert save(c, pid, candidate.json(), before["revision"]).json()["plan"]["shots"] == []
+    assert c.get(f"/api/projects/{pid}/source").content == raw
+
+
 def test_external_candidate_is_read_only_until_explicit_revision_bound_save(setup):
     c, pid, _, plan = setup
     prefix = f"/api/projects/{pid}/production"
     answer = external_return(c, pid, plan)
-    answer["plan"]["shots"][0]["status"] = "approved"
+    answer["plan"]["shots"][0].update(status="approved", image_asset_id="not-an-authored-binding")
     before = c.get(prefix).json()
     validated = c.post(prefix + "/validate", json=answer)
     assert validated.status_code == 200, validated.text
     assert validated.json()["shots"][0]["status"] == "draft"
+    assert validated.json()["shots"][0]["image_asset_id"] is None
     assert c.get(prefix).json() == before
     response = save(c, pid, validated.json(), answer["base_plan_revision"])
     assert response.status_code == 200, response.text
@@ -368,6 +502,7 @@ def test_synchronous_generation_keeps_existing_unbound_model_response_contract(s
     c, pid, _, plan = setup
     instance = c.app.state.production
     source_hash = instance.state(pid)["source_sha256"]
+    plan = external_return(c, pid, plan)["plan"]
     monkeypatch.setattr(
         production.llm,
         "model_settings",
@@ -404,8 +539,9 @@ def test_synchronous_generation_keeps_existing_unbound_model_response_contract(s
             task = json.loads(kwargs["json"]["messages"][1]["content"])
             assert "project_id" not in task and "base_plan_revision" not in task
             assert task["schema"]["required"] == ["source_sha256", "plan"]
-            assert "仅输出包含source_sha256与plan、符合schema的JSON。" in (
-                kwargs["json"]["messages"][0]["content"]
+            assert (
+                "仅输出包含source_sha256与plan、符合schema的JSON。"
+                in (kwargs["json"]["messages"][0]["content"])
             )
             return Response()
 
@@ -459,6 +595,7 @@ def test_ai_task_schema_refs_resolve_and_late_model_result_cannot_overwrite(setu
 
     check_refs(schema)
     source_hash = instance.state(pid)["source_sha256"]
+    plan = external_return(c, pid, plan)["plan"]
     monkeypatch.setattr(production.llm, "api_key", lambda: "fake-test-only")
 
     class Response:

@@ -1,9 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
+import { byteLength, sourceSlice } from '../reader/model'
 import type { ReaderState } from '../reader-types'
 import { heardEntireTake } from './prepareNarration'
-import { layers, occurrences, soundUrl, type Soundscapes, type SoundTake } from './soundscape'
+import {
+  layers,
+  occurrences,
+  selectedSoundEvidence,
+  soundUrl,
+  type Soundscapes,
+  type SoundTake,
+} from './soundscape'
 import './voice.css'
 
 type Paragraph = ReaderState['paragraphs'][number]
@@ -320,13 +328,13 @@ function SoundEditor({
       setError('请先在原文里选中几个字，或直接在「原文依据」填写。')
       return
     }
-    const text = el.value.slice(el.selectionStart, el.selectionEnd)
-    if (!text.trim() || [...text].length > 300) {
+    const selected = selectedSoundEvidence(paragraph.text, el.selectionStart, el.selectionEnd)
+    if (!selected) {
       setError('请选择 1 至 300 个字，不能只有空白。')
       return
     }
-    setEvidence(text)
-    setOccurrence(String(occurrences(paragraph.text, text).indexOf(el.selectionStart) + 1))
+    setEvidence(selected.text)
+    setOccurrence(String(selected.occurrence))
     setError('')
   }
   async function change(action: 'generate' | 'accepted' | 'withdrawn', take?: SoundTake) {
@@ -383,9 +391,7 @@ function SoundEditor({
                   revision,
                   byte_start: paragraph.byte_start,
                   evidence,
-                  evidence_start:
-                    paragraph.byte_start +
-                    new TextEncoder().encode(paragraph.text.slice(0, start)).length,
+                  evidence_start: paragraph.byte_start + byteLength(paragraph.text.slice(0, start)),
                   rain,
                   wind,
                   ...(pencil ? { pencil: true } : {}),
@@ -520,9 +526,9 @@ function SoundEditor({
           )}
           {start !== undefined && matches.length > 1 && (
             <p>
-              所选位置：…{paragraph.text.slice(Math.max(0, start - 12), start)}
+              所选位置：…{sourceSlice(paragraph.text, start - 12, start)}
               <mark>{evidence}</mark>
-              {paragraph.text.slice(start + evidence.length, start + evidence.length + 12)}…
+              {sourceSlice(paragraph.text, start + evidence.length, start + evidence.length + 12)}…
             </p>
           )}
           <p className="asset-helper">

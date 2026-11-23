@@ -14,6 +14,8 @@ TXT → 只读源文本 → 人物／对白审校 → 章节制作方案 → 素
 
 无密钥流程：下载 AI 方案任务（含 schema、正文段落与人物ID）→ 在自选工具处理 → 返回 `{project_id, base_plan_revision, source_sha256, plan}` → 导入并审校。前三项来自导出任务；项目不匹配或基线方案版本已变时拒绝导入，保存仍执行版本检查。生图任务由结构化方案编译，包含身份引用；用户自行携带对应参考图，图片完成后上传并回填。网页没有直接调用 Codex 会话生图的接口。扩展自动图片后端时必须显式声明参考图、透明背景、重试和费用能力，不能把“导入已有候选”伪装为自动生成。
 
+AI 方案是完整候选，不是部分编辑：`style`、`budget`、`shots` 和 `scenes` 必须显式返回，画风和预算保持发起任务时的值。沿用场景时必须保留已选母版，新场景不自动绑定母版。无合适镜头可以显式留白，但制作台不会把在线生成的空方案自动写到已有镜头上；需要清空时，先查看候选，再明确保存。普通手工编辑不受候选专用规则影响。
+
 ## 内容包与示例
 
 `samples/content-packs/catalog.json` 描述本地示例，包内格式与用户工程相同，通过 `/api/project-bundles` 导入。在 `samples/last-light/recipe.json` 中表达正文、人物、对白、镜头与文件；`tools/build_content_pack.py` 是通用构建器，调用公开接口，不识别小说名称。
@@ -69,6 +71,8 @@ The public checkout includes canonical Last Light references, but excludes packe
 匹配使用固定 `opencc-js` 1.4.2 的 generic `t2s`，仅转换搜索索引和查询中的连续 Han 字符；不转换地区词汇、不猜测语义，不删除空格或标点，不折合大小写、拉丁字母重音、全角字母、非汉字兼容字符。它不是日文转换器，也不声称识别任意导入文本的语言。简体同形可能合并多种原字（例如发／發／髮）；「精确匹配」完全绕过折合，恢复原来的逐字短语匹配。少数罕见字不在上游浏览器字典内。
 
 按 Unicode scalar 一一记录折合边界，映射回原文 UTF-16 索引后才计算 UTF-8 跳转锚点，不能直接拿折合字符串的长度定位。固定版 generic `t2s` 的 4,991 个字典条目全部经过 scalar 数量相等检查；未来若某段发生扩缩，运行时该段退回原样而不猜位置。保留直接逐字命中，避免词组语境让原字子串失踪（如「乾坤」中的「乾」）。搜索与正文高亮共用同一匹配器，跨对白 run 只切显示范围并保留原字符、说话人与音频锚点。测试在 `tools/webgal-verify/reader-search-check.cjs`，随 `npm --prefix frontend run test:reader` 执行。
+
+书签、续读、摘录和声景编辑统一按有效 Unicode scalar 边界换算浏览器的 UTF-16 偏移与协议的 UTF-8 字节锚点；不把半个代理对当成文字。精确摘录保留原有换行、引句和出现位置，不重新归一化原文字节，也不把完整字形簇当作偏移协议。后端用累计字节偏移扫描段落和显示单元，不重复编码已处理的前缀。
 
 维护依据：[固定版官方用法与能力边界](https://github.com/nk2028/opencc-js/blob/v1.4.2/README.md)、[固定版字典许可](https://github.com/nk2028/opencc-js/blob/v1.4.2/THIRD_PARTY_LICENSES.md)。独立阅读导出必须同时带 MIT 代码许可、Apache-2.0 字典许可与第三方说明，不能只复制一个 LICENSE。
 

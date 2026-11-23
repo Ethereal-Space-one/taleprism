@@ -1,7 +1,10 @@
+from itertools import pairwise
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from storygal.reader import paragraphs
 from storygal.text import (
     assert_span_coverage,
     build_units,
@@ -23,7 +26,11 @@ def test_every_utf8_byte_is_covered_and_pages_preserve_visible_text(text):
     spans = split_spans(raw)
     assert_span_coverage(raw, spans)
     units = build_units(raw)
+    blocks = paragraphs(raw)
     assert "".join(u.text for u in units) == visible_text(text)
+    assert "".join(p["text"] for p in blocks) == visible_text(text)
+    assert all(raw[p["byte_start"] : p["byte_end"]].decode() == p["text"] for p in blocks)
+    assert all(p["id"] == f"p-{p['byte_start']}" for p in blocks)
     assert all(raw[u.byte_start : u.byte_end].decode("utf-8") == u.text for u in units)
     assert all(len(u.text) <= 64 for u in units)
 
@@ -56,3 +63,23 @@ def test_coverage_rejects_gap_and_changed_content():
     spans[0].byte_start = 1
     with pytest.raises(ValueError):
         assert_span_coverage(raw, spans)
+
+
+def test_long_mixed_source_keeps_offsets_and_ids_at_chapter_limit():
+    line = "　風🌧\r\n"
+    raw = ("\ufeff第一章\r\n" + line * 5000 + "\t\r末段").encode()
+    blocks = paragraphs(raw)
+    first = len("\ufeff第一章\r\n　".encode())
+    stride = len(line.encode())
+    assert blocks[0]["heading"] and blocks[0]["byte_start"] == 3
+    assert [p["byte_start"] for p in blocks[1:-1]] == [first + i * stride for i in range(5000)]
+    assert blocks[-1]["byte_end"] == len(raw)
+
+    long_body = "風🌧e\u0301。" * 5999
+    long_raw = ("\ufeff　" + long_body + "\t\r\n").encode()
+    units = build_units(long_raw)
+    assert len(units) > 400
+    assert units[0].byte_start == len("\ufeff　".encode())
+    assert units[-1].byte_end == len(long_raw) - len(b"\t\r\n")
+    assert all(a.byte_end == b.byte_start for a, b in pairwise(units))
+    assert b"".join(long_raw[u.byte_start : u.byte_end] for u in units) == long_body.encode()

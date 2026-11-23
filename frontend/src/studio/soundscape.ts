@@ -1,3 +1,5 @@
+import { utf16Boundary } from '../reader/model'
+
 export type SoundTake = {
   id: string
   byte_start: number
@@ -17,9 +19,17 @@ export const soundUrl = (id: string) => '/api/projects/' + id + '/reader/soundsc
 
 export function occurrences(source: string, phrase: string) {
   const starts: number[] = []
-  if (!phrase.trim() || [...phrase].length > 300) return starts
+  if (!phrase.trim() || [...phrase].length > 300 || /[\uD800-\uDFFF]/u.test(phrase)) return starts
   for (let i = source.indexOf(phrase); i >= 0; i = source.indexOf(phrase, i + 1)) starts.push(i)
   return starts
+}
+
+export function selectedSoundEvidence(source: string, from: number, to: number) {
+  if (to <= from) return null
+  const start = utf16Boundary(source, from)
+  const text = source.slice(start, utf16Boundary(source, to, 'ceil'))
+  const occurrence = occurrences(source, text).indexOf(start) + 1
+  return occurrence ? { text, occurrence } : null
 }
 
 export function layers(t: Pick<SoundTake, 'rain' | 'wind' | 'pencil' | 'car_at'>) {

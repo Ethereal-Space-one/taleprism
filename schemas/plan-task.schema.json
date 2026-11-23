@@ -577,15 +577,14 @@
     },
     "plan": {
       "additionalProperties": false,
+      "description": "AI replaces a whole plan. A missing list is not a decision to leave it empty.",
       "properties": {
         "style": {
-          "default": "自然人物比例，统一画风，克制而明确的人物表演。",
           "maxLength": 2000,
           "title": "Style",
           "type": "string"
         },
         "budget": {
-          "default": 6,
           "maximum": 64,
           "minimum": 0,
           "title": "Budget",
@@ -608,7 +607,13 @@
           "type": "array"
         }
       },
-      "title": "Plan",
+      "required": [
+        "style",
+        "budget",
+        "shots",
+        "scenes"
+      ],
+      "title": "CandidatePlan",
       "type": "object"
     }
   }

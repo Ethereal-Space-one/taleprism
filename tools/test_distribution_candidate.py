@@ -67,7 +67,9 @@ class CandidateTests(unittest.TestCase):
                 path, _ = urldefrag(link)
                 if not path or path.startswith(("https://", "http://")):
                     continue
-                target = posixpath.normpath(posixpath.join(posixpath.dirname(page), path))
+                target = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(page), path)
+                )
                 with self.subTest(page=page, target=target):
                     self.assertIn(target, files.keys())
 
@@ -107,6 +109,39 @@ class CandidateTests(unittest.TestCase):
             self.assertEqual(z.getinfo("Project.zip").date_time, (1980, 1, 1, 0, 0, 0))
             for n, data in new.items():
                 self.assertEqual(z.read(n), data)
+
+    def test_reopened_work_zip_is_checked_against_reference_not_its_own_inventory(self):
+        files = synthetic_reader()
+        reader = zipped(files.items())
+        project = zipped([("project.json", b"editable")])
+        expected = candidate.work_files("chibi", reader, project)
+        for fault in (
+            "valid",
+            "different_project",
+            "extra",
+            "missing",
+            "changed_image",
+            "wrong_guide",
+        ):
+            with self.subTest(fault=fault):
+                wrapped = expected.copy()
+                if fault == "different_project":
+                    wrapped["Project.zip"] = zipped([("project.json", b"another book")])
+                elif fault == "extra":
+                    wrapped["private-notes.txt"] = b"must not travel"
+                elif fault == "missing":
+                    del wrapped["Reader/RIGHTS.txt"]
+                elif fault == "changed_image":
+                    wrapped["Reader/media/sample.png"] = b"change"
+                elif fault == "wrong_guide":
+                    wrapped["README.md"] = candidate.work_readme("last-light")
+                path = self.root / f"{fault}.zip"
+                candidate.write_zip(path, wrapped)
+                if fault == "valid":
+                    candidate.verify_work_zip(path, "chibi", reader, sha(project))
+                else:
+                    with self.assertRaises(ValueError):
+                        candidate.verify_work_zip(path, "chibi", reader, sha(project))
 
     def test_reject_unsafe_and_colliding_reader_members(self):
         examples = [
@@ -193,6 +228,31 @@ class CandidateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             candidate.work_files("last-light", zipped(files.items()), b"project")
 
+    def test_starter_cannot_drop_template_and_source_cannot_self_attest_missing_file(
+        self,
+    ):
+        starter = self.root / "starter.zip"
+        candidate.write_zip(starter, {"README.md": b"start"})
+        with (
+            zipfile.ZipFile(starter) as archive,
+            self.assertRaisesRegex(ValueError, "missing files"),
+        ):
+            candidate.verify_members(
+                archive,
+                {"README.md": sha(b"start"), "prompts/01-source.md": sha(b"template")},
+                (".command",),
+            )
+
+        source = self.root / "source.zip"
+        sample = self.root / "start.sh"
+        sample.write_bytes(b"onboarding")
+        manifest = {"format": "storygal-source", "version": 1, "files": {}}
+        candidate.write_zip(
+            source, {"taleprism/SOURCE-MANIFEST.json": json.dumps(manifest).encode()}
+        )
+        with self.assertRaisesRegex(ValueError, "reviewed source inventory"):
+            candidate.verify_source_zip(source, [("start.sh", sample)])
+
     def test_pins_ignore_inputs_own_sidecars_and_other_tags(self):
         n = "taleprism-v0.9.2-chibi-project.zip"
         raw = b"replacement"
@@ -221,8 +281,23 @@ class CandidateTests(unittest.TestCase):
                 (self.src / f"taleprism-v0.9.2-{slug}-{kind}.zip").write_bytes(raw)
         commit = "a" * 40
 
+        sample = self.root / "README.md"
+        sample.write_bytes(b"source")
+        selected = [("README.md", sample)]
+
         def source_stub(path):
-            candidate.write_zip(path, {"taleprism/README.md": b"source"})
+            doc = {
+                "format": "storygal-source",
+                "version": 1,
+                "files": {"README.md": sha(b"source")},
+            }
+            candidate.write_zip(
+                path,
+                {
+                    "taleprism/README.md": b"source",
+                    "taleprism/SOURCE-MANIFEST.json": json.dumps(doc).encode(),
+                },
+            )
             path.with_suffix(".json").write_text("{}")
 
         with (
@@ -234,6 +309,7 @@ class CandidateTests(unittest.TestCase):
                 return_value={"taleprism/prompts/START-HERE.md": b"start"},
             ),
             patch.object(candidate, "package_source", source_stub),
+            patch.object(candidate, "source_files", return_value=selected),
         ):
             out = candidate.build(self.src, self.root / "one")
             two = candidate.build(self.src, self.root / "two")

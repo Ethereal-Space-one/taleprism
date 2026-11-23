@@ -42,6 +42,26 @@ uv run --project backend --frozen --python 3.12 python tools/build_distribution_
 (cd .release/distribution && shasum -a 256 -c SHA256SUMS)
 ```
 
+**What ordinary CI verifies.** New reader code is not an input for reconstructing a
+historical work: a change to the current reader JavaScript would change the original
+ZIP hash even when nothing in the novel changed. Both platforms build the four
+current downloads using pinned historical inputs. The builder reopens each work
+ZIP and checks its exact member set, reader file bytes, executable launcher modes,
+work-specific guide and intact inner project against independent input pins. It also
+reopens the starter and source archive, comparing all members to the current
+starter selection or reviewed source inventory, including executable modes.
+New editions must use new pins and an explicitly reviewed release; never update old
+pins to make a development build pass.
+
+Linux CI also uses `tools/check_edition_semantics.py --frozen-books /path/to/v0.9.2-zips`
+with **all six** pinned book ZIPs (four readers, two projects). This exercises the
+unchanged readers and imports the editable versions into the **current** workbench,
+then opens its ordinary new exports. Those exports are checked against book intent
+(source, art, anchors and sound), not against the frozen JavaScript hash.
+A frozen-book compatibility receipt is not a release-finalization receipt. To
+reproduce the historical eight-attachment build, use the historical source and
+procedure below.
+
 Before a separately authorized release, validate the exact new downloads: extract
 each work once, open the bundled reader offline, import only its `Project.zip`
 into a fresh store, and verify original text, placed art and paragraph soundscape

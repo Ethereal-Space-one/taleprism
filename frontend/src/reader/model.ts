@@ -7,6 +7,40 @@ import type {
 
 const encoder = new TextEncoder()
 export const byteLength = (s: string) => encoder.encode(s).length
+// DOM offsets and display limits are UTF-16 units; persistent anchors are UTF-8 bytes.
+// Snap only if a boundary bisects a scalar. Never normalize or re-decode the source.
+export function utf16Boundary(text: string, offset: number, edge: 'floor' | 'ceil' = 'floor') {
+  const at = Math.max(0, Math.min(text.length, offset))
+  const left = text.charCodeAt(at - 1),
+    right = text.charCodeAt(at)
+  return left >= 0xd800 && left <= 0xdbff && right >= 0xdc00 && right <= 0xdfff
+    ? at + (edge === 'ceil' ? 1 : -1)
+    : at
+}
+export const sourceSlice = (text: string, start: number, end: number) =>
+  text.slice(utf16Boundary(text, start), utf16Boundary(text, end, 'ceil'))
+
+// Anchors name a character, not an insertion point: the paragraph end names its
+// last scalar. Return both units from one pass, even for an old mid-scalar byte.
+export function textPointAtByte(text: string, offset: number) {
+  let byte = 0,
+    index = 0
+  for (const char of text) {
+    const cp = char.codePointAt(0)!
+    const next = byte + (cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4)
+    if (!(next <= offset) || index + char.length === text.length) break
+    byte = next
+    index += char.length
+  }
+  return { byte, index }
+}
+export function anchorByteAtCaret(text: string, offset: number) {
+  return byteLength(text.slice(0, utf16Boundary(text, Math.min(offset, text.length - 1))))
+}
+export function sourceQuote(text: string, offset: number, before: number, after: number) {
+  const { index } = textPointAtByte(text, offset)
+  return sourceSlice(text, index - before, index + after)
+}
 export type Position = {
   byte: number
   offset: number
@@ -84,23 +118,16 @@ export function validPosition(data: ReaderContent, value: unknown): Position {
         (b) => typeof p?.byte === 'number' && b.byte_start <= p.byte && p.byte < b.byte_end,
       )
   if (!b) return { byte: data.blocks[0].byte_start, offset: 0 }
-  const lastByte = b.byte_end - byteLength([...b.text].at(-1)!)
   if (plate)
     return {
-      byte: lastByte,
+      byte: b.byte_end - byteLength(b.text.slice(utf16Boundary(b.text, b.text.length - 1))),
       offset: 0,
       plate: plate.id,
       imageAsset: plate.image_asset_id,
       imageOffset: Math.max(0, Math.min(1, finite(p?.imageOffset))),
     }
-  let byte = b.byte_start
-  for (const c of b.text) {
-    const next = byte + byteLength(c)
-    if (next > p!.byte!) break
-    byte = next
-  }
   return {
-    byte: Math.min(byte, lastByte),
+    byte: b.byte_start + textPointAtByte(b.text, p!.byte! - b.byte_start).byte,
     offset: Math.max(-2, Math.min(2, finite(p?.offset))),
   }
 }
@@ -151,11 +178,26 @@ export function readRecord(data: ReaderContent, raw: string | null): RecordData 
       ? r.marks
           .filter((m: any) => m && typeof m.id === 'string' && typeof m.text === 'string')
           .slice(0, 300)
-          .map((m: Mark) => ({
-            ...m,
-            position: validPosition(data, m.position),
-            text: m.text.slice(0, 3000),
-          }))
+          .map((m: Mark) => {
+            const position = validPosition(data, m.position)
+            // Old ordinary bookmarks could store a clipped surrogate. Regenerate only
+            // their derived labels from a resolvable source, never rewrite an excerpt.
+            const recoverLabel =
+              !m.ranges &&
+              !m.position?.plate &&
+              typeof m.position?.byte === 'number' &&
+              data.blocks.some(
+                (b) => b.byte_start <= m.position.byte && m.position.byte < b.byte_end,
+              ) &&
+              /[\uD800-\uDFFF]/u.test(m.text)
+            return {
+              ...m,
+              position,
+              text: recoverLabel
+                ? quoteAt(data, position.byte)
+                : m.text.slice(0, utf16Boundary(m.text, 3000)),
+            }
+          })
       : [],
     completed: r.completed === true,
     updated: Number(r.updated) || 0,
@@ -303,15 +345,12 @@ export function blockAt(blocks: ReaderBlock[], byte: number) {
 }
 export function quoteAt(data: ReaderContent, byte: number) {
   const b = blockAt(data.blocks, byte)
-  const n = encoder.encode(b.text).slice(0, Math.max(0, byte - b.byte_start))
-  const index = new TextDecoder().decode(n).length
-  return b.text.slice(Math.max(0, index - 12), index + 65)
+  const inBlock = b.byte_start <= byte && byte < b.byte_end
+  return sourceQuote(b.text, inBlock ? byte - b.byte_start : 0, 12, 65)
 }
 // Search offsets are UTF-16 boundaries into the untouched source, never folded text.
 export type TextMatch = { start: number; end: number }
 export type TextMatcher = (text: string, query: string) => TextMatch[]
-const codePointBoundary = (text: string, at: number) =>
-  !(at > 0 && /[\uD800-\uDBFF]/.test(text[at - 1]) && /[\uDC00-\uDFFF]/.test(text[at] || ''))
 export const literalMatches: TextMatcher = (text, query) => {
   if (!query) return []
   const matches: TextMatch[] = []
@@ -320,7 +359,7 @@ export const literalMatches: TextMatcher = (text, query) => {
     const start = text.indexOf(query, at)
     if (start < 0) break
     const end = start + query.length
-    if (codePointBoundary(text, start) && codePointBoundary(text, end)) {
+    if (utf16Boundary(text, start) === start && utf16Boundary(text, end) === end) {
       matches.push({ start, end })
       at = end
     } else at = start + 1
@@ -332,13 +371,9 @@ export function search(data: ReaderContent, query: string, match: TextMatcher = 
   const results: { byte: number; text: string }[] = []
   for (const block of data.blocks) {
     for (const { start, end } of match(block.text, query)) {
-      let from = Math.max(0, start - 12),
-        to = Math.min(block.text.length, end + 35)
-      if (!codePointBoundary(block.text, from)) from--
-      if (!codePointBoundary(block.text, to)) to++
       results.push({
         byte: block.byte_start + byteLength(block.text.slice(0, start)),
-        text: block.text.slice(from, to),
+        text: sourceSlice(block.text, start - 12, end + 35),
       })
       if (results.length === 300) return results
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { sourceSlice } from './reader/model'
 import { api, type Span, type PresentationUnit } from './api'
 
 type Node = { id: string; label: string; evidence_span_ids: number[] }
@@ -23,7 +24,7 @@ function ItemEditor({ item, kind, spans, units, pending, onSave }: { item?: Item
   const [graph, setGraph] = useState<Graph>(item?.graph || { nodes: [{ id: 'n1', label: '', evidence_span_ids: [] }, { id: 'n2', label: '', evidence_span_ids: [] }], edges: [] })
   return <form className="visual-editor" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); onSave({ kind, title: String(form.get('title')), anchor_byte: Number(form.get('anchor')), evidence_span_ids: refs, graph: kind === 'diagram' ? graph : null }) }}>
     <label>项目名称<input name="title" maxLength={80} required defaultValue={item?.title || ''} /></label>
-    <label>插入位置（在该显示框之后）<select name="anchor" defaultValue={item?.anchor_byte || units.at(-1)?.byte_end} required>{units.map(u => <option key={u.id} value={u.byte_end}>第 {u.id + 1} 框 · {u.text.slice(0, 30)}</option>)}</select></label>
+    <label>插入位置（在该显示框之后）<select name="anchor" defaultValue={item?.anchor_byte || units.at(-1)?.byte_end} required>{units.map(u => <option key={u.id} value={u.byte_end}>第 {u.id + 1} 框 · {sourceSlice(u.text, 0, 30)}</option>)}</select></label>
     <p className="asset-helper">插入位置必须晚于所有引用证据。正文分页变化时，导出会把锚点移到不早于该位置的显示框结束处。</p>
     <EvidencePicker spans={spans} value={refs} onChange={setRefs} />
     {kind === 'diagram' && <div className="graph-editor"><h3>节点（最多 4 个）</h3>{graph.nodes.map((node, index) => <section className="graph-element" key={node.id}>

@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib.parse import quote
 from urllib.request import urlopen
 
-from chibi_source import read_zip
+from chibi_source import LIMIT, read_zip
 from reissue_autoplay import inspect_story, loadzip
 from release_version import PREFIX, ROOT
 
@@ -207,6 +207,11 @@ def run():
         help="Release asset directory; tests 4 readers and 2 editable projects",
     )
     group.add_argument(
+        "--frozen-books",
+        type=Path,
+        help="Test 6 pinned historical book ZIPs with the current workbench; not a release finalization",
+    )
+    group.add_argument(
         "--reader-zip",
         type=Path,
         help="Exact released Pages or individually selected reader ZIP",
@@ -295,14 +300,41 @@ def run():
         else:
             from build_public_example_pairs import cold_export
 
-            for suffix in ("source", "prompt-starter"):
-                archive(args.output / f"{PREFIX}-{suffix}.zip")
-            for name in contract:
-                check(
-                    name, archive(args.output / f"{PREFIX}-{name}-reader.zip"), "reader"
+            folder = args.output or args.frozen_books
+            pins = {}
+            if args.frozen_books:
+                from build_distribution_candidate import PINS
+                from check_plate_studies import SHEETS, plans
+
+                books = plans(json.loads((SHEETS / "catalog.json").read_bytes()))
+                pins = {b["reader"]: b["sha256"] for b in books}
+                pins.update(
+                    {f"{PREFIX}-{s}-project.zip": p["project"] for s, p in PINS.items()}
                 )
+            else:
+                for suffix in ("source", "prompt-starter"):
+                    archive(folder / f"{PREFIX}-{suffix}.zip")
+
+            def book_archive(name):
+                path = folder / name
+                require(
+                    not path.is_symlink()
+                    and path.is_file()
+                    and path.stat().st_size <= LIMIT,
+                    "Missing/oversized: " + name,
+                )
+                raw = archive(path)
+                if args.frozen_books:
+                    require(
+                        asset_hashes[name] == pins[name],
+                        "Wrong frozen book SHA-256: " + name,
+                    )
+                return raw
+
+            for name in contract:
+                check(name, book_archive(f"{PREFIX}-{name}-reader.zip"), "reader")
                 if name in ("chibi", "last-light"):
-                    raw = archive(args.output / f"{PREFIX}-{name}-project.zip")
+                    raw = book_archive(f"{PREFIX}-{name}-project.zip")
                     project = json.loads(read_zip(raw)["project.json"])
                     takes = project["records"].get("soundscape_takes", [])
                     want = contract[name]["soundscapes"]
@@ -337,6 +369,8 @@ def run():
                     "static_only": False,
                     "mode": "release"
                     if args.output
+                    else "frozen-books"
+                    if args.frozen_books
                     else "pages-live"
                     if args.live_url
                     else "pages-staged"

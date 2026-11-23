@@ -13,7 +13,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
-from check_edition_semantics import inspect, variant
+from check_edition_semantics import inspect, run, variant
 from reissue_autoplay import loadzip
 
 
@@ -160,3 +160,10 @@ def test_only_explicit_cold_aliases_allowed(gold):
     assert variant(spec, "chibi", True)["illustrations"][0]["id"] == "plan-checked"
     assert variant(spec, "last-light", True) == copy.deepcopy(spec)
     assert spec["illustrations"][0]["id"] == "checked"
+
+
+def test_frozen_mode_rejects_changed_archive_before_inspecting_or_rendering(tmp_path, monkeypatch):
+    (tmp_path / "taleprism-v0.9.2-chibi-reader.zip").write_bytes(b"wrong book")
+    monkeypatch.setattr(sys, "argv", ["check", "--frozen-books", str(tmp_path), "--static-only"])
+    with pytest.raises(ValueError, match="Wrong frozen book SHA-256"):
+        run()

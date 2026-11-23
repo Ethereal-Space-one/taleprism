@@ -83,32 +83,38 @@ jobs:
           --deselect=tests/test_reader.py::test_reader_change_during_packaging_never_publishes
           --deselect=tests/test_visual.py::test_illustration_budget_style_and_asset_integrity
       - run: npm --prefix frontend run test:reader
-      - name: Rebuild four readers, two editables, starter and source
-        run: >-
-          uv run --project backend --frozen python tools/build_release.py
-          --chibi-source "$TALEPRISM_CHIBI_SOURCE" --output .release/ci
-      - name: Verify every final edition, including ordinary editable round trips
-        if: runner.os == 'Linux'
+      - name: Fetch frozen v0.9.2 book inputs (never rebuild a published book with today's reader)
         run: |
-          uv run --project backend --frozen python tools/check_edition_semantics.py --output .release/ci --report .release/ci/edition-acceptance.json
-          uv run --project backend --frozen python tools/check_reading_upgrade.py --output .release/ci --fetch-previous
-          TALEPRISM_CHROMIUM="$(command -v google-chrome || command -v chromium)" node tools/webgal-verify/plate-screening-workbench.cjs
-          uv run --project backend --frozen python tools/check_plate_studies.py --output .release/ci --report .release/ci/plate-screening-acceptance.json
-          uv run --project backend --frozen python tools/finalize_release.py --output .release/ci
-      - name: Verify the separate four-download distribution candidate
+          mkdir -p .release/frozen
+          for item in chibi-reader chibi-project last-light-reader last-light-project the-door-left-open-reader the-margin-reader; do
+            file="taleprism-v0.9.2-$item.zip"
+            curl --disable --fail --silent --show-error --location \
+              --proto '=https' --proto-redir '=https' --max-filesize 160000000 \
+              --retry 3 --connect-timeout 15 --max-time 300 \
+              --output ".release/frozen/$file" -- "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2/$file"
+          done
+      - name: Build current starter/source and verify both actual work ZIPs against pinned inputs
         run: |
-          uv run --project backend --frozen python tools/build_distribution_candidate.py --inputs .release/ci --output .release/distribution
+          uv run --project backend --frozen python tools/build_distribution_candidate.py --inputs .release/frozen --output .release/distribution
           (cd .release/distribution && shasum -a 256 -c SHA256SUMS)
-      - name: Record exact hosted release bytes and acceptance receipt
+      - name: Verify frozen books plus current workbench re-exports and Unicode echo anchors
         if: runner.os == 'Linux'
-        working-directory: .release/ci
         run: |
-          sha256sum -c SHA256SUMS
-          printf 'HOSTED_COMMIT=%s\n' "$GITHUB_SHA"
-          cat SHA256SUMS
-          sha256sum SHA256SUMS edition-acceptance.json plate-screening-acceptance.json
-          for file in SHA256SUMS release-manifest.json edition-acceptance.json plate-screening-acceptance.json; do
-            printf 'TALEPRISM_HOSTED_%s_BASE64=' "$file"
+          uv run --project backend --frozen python tools/check_edition_semantics.py --frozen-books .release/frozen --report .release/edition-acceptance.json
+          CHROME_PATH="$(command -v google-chrome || command -v chromium)" node tools/webgal-verify/reader-echo-check.cjs
+          TALEPRISM_CHROMIUM="$(command -v google-chrome || command -v chromium)" node tools/webgal-verify/plate-screening-workbench.cjs
+          uv run --project backend --frozen python tools/check_plate_studies.py --output .release/frozen --report .release/plate-screening-acceptance.json
+      - name: Check historical v0.9.0 to v0.9.2 reading-progress compatibility
+        if: runner.os == 'Linux'
+        run: uv run --project backend --frozen python tools/check_reading_upgrade.py --output .release/frozen --fetch-previous
+      - name: Record candidate identity and distinct compatibility receipts
+        if: runner.os == 'Linux'
+        run: |
+          printf 'CANDIDATE_COMMIT=%s\n' "$GITHUB_SHA"
+          cat .release/distribution/SHA256SUMS
+          sha256sum .release/edition-acceptance.json .release/plate-screening-acceptance.json
+          for file in .release/distribution/candidate-manifest.json .release/edition-acceptance.json .release/plate-screening-acceptance.json; do
+            printf 'CANDIDATE_%s_BASE64=' "${file##*/}"
             base64 -w0 "$file"
             printf '\n'
           done

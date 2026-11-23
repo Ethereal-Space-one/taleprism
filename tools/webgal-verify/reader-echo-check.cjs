@@ -11,7 +11,7 @@ const { chromium } = require("playwright");
 const root = path.resolve(__dirname, "../..");
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "tale-echo-"));
 const source =
-  "纸船上写着「稍候」。\r\n\r\n风把灯吹灭。\n　她终于放开了船。\n水声还在。";
+  "😀纸船上写着「稍候」。\r\n\r\n风把灯吹灭。\n　她终于放开了船。\n水声还在。𠮷";
 const fold = {
   earlier: { paragraph: 1, quote: "「稍候」" },
   later: { paragraph: 3, quote: "放开了船" },
@@ -141,7 +141,7 @@ async function main() {
           el.nextElementSibling.querySelector(".reader-paragraph-text")
             .textContent,
       ),
-      "水声还在。",
+      "水声还在。𠮷",
     );
     assert.equal(await echo.locator("[data-source-start]").count(), 0);
     const position = await p
@@ -161,30 +161,36 @@ async function main() {
     );
     assert(await p.locator("audio").evaluate((a) => a.paused));
     // Native copy event while the selected range crosses the open fold.
-    const copied = await p.evaluate(() => {
-      const spans = document.querySelectorAll(
-        ".reader-prose [data-source-start]",
-      );
-      const first = spans[0].firstChild,
-        last = [...spans].at(-1).firstChild;
-      const range = new Range();
-      range.setStart(first, 0);
-      range.setEnd(last, last.length);
-      const sel = getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      const dt = new DataTransfer();
-      document.dispatchEvent(
-        new ClipboardEvent("copy", {
-          bubbles: true,
-          cancelable: true,
-          clipboardData: dt,
-        }),
-      );
-      sel.removeAllRanges();
-      return dt.getData("text/plain");
-    });
-    assert.equal(copied, source);
+    const copyAcrossFold = (inset) =>
+      p.evaluate((inset) => {
+        const spans = document.querySelectorAll(
+          ".reader-prose [data-source-start]",
+        );
+        const first = spans[0].firstChild,
+          last = [...spans].at(-1).firstChild;
+        const range = new Range();
+        range.setStart(first, inset);
+        range.setEnd(last, last.length - inset);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        const dt = new DataTransfer();
+        document.dispatchEvent(
+          new ClipboardEvent("copy", {
+            bubbles: true,
+            cancelable: true,
+            clipboardData: dt,
+          }),
+        );
+        sel.removeAllRanges();
+        return dt.getData("text/plain");
+      }, inset);
+    assert.equal(await copyAcrossFold(0), source);
+    assert.equal(
+      await copyAcrossFold(1),
+      source,
+      "DOM Range endpoints inside emoji/CJK supplementary characters preserve the original selection and gaps",
+    );
     await summary.press("Space");
     await quote.waitFor({ state: "hidden" });
     await p.getByRole("button", { name: "阅读工具", exact: true }).click();
