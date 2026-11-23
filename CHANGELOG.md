@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased · Let the story reveal itself
+## 0.9.4 · Let the story reveal itself
 
 - Add a separate author check for what each placed image and its reader-facing words reveal at that point in the source. It is a human editorial decision, not a pass granted by matching a quotation or by a model.
 - Keep draft previews, Reader downloads and editable backups available during review. Only formal Reader sign-off requires current per-image decisions, and their private reasoning does not travel with the book.
 - In new Reader exports, the gallery starts with art at or before the current reading position. Seeing future illustrations or titles is a deliberate action for that visit. When an image is reused, the expanded view uses the selected placement’s own title and description.
+- Harden UTF-8 source anchors across short lines, repeat passages and supplementary characters. Save soundscape intent in the workbench while keeping unaccepted cues out of exported readers.
+- Validate the four current downloads independently of the frozen historical books and their contents; the existing online reader stays unchanged. [Release notes](docs/RELEASE-v0.9.4.md).
 
 ## 0.9.3 · A simpler download, from your novel or ours
 

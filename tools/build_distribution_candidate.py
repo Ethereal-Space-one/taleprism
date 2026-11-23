@@ -24,8 +24,9 @@ from chibi_source import LIMIT, read_zip, verify_inventory
 from package_source import EPOCH, document, package_source
 from package_source import MANIFEST as SOURCE_MANIFEST
 from release_files import ROOT, source_files, tracked_inventory
+from release_version import FROZEN_BOOK_PREFIX, FROZEN_BOOK_TAG, VERSION
 
-BASE = "https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.2"
+BASE = f"https://github.com/Ethereal-Space-one/taleprism/releases/download/{FROZEN_BOOK_TAG}"
 # SHA256SUMS, v0.9.2. Never trust checksums supplied by --inputs or by a new catalog.
 PINS = {
     "chibi": {
@@ -89,7 +90,7 @@ and software notices travel with these files; see [Reader/RIGHTS.txt](Reader/RIG
 
 
 def checked_input(folder, slug, kind):
-    name = f"taleprism-v0.9.2-{slug}-{kind}.zip"
+    name = f"{FROZEN_BOOK_PREFIX}-{slug}-{kind}.zip"
     path = folder / name
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= LIMIT:
         raise ValueError("Missing, linked or oversized official input: " + name)
@@ -313,14 +314,15 @@ def build(inputs, output):
                 {
                     "schema": 1,
                     "product": "Taleprism",
+                    "version": VERSION,
                     "channel": "local-distribution-candidate",
                     "commit": commit,
                     "artifacts": artifacts,
-                    "work_inputs": {"tag": "v0.9.2", "works": inputs_by_work},
+                    "work_inputs": {"tag": FROZEN_BOOK_TAG, "works": inputs_by_work},
                     "historical_reader_only": [
                         {
                             "id": slug,
-                            "url": f"{BASE}/taleprism-v0.9.2-{slug}-reader.zip",
+                            "url": f"{BASE}/{FROZEN_BOOK_PREFIX}-{slug}-reader.zip",
                         }
                         for slug in ("the-door-left-open", "the-margin")
                     ],

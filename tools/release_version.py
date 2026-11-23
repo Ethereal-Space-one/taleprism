@@ -9,6 +9,7 @@ VERSION = tomllib.loads((ROOT / "backend/pyproject.toml").read_text())["project"
 ]
 PREFIX = "taleprism-v" + VERSION
 
-# The authoring release does not re-edit the four books. Preserve their embedded
-# edition metadata, runtime, source and media; only the download filenames follow VERSION.
+# Historical book content and published filenames are not app version metadata.
 BOOK_EDITION = "0.9.1"
+FROZEN_BOOK_TAG = "v0.9.2"
+FROZEN_BOOK_PREFIX = "taleprism-" + FROZEN_BOOK_TAG

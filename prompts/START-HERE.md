@@ -4,7 +4,7 @@
 
 **第一件作品可以只有一章、一幅静图，没有声音。** 目标是让人读到某句话时多看懂一点，不是把一章改写成分镜剧本。
 
-1. 解压 [v0.9.3 AI 创作入门包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip)，把有权使用的一章原文副本（如 UTF-8 的 `chapter.txt`）放在 `prompts/` **旁边**。用 Codex 打开该目录，或在其中启动 Claude Code。只能上传附件时，上传原文、[01-source.md](01-source.md) 和 [03-shot-plan.md](03-shot-plan.md)；只能贴文字时，贴原文及两份模板的「可复制模板」。不要向外部服务上传无权分享的稿件。
+1. 解压 [v0.9.4 AI 创作入门包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-agent-starter.zip)，把有权使用的一章原文副本（如 UTF-8 的 `chapter.txt`）放在 `prompts/` **旁边**。用 Codex 打开该目录，或在其中启动 Claude Code。只能上传附件时，上传原文、[01-source.md](01-source.md) 和 [03-shot-plan.md](03-shot-plan.md)；只能贴文字时，贴原文及两份模板的「可复制模板」。不要向外部服务上传无权分享的稿件。
 2. **复制下面这条指令。** 它也能配合 v0.9.3 包内的旧模板使用。
 
    > 先读 chapter.txt、01-source.md 和 03-shot-plan.md（本地模板在 prompts/）。这次先做一页镜头计划，暂不生图，不改原文，段落编号只写在工作表上。最多选三处，一处就够，没有合适位置可以不画。每处写：① 放在哪一段之后？抄出届时已读到的逐字原句。② 这幅图要帮读者看懂什么？画面和公开图注／替代文字可以透露什么？如果用声音，可听见什么？③ 哪个细节还不能出现？到哪一句才能揭示，还是全文都没有证实？没有要保留的悬念就写无。④ 若是续图，写上一幅已选定的参考图、必须保持的东西和本次有意的变化及依据。没有前图就直说。把艺术推断和未确定项与原文事实分开，也不要把防剧透笔记当成公开图注。能写文件就另存 shot-plan.md，否则直接回复。等我选定镜头再继续。
@@ -20,7 +20,7 @@
 
 **One chapter, one still image and no sound is a complete first project.** Use a picture when it helps a reader notice something in the prose, not to turn the chapter into a screenplay.
 
-1. Extract the [v0.9.3 AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip). Put an authorized chapter (e.g. UTF-8 `chapter.txt`) **beside**, not inside, `prompts/`. Open that folder in Codex or start Claude Code there. In an upload-only chat, attach the chapter, [01-source.md](01-source.md) and [03-shot-plan.md](03-shot-plan.md); in a text-only chat paste the chapter and the two copyable template blocks. Share only material you have the right to send to that service.
+1. Extract the [v0.9.4 AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-agent-starter.zip). Put an authorized chapter (e.g. UTF-8 `chapter.txt`) **beside**, not inside, `prompts/`. Open that folder in Codex or start Claude Code there. In an upload-only chat, attach the chapter, [01-source.md](01-source.md) and [03-shot-plan.md](03-shot-plan.md); in a text-only chat paste the chapter and the two copyable template blocks. Share only material you have the right to send to that service.
 2. **Copy this prompt.** It also works with the older templates in the v0.9.3 download.
 
    > Read chapter.txt, 01-source.md and 03-shot-plan.md (the local templates are in prompts/). Give me a one-page shot plan. Do not generate images, rewrite the original or insert numbers into it. Pick up to three moments; one is enough and none is fine. For each: (1) Place it after a specific paragraph and quote the exact words already read. (2) What will the reader notice? What can the image, public caption/alt text and any sound reveal? (3) Hold back one specific detail until its first supporting line, or say it is never confirmed; if there is no reveal to protect, say so. (4) For a continuation, name the last frame selected for this sequence, what must stay, and the intentional change and its basis. Say if there is no earlier frame. Separate artistic choices and unknowns from facts. Keep private spoiler notes out of public copy. Save this as shot-plan.md if you can, or reply in chat. Wait for my selection.

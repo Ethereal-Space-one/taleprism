@@ -1,4 +1,4 @@
-# Public preview releases
+# Taleprism releases
 
 A GitHub prerelease is not a stable release or a Pages rollout. Use an ordinary review branch from the verified public main; never import an unrelated private Git history or replace an existing tag. The [iteration history](ITERATION-HISTORY.md) is the public record of the intervening work.
 
@@ -11,9 +11,10 @@ A GitHub prerelease is not a stable release or a Pages rollout. Use an ordinary 
 ## 0.9.3 distribution layout: one download per work
 
 This is the layout used by the published v0.9.3 preview. To reproduce its
-historical attachments, use the exact v0.9.3 source. Like that release, any future
-preview should lead with the author starter, then group the two complete works
-and show the workbench last, without replacing older downloads or deploying Pages.
+historical attachments, use the exact v0.9.3 source. The same four-download
+layout is used by v0.9.4: lead with the author starter, group the two complete
+works, and show the workbench last, without replacing older downloads or
+deploying Pages.
 
 | What the visitor wants | New release attachment |
 | --- | --- |
@@ -62,13 +63,19 @@ A frozen-book compatibility receipt is not a release-finalization receipt. To
 reproduce the historical eight-attachment build, use the historical source and
 procedure below.
 
-Before a separately authorized release, validate the exact new downloads: extract
+Before publishing a separately authorized release, verify the Linux and macOS
+checks for its exact source commit. Validate the exact new downloads: extract
 each work once, open the bundled reader offline, import only its `Project.zip`
 into a fresh store, and verify original text, placed art and paragraph soundscape
 in the default re-export. A structural or static check is not a browser pass.
 Test the Agent starter from its own README and source setup from a clean directory.
-Bind the reviewed candidate to its exact commit, do not overwrite a published
-tag or replace old attachments, and do not deploy Pages as a side effect.
+
+The final `candidate-manifest.json` must identify the current application version,
+exact tag commit and separate historical book-input tag. Compare it and
+`SHA256SUMS` to the expected CI evidence. Attach the four ZIPs and those two
+verification files to a draft for the **new** tag. Verify the uploaded downloads,
+then publish with the authorized stability setting. Never overwrite a published
+tag, replace old attachments or deploy Pages as a side effect.
 
 ## 0.9.2 local build: review every plate without changing the books
 

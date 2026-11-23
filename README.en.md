@@ -31,7 +31,7 @@ In *The Door Left Open*, only the wet road on the right moves. The dry threshold
 
 ## Start with one chapter
 
-1. **Download one package.** Get the [AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.3/taleprism-agent-starter.zip), extract it, and add a chapter such as `chapter.txt` beside `prompts/`. Open the folder in Codex or Claude Code. In an upload-only chat, attach the chapter and the two templates below.
+1. **Download one package.** Get the [AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-agent-starter.zip), extract it, and add a chapter such as `chapter.txt` beside `prompts/`. Open the folder in Codex or Claude Code. In an upload-only chat, attach the chapter and the two templates below.
 2. **Ask for a brief, not finished images.** Send this to your agent:
 
    > Use Taleprism for this chapter. Read `prompts/01-source.md`, `prompts/03-shot-plan.md`, and `chapter.txt`, or the matching attachments. Keep the source unchanged. Pick up to three places where an illustration would help; leave a slot empty if none fits. For each, give the placement and exact quote: what can be seen or heard now, and which later line permits the detail you are withholding? For a continuation, name the last selected frame, what stays and why anything changes. Separate inference from fact. Return Markdown and stop for my review before generating images.
@@ -52,4 +52,4 @@ To install the local workbench, extract the source package and run `./start.sh` 
 
 Review each finished illustration at its source passage. Stillness is a valid choice. As a final, optional step, an agent can propose a sound, an image treatment, or a way to reveal text. Only the author's choices enter the book, and the standalone reader never calls AI. Share a reader ZIP and keep the editable project as a separate backup.
 
-[v0.9.3 release notes](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.3) · [中文](README.md)
+[v0.9.4 release notes](https://github.com/Ethereal-Space-one/taleprism/releases/tag/v0.9.4) · [中文](README.md)

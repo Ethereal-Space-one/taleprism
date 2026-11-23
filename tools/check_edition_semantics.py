@@ -22,7 +22,7 @@ from urllib.request import urlopen
 
 from chibi_source import LIMIT, read_zip
 from reissue_autoplay import inspect_story, loadzip
-from release_version import PREFIX, ROOT
+from release_version import FROZEN_BOOK_PREFIX, PREFIX, ROOT
 
 CONTRACT = ROOT / "tools/edition-contract.json"
 LIVE = "https://ethereal-space-one.github.io/taleprism/"
@@ -301,6 +301,7 @@ def run():
             from build_public_example_pairs import cold_export
 
             folder = args.output or args.frozen_books
+            prefix = FROZEN_BOOK_PREFIX if args.frozen_books else PREFIX
             pins = {}
             if args.frozen_books:
                 from build_distribution_candidate import PINS
@@ -309,7 +310,7 @@ def run():
                 books = plans(json.loads((SHEETS / "catalog.json").read_bytes()))
                 pins = {b["reader"]: b["sha256"] for b in books}
                 pins.update(
-                    {f"{PREFIX}-{s}-project.zip": p["project"] for s, p in PINS.items()}
+                    {f"{prefix}-{s}-project.zip": p["project"] for s, p in PINS.items()}
                 )
             else:
                 for suffix in ("source", "prompt-starter"):
@@ -332,9 +333,9 @@ def run():
                 return raw
 
             for name in contract:
-                check(name, book_archive(f"{PREFIX}-{name}-reader.zip"), "reader")
+                check(name, book_archive(f"{prefix}-{name}-reader.zip"), "reader")
                 if name in ("chibi", "last-light"):
-                    raw = book_archive(f"{PREFIX}-{name}-project.zip")
+                    raw = book_archive(f"{prefix}-{name}-project.zip")
                     project = json.loads(read_zip(raw)["project.json"])
                     takes = project["records"].get("soundscape_takes", [])
                     want = contract[name]["soundscapes"]

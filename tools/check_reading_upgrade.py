@@ -13,8 +13,9 @@ import tempfile
 from pathlib import Path
 from urllib.request import urlopen
 
+from build_distribution_candidate import checked_input
 from reissue_autoplay import loadzip
-from release_version import PREFIX, ROOT
+from release_version import ROOT
 
 OLD = {
     "chibi": "16c89132d27345b51d6ef223c8c3db676b5f804f95c10987c5a5e5de6f09cc28",
@@ -33,7 +34,7 @@ def extract(raw, directory):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
-        "--output", type=Path, required=True, help="Candidate release folder"
+        "--output", type=Path, required=True, help="Directory with pinned v0.9.2 readers"
     )
     source = p.add_mutually_exclusive_group(required=True)
     source.add_argument("--previous", type=Path)
@@ -76,7 +77,8 @@ def main():
                 raise ValueError("Wrong v0.9.0 predecessor: " + filename)
             old, new = root / book / "previous", root / book / "candidate"
             extract(raw, old)
-            extract((args.output / f"{PREFIX}-{book}-reader.zip").read_bytes(), new)
+            successor, _ = checked_input(args.output, book, "reader")
+            extract(successor, new)
             script = ROOT / "tools/webgal-verify"
             subprocess.run(
                 [

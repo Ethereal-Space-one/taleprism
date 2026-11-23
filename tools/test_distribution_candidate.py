@@ -333,6 +333,8 @@ class CandidateTests(unittest.TestCase):
             )
             doc = json.loads((out / candidate.MANIFEST).read_bytes())
             self.assertEqual(doc["commit"], commit)
+            self.assertEqual(doc["version"], candidate.VERSION)
+            self.assertEqual(doc["work_inputs"]["tag"], "v0.9.2")
             self.assertEqual({a["file"] for a in doc["artifacts"]}, wanted)
             for a in doc["artifacts"]:
                 self.assertEqual(

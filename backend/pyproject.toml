@@ -1,6 +1,6 @@
 [project]
 name = "storygal"
-version = "0.9.2"
+version = "0.9.4"
 description = "Taleprism: local-first illustrated fiction workbench"
 requires-python = ">=3.11"
 dependencies = [
