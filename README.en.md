@@ -27,7 +27,7 @@ The boots stay still. Rain and a passing car belong to one passage.
 
 Chibi reveals its map, factions, and causes at the point you reach in the story. Going back hides later outcomes again. To hear the wind, search for `旗旛轉動` and choose **听此处声景 · 风声** at the end of the passage. It is one synthesized sound cue, not a chapter-long soundtrack. Automatic cues occur during forward reading, not as catch-up playback after search. The still illustration appears a little later; the sound does not animate it.
 
-In *The Door Left Open*, only the wet road on the right moves. The dry threshold and the boots do not. Readers can choose quiet reading, pause automatic cues, mute sound, or use their system's reduced-motion setting.
+In the [reader-only edition of *The Door Left Open*](docs/DOWNLOADS.md#仅试读--reader-only), only the wet road on the right moves. The dry threshold and the boots do not. Readers can choose quiet reading, pause automatic cues, mute sound, or use their system's reduced-motion setting.
 
 ## Start with one chapter
 
@@ -42,9 +42,9 @@ The starter isn't a plugin and doesn't require a Taleprism key. External service
 
 ## Open a finished work, or make your own
 
-**Chibi** shows how to stage an ensemble and reveal a battle. **Last Light** gives you a guided three-shot exercise in character, camera, and prop continuity. Each comes in one ZIP: open `Reader/index.html` to read or import the included `Project.zip` into the workbench to edit. *The Door Left Open* and *The Margin* are reader-only.
+The [**Chibi bundle**](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-chibi-work.zip) shows how to stage an ensemble and reveal a battle. The [**Last Light bundle**](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-last-light-work.zip) gives you a guided three-shot exercise in character, camera, and prop continuity. Each comes in one ZIP: open `Reader/index.html` to read or import the included `Project.zip` into the workbench to edit. *The Door Left Open* and *The Margin* are reader-only.
 
-To install the local workbench, extract the source package and run `./start.sh` (Python 3.11+, uv, Node.js 22.12+, npm; first setup needs a connection). Later, use `./run.sh`. On macOS, you can also open **打开Taleprism.command**.
+To install the local workbench, extract the [workbench source package](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-workbench-source.zip), open the `taleprism/` folder containing `start.sh`, and run `./start.sh` (Python 3.11+, uv, Node.js 22.12+, npm; first setup needs a connection). Later, use `./run.sh`. On macOS, you can also open **打开Taleprism.command**.
 
 **[Works and downloads](docs/DOWNLOADS.md#works-and-downloads)** · [Workbench setup (Chinese)](docs/快速上手.md)
 

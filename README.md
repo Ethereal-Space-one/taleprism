@@ -27,7 +27,7 @@
 
 《赤壁》的战区地图、阵营关系和事件脉络随正文展开，回读时也收起后文的结果。想直接体验声景，打开《赤壁》搜 `旗旛轉動`，点该段末的「听此处声景 · 风声」。这是一处合成风声，不是整章背景乐；正常向前阅读才会触发自动演绎。「风先入帐」是随后出场的静图，不把声音冒充动画。
 
-《留门》把雨线留在图的右侧湿路，干门槛和靴子不动。你也可以用「安静阅读」手动体验，或随时暂停、静音；开启系统「减少动态效果」时，插图保持静止。
+[《留门》只读示例](docs/DOWNLOADS.md#仅试读--reader-only)把雨线留在图的右侧湿路，干门槛和靴子不动。你也可以用「安静阅读」手动体验，或随时暂停、静音；开启系统「减少动态效果」时，插图保持静止。
 
 ## 用自己的小说，先做一页
 
@@ -42,9 +42,9 @@
 
 ## 拆开一部成品，或者做自己的
 
-**《赤壁》**适合看群像、战局和章节编排；**《末班灯》**适合跟着三镜头练习人物、机位和道具连续性。两部作品各一个 ZIP：解压后打开 `Reader/index.html` 试读，或把同包的 `Project.zip` 导入制作台继续做。《留门》《留白处》是只读示例。
+[**《赤壁》作品包**](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-chibi-work.zip)适合看群像、战局和章节编排；[**《末班灯》作品包**](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-last-light-work.zip)适合跟着三镜头练习人物、机位和道具连续性。两部作品各一个 ZIP：解压后打开 `Reader/index.html` 试读，或把同包的 `Project.zip` 导入制作台继续做。《留门》《留白处》是只读示例。
 
-想装本地制作台，下载源码包并在解压目录运行 `./start.sh`（需 Python 3.11+、uv、Node.js 22.12+ 和 npm，首次安装需联网）。之后运行 `./run.sh`，macOS 也可以双击「打开Taleprism.command」。
+想装本地制作台，下载[制作台源码包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-workbench-source.zip)，解压后进入含 `start.sh` 的 `taleprism/` 目录，运行 `./start.sh`（需 Python 3.11+、uv、Node.js 22.12+ 和 npm，首次安装需联网）。之后运行 `./run.sh`，macOS 也可以双击「打开Taleprism.command」。
 
 **[所有作品与下载](docs/DOWNLOADS.md)**　·　[制作台安装与详细手顺](docs/快速上手.md)
 
