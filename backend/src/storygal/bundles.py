@@ -226,7 +226,7 @@ class Bundles:
         """Stat all recorded media, including old/unselected takes; never silently omit any."""
         files = {"project.json": encoded(document)}
         files["README.txt"] = (
-            "Taleprism 私有可编辑工程｜给自己备份，或交给可信的共同制作者。不要作为读者版公开分享。\n此包可含原文、草稿、拒绝或撤回的素材和录音、未公开署名、配音说明与制作意见（含延期理由）。它不转移最终交付复核，不含密钥、模型缓存、工作日志或个人阅读进度。请在制作台导入；给读者请另导出独立阅读器。\n".encode()
+            "Taleprism 私有可编辑工程｜给自己备份，或交给可信的共同制作者。不要作为读者版公开分享。\n此包可含原文、草稿、拒绝或撤回的素材和录音、未公开署名、配音说明与制作意见（含延期理由）。逐幅动静审图单须另存私有 JSON；出场时机判断不随工程迁移，恢复后须重新确认。它不转移最终交付复核，不含密钥、模型缓存、工作日志或个人阅读进度。请在制作台导入；给读者请另导出独立阅读器。\n".encode()
         )
         if soundscape.TABLE in document["records"]:
             files["README.txt"] += (

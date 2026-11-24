@@ -61,6 +61,7 @@ ROOT_FILES = (
     "docs/RELEASE-v0.9.2.md",
     "docs/RELEASE-v0.9.3.md",
     "docs/RELEASE-v0.9.4.md",
+    "docs/RELEASE-v0.9.5.md",
     "docs/VALIDATION-v0.9.2.md",
     "docs/RELEASE-v0.9.1.md",
     "docs/VALIDATION-v0.9.1.md",

@@ -85,6 +85,7 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
   return (
     <Editor
       key={projectId}
+      projectId={projectId}
       initial={state.data}
       reader={reader.data}
       tasks={tasks.data}
@@ -96,15 +97,21 @@ export function ProductionPanel({ projectId }: { projectId: string }) {
       prefix={prefix}
       refresh={async () => {
         await Promise.all(
-          ['production', 'production-tasks', 'reader', 'reader-content', 'delivery'].map((k) =>
-            cache.invalidateQueries({ queryKey: [k, projectId] }),
-          ),
+          [
+            'production',
+            'production-tasks',
+            'reader',
+            'reader-content',
+            'delivery',
+            'plate-screening',
+          ].map((k) => cache.invalidateQueries({ queryKey: [k, projectId] })),
         )
       }}
     />
   )
 }
 function Editor({
+  projectId,
   initial,
   reader,
   tasks,
@@ -114,6 +121,7 @@ function Editor({
   prefix,
   refresh,
 }: {
+  projectId: string
   initial: State
   reader: ReaderState
   tasks?: ImageTasks
@@ -315,7 +323,7 @@ function Editor({
           <h2>章节制作方案</h2>
           <p>先读懂人物处境，再安排镜头与素材。每个镜头放在对应原文段落之后。</p>
         </div>
-        <BundleBackup prefix={prefix} disabled={unsaved || busy} />
+        <BundleBackup projectId={projectId} disabled={unsaved || busy} />
       </div>
       <div className="production-toolbar">
         <button onClick={() => runOperation('save')} disabled={!dirty || busy}>

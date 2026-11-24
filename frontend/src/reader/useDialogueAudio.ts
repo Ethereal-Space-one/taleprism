@@ -76,6 +76,12 @@ export function useDialogueAudio(data: ReaderContent) {
       setStatus('paused')
     }
   }, [clearTarget, playbackPoint, setStatus])
+  const pauseAutomaticDialogue = useCallback(() => {
+    // The cue conductor separately clears its automatic soundscapes. Neither
+    // switch should pause or discard a clip or dialogue sequence chosen by hand.
+    if (queue.current === 'automatic') suspend()
+    setAutomatic(false)
+  }, [setAutomatic, suspend])
   const stop = useCallback(() => {
     suspend()
     creative.current = false
@@ -312,6 +318,7 @@ export function useDialogueAudio(data: ReaderContent) {
     element,
     automatic,
     setAutomatic,
+    pauseAutomaticDialogue,
     cueAt,
     cueBlocked,
     interruptCue,

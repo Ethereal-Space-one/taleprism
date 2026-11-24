@@ -432,8 +432,7 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
   }, [preferences.muted])
   function toggleRunning() {
     cues.invalidate()
-    audio.suspend()
-    audio.setAutomatic(false)
+    audio.pauseAutomaticDialogue()
     setPreferences((v) => ({ ...v, creativeAuto: v.creativeAuto === false }))
   }
   function toggleMute() {

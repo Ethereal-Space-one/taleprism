@@ -86,7 +86,7 @@ async function run() {
   }
   const writes = []
   global.fetch = async (url, opt) => {
-    if (!opt) {
+    if (!opt?.method || opt.method === 'GET') {
       assert.equal(url, prefix)
       return Response.json(state)
     }

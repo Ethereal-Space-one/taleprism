@@ -63,6 +63,13 @@ type Data = {
   changed: string[]
   notices: string[]
   display: Record<string, Display>
+  handoff: {
+    plates: number
+    motion_transferable: number
+    motion_unassessed: number
+    motion_blocked: number
+    timing_recorded: number
+  }
   timing: {
     revision: number
     ok: boolean
@@ -79,7 +86,7 @@ const endpoint = (id: string) => '/api/projects/' + id + '/plate-screening'
 export function usePlateScreening(id: string, enabled = true) {
   return useQuery({
     queryKey: ['plate-screening', id],
-    queryFn: () => api<Data>(endpoint(id)),
+    queryFn: ({ signal }) => api<Data>(endpoint(id), { signal }),
     enabled,
   })
 }
@@ -110,7 +117,7 @@ function changeNotice(s: string) {
     .replace(/: new plate; unassessed$/, '：新增插图，尚未审图。')
     .replace(/: removed from edition$/, '：本版已移除。')
 }
-function download(sheet: Sheet) {
+export function downloadScreeningWorksheet(sheet: Sheet) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(sheet, null, 2) + '\n'], { type: 'application/json' }),
   )
@@ -754,7 +761,7 @@ export function PlateScreening({
                 <button
                   type="button"
                   disabled={working || dirty || q.isError}
-                  onClick={() => download(data.worksheet)}
+                  onClick={() => downloadScreeningWorksheet(data.worksheet)}
                 >
                   下载私有审图单 JSON
                 </button>

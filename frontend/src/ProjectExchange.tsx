@@ -112,7 +112,7 @@ export function ProjectExchange({
               }}
             />
           </label>
-          <small>每次导入新建项目；原工程保留。工程 ZIP 与只读阅读成品不同。</small>
+          <small>每次导入新建项目；原工程保留。作品包请先解压，再选包内的 Project.zip；独立阅读器 ZIP 不能导入。</small>
           <div className="raw-sample">
             <button
               disabled={rawSample.pending || busy || guidedStart.pending}
@@ -152,6 +152,11 @@ export function ProjectExchange({
       {(install.error || restore.error || list.error) && (
         <p className="error" role="alert">
           {(install.error || restore.error || list.error)?.message}
+          {restore.error && (
+            <span className="asset-helper">
+              {' '}请核对所选包：如果 ZIP 顶层有 reader.json 和 index.html，这是读本，不能用来恢复编辑。请改选备份可编辑工程时下载的 ZIP；示例作品请选择解压后的 Project.zip。
+            </span>
+          )}
         </p>
       )}
     </div>
