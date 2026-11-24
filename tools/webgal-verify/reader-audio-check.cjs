@@ -253,6 +253,36 @@ const originalLoad = Module._load,
     const rejectedPolicy = Object.assign(new Error("audible autoplay denied"), { name: "NotAllowedError" });
     const rejectLast = async (reason) => { rejects.at(-1)(reason); await Promise.resolve(); render() };
     const fresh = () => act(() => { hook.stop(); hook.resetCueVisit(); });
+    // ReaderView's automatic transport invalidates encounter cues, then pauses
+    // only automatically started dialogue. Its manual transport is independent.
+    const togglePerformance = () => act(() => {
+      hook.interruptCue();
+      hook.pauseAutomaticDialogue();
+    });
+    for (const id of ["s", "n", "a"]) {
+      fresh(); act(() => hook.setAutomatic(true)); act(() => hook.play(id));
+      audio.currentTime = .65;
+      act(() => hook.cueAt(28));
+      const calls = count();
+      togglePerformance();
+      assert.equal(hook.automatic, false);
+      assert.equal(hook.status, "playing", `manual ${id} survives the automatic switch`);
+      assert.equal(audio.paused, false);
+      assert.equal(count(), calls);
+      assert.deepEqual(hook.point(), { id, time: .65 });
+      ended();
+      if (id === "a") {
+        assert.equal(hook.current, "b", "manual dialogue sequence stays intact");
+        ended();
+      }
+      assert.equal(hook.current, null, "deferred automated cues are not replayed");
+    }
+    fresh(); act(() => hook.setAutomatic(true)); act(() => hook.play("c", 0, "automatic"));
+    togglePerformance(); assert.equal(hook.status, "paused"); assert.equal(audio.paused, true);
+    ended(); assert.equal(hook.current, "c", "automatic dialogue no longer advances");
+    fresh(); act(() => hook.cueAt(13)); togglePerformance();
+    assert.equal(hook.current, null, "automatic soundscape does stop");
+    act(() => hook.cueAt(13)); assert.equal(hook.current, null, "automatic cue does not replay");
     fresh();
     const opening = count();
     act(() => hook.cueAt(0));

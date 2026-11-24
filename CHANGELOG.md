@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.5 · Clearer project handoff
+
+- Show which private still/motion judgments can travel separately and how many current placements need a new reveal-timing review after restoration. The reader and project package rules are unchanged.
+- Guide authors who choose a Reader ZIP to the editable backup or the enclosed Project.zip, without weakening archive validation.
+- Keep manually started sound playing when automatic effects are toggled in newly exported readers. Existing work bundles and Pages are not replaced by this source release.
+
 ## 0.9.4 · Let the story reveal itself
 
 - Add a separate author check for what each placed image and its reader-facing words reveal at that point in the source. It is a human editorial decision, not a pass granted by matching a quotation or by a model.

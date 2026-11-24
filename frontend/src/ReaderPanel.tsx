@@ -636,7 +636,7 @@ export function ReaderPanel({
               </div>
             </div>
           )}
-          <BundleBackup prefix={`/api/projects/${projectId}`} disabled={busy} />
+          <BundleBackup projectId={projectId} disabled={busy} />
           {!studio && (
             <>
               <details className="visual-edit-details">

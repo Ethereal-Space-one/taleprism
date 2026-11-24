@@ -65,6 +65,22 @@ def same_binding(a, b):
     return bindings(a) == bindings(b)
 
 
+def assess_transfer(current, sheet, raw, carriers):
+    # Unlike final delivery, a transferable still/deferred decision may
+    # intentionally disagree with the current animation, for the next editor
+    # to resolve. A motion candidate still needs a compatible effect.
+    return screening.assess(
+        current,
+        sheet,
+        raw,
+        carriers={
+            r["plate_id"]: carriers[r["plate_id"]]
+            for r in sheet["plates"]
+            if r["decision"] == "motion" and carriers.get(r["plate_id"])
+        },
+    )
+
+
 class ScreeningDesk:
     def __init__(self, reader):
         self.reader, self.store = reader, reader.store
@@ -114,6 +130,19 @@ class ScreeningDesk:
         carriers = screening.carriers_for_book(book, current, raw)
         report = screening.assess(current, sheet, raw, carriers=carriers)
         timing_display, timing = plate_timing.assess(book, current, stored_timing)
+        transfer = assess_transfer(current, sheet, raw, carriers)
+        # This describes the saved, reconciled chapter, not unplaced art, a
+        # release sign-off, or rows whose old bindings no longer match.
+        handoff = {
+            "plates": report["counts"]["total"],
+            "motion_transferable": transfer["counts"]["screened"],
+            "motion_unassessed": transfer["counts"]["unassessed"],
+            "motion_blocked": sum(
+                bool(row["errors"]) and row["decision"] != "unassessed"
+                for row in transfer["plates"]
+            ),
+            "timing_recorded": timing["counts"]["clear"] + timing["counts"]["revise"],
+        }
         paragraphs = {b["byte_end"]: b["text"] for b in book["blocks"]}
         display = {
             r["plate_id"]: {
@@ -132,6 +161,7 @@ class ScreeningDesk:
             "display": display,
             "report": report,
             "timing": timing,
+            "handoff": handoff,
         }
         return data, current, raw
 
@@ -229,12 +259,9 @@ class ScreeningDesk:
         # A still/deferred decision may disagree with an existing renderer:
         # allow saving that editorial judgment, but the *formal gate* reports
         # the unresolved contradiction. Never bless it or turn the renderer off.
-        motion_carriers = {
-            r["plate_id"]: state["display"][r["plate_id"]]["carrier"]
-            for r in sheet["plates"]
-            if r["decision"] == "motion" and state["display"][r["plate_id"]]["carrier"]
-        }
-        validation = screening.assess(current, sheet, raw, carriers=motion_carriers)
+        validation = assess_transfer(
+            current, sheet, raw, {k: v["carrier"] for k, v in state["display"].items()}
+        )
         for r in validation["plates"]:
             if r["plate_id"] in touched and r["errors"]:
                 raise ValueError("无法保存本幅判断：" + "；".join(r["errors"]))

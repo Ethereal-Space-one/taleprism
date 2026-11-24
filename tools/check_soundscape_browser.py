@@ -236,6 +236,11 @@ def main():
                 raise AssertionError("the delivered sample did not play")
 
             clock_advances()
+            for name in ["继续自动演绎", "暂停自动演绎"]:
+                before = pg.locator("audio").evaluate("a=>a.currentTime")
+                pg.get_by_role("button", name=name, exact=True).click()
+                assert pg.locator("audio").evaluate("a=>!a.paused && a.currentTime>0")
+                assert pg.locator("audio").evaluate("a=>a.currentTime") >= before
             pg.get_by_role("button", name="暂停声景").click()
             assert pg.locator("audio").evaluate("a=>a.paused")
             pg.get_by_role("button", name="继续声景").click()
