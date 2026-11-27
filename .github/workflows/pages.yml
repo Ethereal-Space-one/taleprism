@@ -20,9 +20,12 @@ jobs:
           package-manager-cache: false
       - run: uv sync --project backend --frozen
       - run: npm --prefix tools/webgal-verify ci --omit=dev --no-audit --no-fund
-      - name: Stage exact public Release reader and exercise the featured edition before deployment
+      - run: npm --prefix frontend ci --no-audit --no-fund
+      - run: npm exec -- vite build --config vite.reader.config.ts
+        working-directory: frontend
+      - name: Stage the pinned Chibi edition with the current runtime and test before deployment
         run: |
-          python3 tools/prepare_pages.py --output .release/site --retain-archive .release/chibi-reader.zip
+          python3 tools/prepare_pages.py --output .release/site --retain-archive .release/chibi-reader.zip --runtime frontend/dist/reader
           uv run --project backend --frozen python tools/check_edition_semantics.py --reader-zip .release/chibi-reader.zip --book chibi --site-dir .release/site --report .release/pages-acceptance.json
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
@@ -58,9 +61,12 @@ jobs:
           package-manager-cache: false
       - run: uv sync --project backend --frozen
       - run: npm --prefix tools/webgal-verify ci --omit=dev --no-audit --no-fund
-      - name: Compare the live reading room to the Release and try the actual public book
+      - run: npm --prefix frontend ci --no-audit --no-fund
+      - run: npm exec -- vite build --config vite.reader.config.ts
+        working-directory: frontend
+      - name: Compare the live reading room to the staged edition and test the public book
         run: |
-          python3 tools/prepare_pages.py --output .release/reference --retain-archive .release/chibi-reader.zip
+          python3 tools/prepare_pages.py --output .release/reference --retain-archive .release/chibi-reader.zip --runtime frontend/dist/reader
           for attempt in 1 2 3; do
             if uv run --project backend --frozen python tools/check_edition_semantics.py --reader-zip .release/chibi-reader.zip --book chibi --live-url https://ethereal-space-one.github.io/taleprism/ --report .release/pages-live-acceptance.json; then exit 0; fi
             if [ "$attempt" -lt 3 ]; then sleep 45; fi

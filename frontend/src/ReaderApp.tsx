@@ -189,7 +189,15 @@ export function ReaderApp({ projectId, exportUrl }: { projectId?: string; export
     )
   return <ReaderView key={data.project.id} data={data} standalone={!!exportUrl} />
 }
-export function ReaderView({ data, standalone }: { data: ReaderContent; standalone: boolean }) {
+export function ReaderView({
+  data,
+  standalone,
+  onlineChibi = false,
+}: {
+  data: ReaderContent
+  standalone: boolean
+  onlineChibi?: boolean
+}) {
   const storyGraph = useMemo(() => resolveStoryGraph(data), [data])
   const platePresentations = useMemo(() => resolvePlatePresentations(data), [data])
   const storageKey = `storygal-reader:${data.project.id}:${data.project.canonical_sha256}`
@@ -1057,7 +1065,9 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
               {data.config.title}
             </h1>
             <p className="reader-cover-subtitle">
-              {data.config.subtitle || '以原文为卷，随文字入境。'}
+              {onlineChibi
+                ? '江上两营，隔水相望。'
+                : data.config.subtitle || '以原文为卷，随文字入境。'}
             </p>
             {nav.resume.byte > data.blocks[0].byte_start && (
               <div className="reader-resume">
@@ -1085,7 +1095,9 @@ export function ReaderView({ data, standalone }: { data: ReaderContent; standalo
             {hasAuto && (
               <p className="reader-cover-cues">
                 {enabled
-                  ? '随读演绎 · 才读到，才出现。可随时暂停；静图不会擅自动起来。'
+                  ? onlineChibi
+                    ? '风声与动效随正文出现，地图和脉络也只展开已读部分。可随时暂停或静音。'
+                    : '随读演绎 · 才读到，才出现。可随时暂停；静图不会擅自动起来。'
                   : '已暂停自动演绎。进入后可继续演绎，原文不变。'}
               </p>
             )}
