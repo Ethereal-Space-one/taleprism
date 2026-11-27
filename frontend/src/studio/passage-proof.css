@@ -1,0 +1,81 @@
+.passage-proof {
+  margin-block: 1rem;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+}
+.passage-proof summary,
+.studio-route summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.proof-body {
+  display: grid;
+  gap: 0.8rem;
+  margin-block-start: 0.8rem;
+  max-width: 52rem;
+  min-width: 0;
+}
+.proof-body label,
+.proof-body small {
+  display: block;
+}
+.proof-body select,
+.proof-body input,
+.proof-body audio {
+  max-width: 100%;
+}
+.proof-body blockquote {
+  margin: 0;
+  border-inline-start: 2px solid #999;
+  padding: 0.45rem 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.proof-body fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.proof-body button {
+  margin: 0.25rem 0.45rem 0.25rem 0;
+}
+.proof-modes button[aria-pressed='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+.proof-review h3,
+.proof-review h4 {
+  margin: 0.8rem 0 0.3rem;
+}
+.proof-review figure,
+.proof-choice figure {
+  margin: 0.7rem 0;
+}
+.proof-review img {
+  max-height: 8rem;
+  max-width: 100%;
+  object-fit: contain;
+}
+.proof-plate {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+.proof-plate img {
+  display: block;
+  max-width: 100%;
+  max-height: 22rem;
+}
+.proof-plate canvas {
+  position: absolute;
+  inset: 0;
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.proof-choice,
+.proof-review {
+  overflow-wrap: anywhere;
+}

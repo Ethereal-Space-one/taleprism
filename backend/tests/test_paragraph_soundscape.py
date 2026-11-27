@@ -451,3 +451,15 @@ def test_pencil_is_hand_staged_portable_and_not_a_weather_recipe(book, tmp_path,
     assert not any(
         "soundscape" in v for v in receiver.get(base + "/reader/content").json()["blocks"]
     )
+
+
+def test_reference_rain_matches_renderer_without_project_mutation(book):
+    from storygal.soundscape_audio import render_soundscape
+
+    client, project = book
+    original = client.get(project + END).json()
+    for _ in range(2):
+        sample = client.get("/api/studio/preview/rain.wav")
+        assert sample.status_code == 200 and sample.headers["content-type"] == "audio/wav"
+        assert sample.content == render_soundscape(True, None)
+    assert client.get(project + END).json() == original

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.6 · Start with the chapter you want
+
+- First-time authors choose illustrations, narration, ambience, any combination, or none. Choices guide the editor, not the export, and never adopt media automatically.
+- Compare quiet, sound and supported motion on the same passage. Review the title, subtitle and art together at the opening; deliberate previews are not automatically treated as spoilers.
+- Document the handoff from a folder-based or attachment-only AI assistant into a local workbench and a standalone offline reader. Export instructions match the actual reading entry.
+- Existing bundled books and the online Chibi reader are not re-edited. [Release notes](docs/RELEASE-v0.9.6.md).
+
 ## 0.9.5 · Clearer project handoff
 
 - Show which private still/motion judgments can travel separately and how many current placements need a new reveal-timing review after restoration. The reader and project package rules are unchanged.

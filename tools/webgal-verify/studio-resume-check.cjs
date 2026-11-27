@@ -34,7 +34,8 @@ const original = Buffer.from('\ufeff雨落在门外的青石地上。\r\n第二�
     await studio.getByLabel('原文权利状态').selectOption('owned')
     let creates=0
     studio.on('request', r => {if (r.method()==='POST' && new URL(r.url()).pathname === '/api/projects') creates++})
-    await studio.getByRole('button',{name:'新建项目，选择插图 →'}).evaluate(b => {b.click();b.click()})
+    await studio.getByRole('checkbox',{name:'插图',exact:true}).check()
+    await studio.getByRole('button',{name:'新建项目，开始制作 →'}).evaluate(b => {b.click();b.click()})
     await studio.getByRole('heading',{name:'把插图放进原文'}).waitFor()
     assert.equal(creates, 1); assert.equal(await previousDraft.inputValue(), '未保存的旧项目标题')
     const id = new URL(studio.url()).searchParams.get('studio'), prefix = '/api/projects/' + id

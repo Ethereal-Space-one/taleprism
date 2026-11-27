@@ -93,7 +93,7 @@ def create_app(data_dir: Path | None = None) -> FastAPI:
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
-    app = FastAPI(title="Taleprism", version="0.9.5", lifespan=lifespan)
+    app = FastAPI(title="Taleprism", version="0.9.6", lifespan=lifespan)
     instance_id = str(uuid.uuid4())
     app.state.store = store
     review = mount_review(app, store)

@@ -60,7 +60,16 @@ async function inspect(browser, job, want, policy) {
         true,
       )
     })
-    await p.goto(job.url)
+    // Pages may still be fetching artwork when the reader is already usable.
+    // Keep interaction timeouts separate from a bounded live network navigation.
+    const response = await p.goto(job.url, {
+      waitUntil: live ? 'domcontentloaded' : 'load',
+      timeout: live ? 60000 : 12000,
+    })
+    if (live) {
+      assert(response?.ok(), 'Live reader document did not return a successful response')
+      assert.equal(p.url(), job.url, 'Live reader moved away from the expected address')
+    }
     const cover = p.getByRole('button', { name: /^开始阅读/ })
     await cover.waitFor()
     assert.equal(
@@ -133,7 +142,8 @@ async function inspect(browser, job, want, policy) {
     const frames = new Map(),
       heard = new Set(),
       opened = new Set()
-    let maxClock = 0,
+    let liveArtWaitMs = 0,
+      maxClock = 0,
       atTarget = false,
       bottom = false,
       permissionClicks = 0
@@ -166,6 +176,12 @@ async function inspect(browser, job, want, policy) {
           clock: a && !a.muted && !a.paused && a.volume > 0 ? a.currentTime : 0,
           bottom: sc.scrollHeight - sc.clientHeight - sc.scrollTop <= 2,
           step: Math.max(64, Math.floor(Math.min(290, h.height * 0.36))),
+          loadingMotion: targets.filter((el) => {
+            if (!el.dataset.autoMotion) return false
+            const r = el.getBoundingClientRect(), img = el.querySelector('img')
+            return img && (!img.complete || !img.naturalWidth)
+              && r.bottom > h.top && r.top < h.top + h.height * 0.72
+          }).map((el) => el.dataset.autoMotion),
           near: targets.some((el) => {
             const r = el.getBoundingClientRect()
             return r.top < h.top + h.height * 0.72 && r.bottom > h.top + 4
@@ -205,6 +221,19 @@ async function inspect(browser, job, want, policy) {
     const ids = want.soundscapes.map((v) => story.blocks[v.paragraph - 1].soundscape.id)
     for (let i = 0; i < 360; i++) {
       let s = await observe()
+      if (live && s.loadingMotion.length) {
+        // A person pausing to inspect a reached illustration does not wheel away
+        // while its pixels are still in flight. Do not prefetch or reveal ahead.
+        const start = Date.now()
+        await p.waitForFunction((ids) => ids.every((id) =>
+          [...document.querySelectorAll('[data-auto-motion]')].some((el) => {
+            const img = el.querySelector('img')
+            return el.dataset.autoMotion === id && img?.complete && img.naturalWidth > 0
+          }),
+        ), s.loadingMotion, { timeout: 60000 })
+        liveArtWaitMs += Date.now() - start
+        s = await observe()
+      }
       // Dwell where a reader actually reaches material. Allow the ordinary UI
       // one real consent click when policy blocks playback; no JS play().
       if (s.near || bottom) {
@@ -267,6 +296,7 @@ async function inspect(browser, job, want, policy) {
       book: job.slug,
       kind: job.kind,
       policy,
+      ...(live ? { live_reached_art_wait_ms: liveArtWaitMs } : {}),
       visible_plates: actual.plates.length,
       sound_play_count: played.length,
       native_audio_advanced: maxClock > 0.08,

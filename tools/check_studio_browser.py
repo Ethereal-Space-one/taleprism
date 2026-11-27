@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import socket
 import subprocess
 import sys
@@ -17,8 +18,10 @@ import time
 import urllib.request
 import zipfile
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from playwright.sync_api import expect, sync_playwright
+from studio_first_chapter_cases import first_chapter, inspect_placed
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -51,7 +54,9 @@ def main():
         "passed": False,
         "source_sha256": sha(source),
         "checks": [],
-        "limits": "Scripted creator; Linux Chromium. Not human art acceptance or a physical phone.",
+        "host_system": platform.system(),
+        "host_machine": platform.machine(),
+        "limits": "Scripted creator using a real desktop browser. Narrow touch viewport is emulated; no physical phone or independent human art review.",
     }
 
     def mark(text):
@@ -123,6 +128,7 @@ def main():
                     )
                     pg = ctx.new_page()
                     pg.set_default_timeout(10000)
+                    report["author_first_chapter"] = first_chapter(b, url, out)
                     pg.goto(url)
                     pg.get_by_role(
                         "link", name="用自己的图文开始", exact=True
@@ -136,9 +142,10 @@ def main():
                         }
                     )
                     pg.get_by_label("原文权利状态").select_option("authorized")
-                    pg.get_by_role("button", name="新建项目，选择插图").click()
+                    pg.get_by_role("checkbox", name="插图", exact=True).check()
+                    pg.get_by_role("button", name="新建项目，开始制作").click()
                     pg.get_by_label("插图文件").wait_for()
-                    current = pg.url.split("studio=")[-1]
+                    current = parse_qs(urlsplit(pg.url).query)["studio"][0]
                     assert (
                         current != "new"
                         and ctx.request.get(
@@ -149,7 +156,7 @@ def main():
                     pg.reload()
                     pg.get_by_label("插图文件").wait_for()
                     mark(
-                        "New project and reload: exact 3,810 original bytes, no setup or sample download."
+                        f"New project and reload: exact {len(source):,} original bytes, no sample download."
                     )
                     pg.get_by_label("插图文件").set_input_files(artwork)
                     pg.get_by_label("图片来源与许可").fill(
@@ -235,6 +242,7 @@ def main():
                     mark(
                         "Unreviewed saved draft stays static after reload; pending edits blocked export."
                     )
+                    inspect_placed(pg, ctx, url, current, reviewed=False)
                     director.get_by_role("button", name="打开动效对照").click()
                     motion = director.get_by_role("button", name="开启动效")
                     expect(motion).to_have_attribute("aria-pressed", "false")
@@ -269,6 +277,10 @@ def main():
                         "Real canvas: eight visible rendered seconds, offscreen time paused, compare/attest/save. Protected subjects stayed clear."
                     )
                     report["author_canvas"] = pixels
+                    inspect_placed(pg, ctx, url, current, reviewed=True)
+                    mark(
+                        "Proof desk: pending motion stayed static; accepted clip rendered on real image, reduced motion suppressed it; gallery/captions obeyed the byte boundary."
+                    )
                     export.click()
                     link = pg.get_by_role("link", name="下载阅读器")
                     with pg.expect_download() as down:

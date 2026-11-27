@@ -54,6 +54,17 @@ class CandidateTests(unittest.TestCase):
         self.src = self.root / "inputs"
         self.src.mkdir()
 
+    def test_first_chapter_receiver_guide_travels_with_starter(self):
+        files = candidate.starter_entries()
+        self.assertIn("](docs/FIRST-CHAPTER.md)", candidate.STARTER_README)
+        self.assertIn(
+            "](../docs/FIRST-CHAPTER.md)",
+            files["taleprism/prompts/START-HERE.md"].decode(),
+        )
+        guide = files["taleprism/docs/FIRST-CHAPTER.md"].decode()
+        self.assertIn("index.html", guide)
+        self.assertIn("taleprism/docs/快速上手.md", files)
+
     def test_first_work_walkthrough_links_exist_in_the_portable_starter(self):
         # A repo-relative link can work online but strand a first-time author
         # who extracted only the starter. Check the actual included entries.
@@ -72,6 +83,45 @@ class CandidateTests(unittest.TestCase):
                 )
                 with self.subTest(page=page, target=target):
                     self.assertIn(target, files.keys())
+
+    def test_bilingual_first_work_downloads_follow_the_packaged_release_index(self):
+        files = candidate.starter_entries()
+        catalog = files["taleprism/docs/DOWNLOADS.md"].decode()
+        base = (
+            "https://github.com/Ethereal-Space-one/taleprism/releases/download/"
+            f"v{candidate.VERSION}/"
+        )
+        for page, heading, fragment, work_fragment in (
+            ("README.md", "# 作品与下载", "作品与下载", "末班灯--last-light"),
+            (
+                "README.en.md",
+                "## Works and downloads",
+                "works-and-downloads",
+                "works-and-downloads",
+            ),
+        ):
+            tutorial = files[f"taleprism/examples/last-light/{page}"].decode()
+            with self.subTest(page=page):
+                self.assertIn(heading, catalog.splitlines())
+                self.assertIn("## 末班灯 / Last Light", catalog.splitlines())
+                self.assertIn(f"](../../docs/DOWNLOADS.md#{fragment})", tutorial)
+                self.assertIn(f"](../../docs/DOWNLOADS.md#{work_fragment})", tutorial)
+                self.assertNotRegex(
+                    tutorial, r"/releases/download/[^/]+/taleprism-[^ )]+"
+                )
+                self.assertNotRegex(
+                    tutorial,
+                    r"\[[^\]]*\bv\d+\.\d+\.\d+\b[^\]]*\]\(\.\./\.\./docs/DOWNLOADS\.md",
+                )
+                # Follow the localized index, not just an existing Markdown file.
+                section = catalog.partition(heading + "\n")[2]
+                if page == "README.md":
+                    section = section.partition("## Works and downloads")[0]
+                for asset in (candidate.STARTER, candidate.work_name("last-light")):
+                    urls = re.findall(r"\]\((https://[^)]+)\)", section)
+                    self.assertEqual(
+                        {u for u in urls if u.endswith("/" + asset)}, {base + asset}
+                    )
 
     def test_reader_exact_and_project_unchanged(self):
         files = synthetic_reader()

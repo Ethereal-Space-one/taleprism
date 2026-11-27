@@ -4,8 +4,9 @@ import json
 import re
 import struct
 import uuid
+from functools import lru_cache
 
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from .narration import Decision, canonical_wav
@@ -182,6 +183,21 @@ class Proposal(BaseModel):
 def mount_soundscapes(app, reader):
     sound = reader.soundscapes
     prefix = "/api/projects/{pid}/reader/soundscapes"
+
+    @lru_cache(maxsize=1)
+    def rain_preview():
+        from .soundscape_audio import render_soundscape
+
+        return render_soundscape(True, None)
+
+    @app.get("/api/studio/preview/rain.wav")
+    def preview_rain():
+        # Fixed, text-free reference: never creates a take, requires no project or model.
+        return Response(
+            rain_preview(),
+            media_type="audio/wav",
+            headers={"Cache-Control": "private, max-age=3600"},
+        )
 
     @app.get(prefix)
     def state(pid: str):

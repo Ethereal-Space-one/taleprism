@@ -10,12 +10,16 @@ Install uv and Node.js 22.12+, then run `./start.sh`. For development, run `uv r
 uv run --project backend ruff check backend/src backend/tests tools/export_prompt_kit.py tools/release_files.py tools/build_release.py
 uv run --project backend python tools/export_prompt_kit.py --check
 python3 tools/release_files.py --check
+npm --prefix frontend ci --no-audit --no-fund
+npm --prefix tools/webgal-verify ci --omit=dev --no-audit --no-fund
 npm --prefix frontend run build
 npm --prefix frontend run test:reader
 uv run --project backend pytest backend/tests/test_text.py backend/tests/test_api.py backend/tests/test_speech.py backend/tests/test_production_bundles.py backend/tests/test_continuity.py backend/tests/test_release.py
 uv run --project backend pytest backend/tests/test_review.py -k "not export"
 uv run --project backend python tools/build_release.py --output .release/local-check
 ```
+
+The reader tests use the separate `tools/webgal-verify` dependency lockfile (including jsdom); installing the frontend alone is not enough. Those reader tests do not require the optional WebGAL engine.
 
 Some historical tests need the old full Chibi/Last Light packs or optional WebGAL assets. They remain available for integration checks; the two full-pack tests skip explicitly if those local packs are absent. Synthetic sound tests exercise import/export without distributing system audio. Full historical suite: install optional WebGAL with `./start.sh --with-webgal`, retain local historical samples, then run `uv run --project backend pytest backend/tests`.
 

@@ -139,7 +139,8 @@ def main():
                 {"name": title + ".txt", "mimeType": "text/plain", "buffer": source}
             )
             page.get_by_label("原文权利状态").select_option("local_test")
-            page.get_by_role("button", name="新建项目，先配朗读").click()
+            page.get_by_role("checkbox", name="朗读", exact=True).check()
+            page.get_by_role("button", name="新建项目，开始制作").click()
             select = page.get_by_label("朗读对应的原文段落")
             select.select_option(index=1)
             project = parse_qs(urlparse(page.url).query)["studio"][0]

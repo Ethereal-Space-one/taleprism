@@ -21,6 +21,7 @@ def starter_entries():
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
         "docs/快速上手.md",
+        "docs/FIRST-CHAPTER.md",
         "docs/DOWNLOADS.md",
         "docs/PLATE-SCREENING.md",
         "docs/场景动效导演.md",

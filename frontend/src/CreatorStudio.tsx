@@ -32,8 +32,27 @@ export function StudioIntro() {
   )
 }
 
-type StartLane = 'art' | 'voice' | 'sound' | 'finish'
-function SourceStep({ onCreated }: { onCreated: (p: Project, lane: StartLane) => void }) {
+const startOptions = {
+  art: { title: '插图', detail: '在选定段落之后放静图；有合适的图再考虑局部动效。' },
+  voice: { title: '朗读', detail: '给某段原文配朗读录音，先试听再采用。' },
+  sound: { title: '声景', detail: '给某段加雨声、风声等环境音，先试听再采用。' },
+} as const
+type StartOption = keyof typeof startOptions
+type StartLane = StartOption | 'finish'
+
+function readStartPlan() {
+  const value = new URLSearchParams(location.search).get('plan') ?? ''
+  return Array.from(
+    new Set(value.split(',').filter((v): v is StartOption => Object.hasOwn(startOptions, v))),
+  )
+}
+
+function SourceStep({
+  onCreated,
+}: {
+  onCreated: (p: Project, lane: StartLane, plan: StartOption[]) => void
+}) {
+  const [plan, setPlan] = useState<StartOption[]>([])
   const [source, setSource] = useState('paste')
   const rightsRef = useRef<HTMLSelectElement>(null)
   function resetRights() {
@@ -43,9 +62,9 @@ function SourceStep({ onCreated }: { onCreated: (p: Project, lane: StartLane) =>
   const [hint, setHint] = useState('')
   const lock = useRef(false)
   const create = useMutation({
-    mutationFn: ({ form }: { form: FormData; lane: StartLane }) =>
+    mutationFn: ({ form }: { form: FormData; lane: StartLane; plan: StartOption[] }) =>
       api<Project>('/api/projects', { method: 'POST', body: form }),
-    onSuccess: (project, { lane }) => onCreated(project, lane),
+    onSuccess: (project, { lane, plan }) => onCreated(project, lane, plan),
     onSettled: () => {
       lock.current = false
     },
@@ -92,15 +111,7 @@ function SourceStep({ onCreated }: { onCreated: (p: Project, lane: StartLane) =>
     }
     lock.current = true
     setHint('')
-    const submitter = (event.nativeEvent as SubmitEvent).submitter
-    create.mutate({
-      form,
-      lane:
-        submitter instanceof HTMLButtonElement &&
-        (submitter.value === 'voice' || submitter.value === 'sound' || submitter.value === 'finish')
-          ? submitter.value
-          : 'art',
-    })
+    create.mutate({ form, lane: plan[0] ?? 'finish', plan })
   }
   return (
     <section className="studio-card" aria-labelledby="studio-source-title">
@@ -109,6 +120,18 @@ function SourceStep({ onCreated }: { onCreated: (p: Project, lane: StartLane) =>
       <p>
         每次都新建独立项目，不改动旧作。原文按换行分段，之后可为某一段配朗读、环境声，或放上一幅插图。
       </p>
+      <details className="studio-route">
+        <summary>第一次做？从自己的第一章到可分享读本</summary>
+        <ol>
+          <li>粘贴一章你有权分享的原文，选明权利状态。</li>
+          <li>想试的能力可以多选。全不选就点「只保留原文，直接试读与导出」，以后还能添加。</li>
+          <li>在「段落试演与防剧透校对」里，对同一段比较留白、声景和局部动效。试演不等于采用。</li>
+          <li>
+            导出独立阅读器，下载 ZIP。把整个 ZIP 发给读者，让对方完整解压后打开
+            index.html；继续编辑才需要工程包。
+          </li>
+        </ol>
+      </details>
       <form
         onSubmit={submit}
         onChange={() => {
@@ -191,18 +214,46 @@ function SourceStep({ onCreated }: { onCreated: (p: Project, lane: StartLane) =>
               {hint || create.error?.message}
             </p>
           )}
+          <fieldset className="studio-options">
+            <legend>这次想做什么？（可选）</legend>
+            <p className="asset-helper">
+              可多选，不选也能完成一章。勾选只决定先打开哪一步，不生成、不采用素材。
+            </p>
+            {(
+              Object.entries(startOptions) as [StartOption, (typeof startOptions)[StartOption]][]
+            ).map(([id, option]) => (
+              <label key={id}>
+                <input
+                  type="checkbox"
+                  aria-label={option.title}
+                  aria-describedby={'studio-start-option-' + id}
+                  checked={plan.includes(id)}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setPlan((list) =>
+                      checked ? [...list, id] : list.filter((item) => item !== id),
+                    )
+                  }}
+                />
+                <span>
+                  {option.title}
+                  <small id={'studio-start-option-' + id}>{option.detail}</small>
+                </span>
+              </label>
+            ))}
+            {plan.length > 0 && (
+              <p className="asset-helper" aria-live="polite">
+                先做{startOptions[plan[0]].title}，其他选项可在制作台接着做。
+              </p>
+            )}
+          </fieldset>
           <div className="studio-buttons">
             <button className="primary">
-              {create.isPending ? '正在新建…' : '新建项目，选择插图 →'}
-            </button>
-            <button type="submit" value="voice">
-              新建项目，先配朗读 →
-            </button>
-            <button className="text-button" type="submit" value="sound">
-              新建项目，先编声景 →
-            </button>
-            <button className="text-button" type="submit" value="finish">
-              只保留原文，直接试读与导出 →
+              {create.isPending
+                ? '正在新建…'
+                : plan.length
+                  ? '新建项目，开始制作 →'
+                  : '只保留原文，直接试读与导出 →'}
             </button>
           </div>
         </fieldset>
@@ -543,6 +594,7 @@ function StudioProject({ project }: { project: Project }) {
 function StudioSteps({ project, data }: { project: Project; data: ReaderState }) {
   // Only our successful placement (or an explicit join) changes the active
   // step. A late cross-tab refetch cannot tear down the user's local draft.
+  const [plan] = useState(readStartPlan)
   const [placed, setPlaced] = useState(
     () => !!data.config.illustrations?.some((p) => p.id === firstPlate),
   )
@@ -602,7 +654,9 @@ function StudioSteps({ project, data }: { project: Project; data: ReaderState })
     history.replaceState(
       null,
       '',
-      studioUrl(project.id) + (next === 'director' ? '' : '&lane=' + next),
+      studioUrl(project.id) +
+        (next === 'director' ? '' : '&lane=' + next) +
+        (plan.length ? '&plan=' + encodeURIComponent(plan.join(',')) : ''),
     )
     setLane(next)
     if (next !== 'art') setHasVisited(true)
@@ -610,6 +664,11 @@ function StudioSteps({ project, data }: { project: Project; data: ReaderState })
   if (lane === 'resolve') return <p role="status">正在读取已保存的制作进度…</p>
   return (
     <div tabIndex={-1} ref={heading}>
+      {plan.length > 0 && (
+        <p className="asset-helper">
+          这次想试：{plan.map((id) => startOptions[id].title).join('、')}。可以跳过，不影响导出。
+        </p>
+      )}
       {!placed && (
         <nav className="studio-lane" aria-label="制作方式">
           {lane === 'art' ? (
@@ -626,6 +685,14 @@ function StudioSteps({ project, data }: { project: Project; data: ReaderState })
               添加插图或返回底图制作 →
             </button>
           )}
+          {lane !== 'art' &&
+            plan
+              .filter((id) => id !== 'art' && id !== lane)
+              .map((id) => (
+                <button key={id} type="button" disabled={writing} onClick={() => visit(id)}>
+                  {startOptions[id].title} →
+                </button>
+              ))}
           {lane === 'art' && (
             <button type="button" disabled={writing} onClick={() => visit('finish')}>
               不加素材，直接试读与导出 →
@@ -673,11 +740,18 @@ export function CreatorStudio({ initialId }: { initialId: string }) {
     queryFn: () => api<Project>('/api/projects/' + id),
     enabled: valid,
   })
-  function created(p: Project, lane: StartLane) {
+  function created(p: Project, lane: StartLane, plan: StartOption[]) {
     cache.setQueryData(['project', p.id], p)
     // Keep one history entry and do not move an open workbench off its previous
     // project. Returning here or reloading resumes the same saved project.
-    history.replaceState(null, '', studioUrl(p.id) + (lane === 'art' ? '' : '&lane=' + lane))
+    history.replaceState(
+      null,
+      '',
+      studioUrl(p.id) +
+        '&lane=' +
+        lane +
+        (plan.length ? '&plan=' + encodeURIComponent(plan.join(',')) : ''),
+    )
     setId(p.id)
   }
   return (
