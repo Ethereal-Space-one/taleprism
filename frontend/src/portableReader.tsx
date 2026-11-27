@@ -8,7 +8,8 @@ try {
   const data = normalizeContent(
     JSON.parse(document.getElementById('taleprism-story')!.textContent!),
   )
-  createRoot(root).render(<ReaderView data={data} standalone />)
+  const onlineChibi = root.dataset.edition === 'online-chibi' && data.config.map_profile === 'chibi'
+  createRoot(root).render(<ReaderView data={data} standalone onlineChibi={onlineChibi} />)
 } catch {
   root.setAttribute('role', 'alert')
   root.textContent =

@@ -72,6 +72,13 @@ async function inspect(browser, job, want, policy) {
     }
     const cover = p.getByRole('button', { name: /^开始阅读/ })
     await cover.waitFor()
+    if (await p.locator('#root[data-edition="online-chibi"]').count()) {
+      assert.equal(job.slug, 'chibi')
+      await p.getByText('江上两营，隔水相望。', { exact: true }).waitFor()
+      await p.getByText('风声与动效随正文出现，地图和脉络也只展开已读部分。可随时暂停或静音。', { exact: true }).waitFor()
+      assert.equal(await p.locator('.reader-cover img').count(), 1)
+      assert(!(await p.locator('.reader-cover').innerText()).includes('三江口纵火'))
+    }
     assert.equal(
       await p
         .locator('audio[src],canvas.reader-inline-motion,.reader-echo-leaf blockquote')
