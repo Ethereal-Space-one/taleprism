@@ -42,7 +42,8 @@ function make(ext,hz,opts=[]){
     const source='第一段在开头。\n第二段只配自己的朗读。\n最后一段保持安静。'
     await page.getByLabel('粘贴自己的原文').fill(source)
     await page.getByLabel('原文权利状态').selectOption('owned')
-    await page.getByRole('button',{name:'新建项目，先配朗读 →'}).click()
+    await page.getByRole('checkbox',{name:'朗读',exact:true}).check()
+    await page.getByRole('button',{name:'新建项目，开始制作 →'}).click()
     const choose=page.getByLabel('朗读对应的原文段落')
     await choose.selectOption({index:2})
     const pid=new URL(page.url()).searchParams.get('studio')

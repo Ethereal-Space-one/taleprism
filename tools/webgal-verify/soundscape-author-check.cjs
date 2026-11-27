@@ -20,7 +20,7 @@ async function main(){
  const l=(k,pg=p)=>pg.getByLabel(k,{exact:true}),b=(k,pg=p)=>pg.getByRole('button',{name:k,exact:true}),t=(k,pg=p)=>pg.getByText(k,{exact:true})
  const passage='木窗未合。\n🌧 雨落。巷口有车驶过。雨落。'
  await l('作品标题').fill('一扇木窗');await l('粘贴自己的原文').fill(passage);await p.locator('select[name=rights_status]').selectOption('owned')
- await b('新建项目，先编声景 →').click();await l('声景对应的原文段落').selectOption({index:2})
+ await page.getByRole('checkbox',{name:'声景',exact:true}).check();await b('新建项目，开始制作 →').click();await l('声景对应的原文段落').selectOption({index:2})
  const pid=new URL(p.url()).searchParams.get('studio');assert(pid && pid!=='new')
  const pre='/api/projects/'+pid,prefix=pre+'/reader',sc=prefix+'/soundscapes'
  const state=async()=>(await q.get(sc)).json(),content=async()=>(await q.get(prefix+'/content')).json()

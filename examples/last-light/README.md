@@ -10,7 +10,7 @@
 
 ## 先准备这些文件
 
-只练制图：解压[公开的 v0.9.4 AI 创作入门包](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-agent-starter.zip)，保持目录结构。只读或想接着改成品：下载[《末班灯》作品包](../../docs/DOWNLOADS.md#末班灯--last-light)，不用再下入门包。
+只练制图：从[作品与下载](../../docs/DOWNLOADS.md#作品与下载)选择「AI 创作入门包」，完整解压。如果你已经在解压后的入门包里读到这里，直接使用包内的模板和示例图，不用再下载。只读或想接着改成品：下载[《末班灯》作品包](../../docs/DOWNLOADS.md#末班灯--last-light)，不用再下入门包。
 
 | 文件，均位于 `samples/last-light/` | 用途 |
 | --- | --- |

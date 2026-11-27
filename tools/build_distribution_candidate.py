@@ -53,6 +53,7 @@ and copy the first prompt. Review the shot plan before making images. The first 
 does not require a workbench, plugin installation or Taleprism model key.
 
 [八套模板 / Eight templates](prompts/README.md) · [三镜头实例 / Three-shot tutorial](examples/last-light/README.en.md)
+· [从自己的第一章到可分享读本 / First chapter to offline reader](docs/FIRST-CHAPTER.md)
 · [作品与下载 / Works and downloads](docs/DOWNLOADS.md)
 
 此包只有模板、结构定义与公开教程，不含可运行制作台或完整小说读本。源码请使用配套的

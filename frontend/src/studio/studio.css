@@ -115,6 +115,34 @@
   gap: 0.6rem;
   flex-wrap: wrap;
 }
+.studio-fields .studio-options {
+  min-width: 0;
+  margin: 1rem 0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-rule);
+}
+.studio-options legend {
+  font-weight: 600;
+}
+.studio-fields .studio-options label {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin-block: 0.5rem;
+  cursor: pointer;
+}
+.studio-fields .studio-options input[type='checkbox'] {
+  width: 1.1rem;
+  min-height: 0;
+  margin: 0.24rem 0 0;
+  padding: 0;
+}
+.studio-options small {
+  display: block;
+  font-weight: 400;
+  color: var(--color-muted);
+}
 .studio-upload {
   margin: 0.9rem 0;
   padding: 12px 16px;

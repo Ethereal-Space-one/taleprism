@@ -65,7 +65,8 @@ def main():
             {"name": plan["title"] + ".txt", "mimeType": "text/plain", "buffer": source}
         )
         page.get_by_label("原文权利状态").select_option("owned")
-        page.get_by_role("button", name="新建项目，先编声景").click()
+        page.get_by_role("checkbox", name="声景", exact=True).check()
+        page.get_by_role("button", name="新建项目，开始制作").click()
         scope = (
             page.locator("details")
             .filter(has=page.get_by_label("声景对应的原文段落"))

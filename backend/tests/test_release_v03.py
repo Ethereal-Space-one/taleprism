@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 def test_application_version_matches_frontend_locks_and_health(tmp_path):
     version = tomllib.loads((ROOT / "backend/pyproject.toml").read_text())["project"]["version"]
-    assert version == "0.9.5"
+    assert version == "0.9.6"
     lock = tomllib.loads((ROOT / "backend/uv.lock").read_text())
     assert next(p for p in lock["package"] if p["name"] == "storygal")["version"] == version
     for folder in ("frontend", "tools/webgal-verify"):

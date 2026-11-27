@@ -5,6 +5,7 @@ import { api, type Job, type ReviewState } from './api'
 import { CreativeDesk } from './studio/CreativeDesk'
 import { PassageSoundscape } from './studio/PassageSoundscape'
 import { PassageVoice } from './studio/PassageVoice'
+import { PassageProof } from './studio/PassageProof'
 import { BundleBackup } from './BundleBackup'
 import { PlateScreening } from './PlateScreening'
 import { ArrangementEditor } from './reader/ArrangementEditor'
@@ -527,6 +528,21 @@ export function ReaderPanel({
             : '预览与导出使用已保存的版本。静图保持静止；只有已复核的动效才随阅读呈现。读者可暂停自动演绎或选择安静阅读。'
           : '阅读包给读者：只包含已保存的编排、应交付的素材和已采用的声音。可编辑工程给继续制作的人，保留草稿和历史，不是同一份 ZIP。'}
       </p>
+      {studioActive && data && content.data && (
+        <PassageProof
+          key={projectId}
+          data={content.data}
+          locked={!!busy}
+          onSound={(anchor) => {
+            setCreativeSoundTarget((old) => ({ anchor, seq: (old?.seq ?? 0) + 1 }))
+            const spot = document.getElementById(soundSectionId)
+            requestAnimationFrame(() => {
+              spot?.querySelector('summary')?.focus()
+              spot?.scrollIntoView({ block: 'start' })
+            })
+          }}
+        />
+      )}
       {dirty && (
         <p className="notice" role="status">
           有未保存的

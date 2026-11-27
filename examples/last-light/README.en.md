@@ -1,8 +1,8 @@
 # Last Light: a three-frame continuity walkthrough
 
-Make a readable scene from fiction without changing its text. [中文](README.md) · [Last Light work and downloads](../../docs/DOWNLOADS.md#末班灯--last-light) · [Bring your own novel](../../prompts/START-HERE.md#english-walkthrough)
+Make a readable scene from fiction without changing its text. [中文](README.md) · [Last Light work and downloads](../../docs/DOWNLOADS.md#works-and-downloads) · [Bring your own novel](../../prompts/START-HERE.md#english-walkthrough)
 
-No workbench installation is needed for the prompt route. For the image exercise, extract the [v0.9.4 AI Author Starter](https://github.com/Ethereal-Space-one/taleprism/releases/download/v0.9.4/taleprism-agent-starter.zip), keep its folders together and open [the prompt templates](../../prompts/README.md). The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
+No workbench installation is needed for the prompt route. For the image exercise, choose **AI Author Starter** under [Works and downloads](../../docs/DOWNLOADS.md#works-and-downloads) and extract the whole ZIP. If you are already reading the extracted starter, go straight to [the prompt templates](../../prompts/README.md) and sample images. The eight templates include copyable instructions and fully filled examples. Actual image generation uses your own chosen service and may require an account or payment. Attach actual images; a filename in a prompt does not upload a reference.
 
 ## Story and files
 
@@ -85,6 +85,6 @@ For the overall workflow comparison, see [old negotiation](../../samples/last-li
 
 For a finished reader, install the [workbench (Chinese setup guide)](../../docs/快速上手.md), import the source, review characters, fill the direction plan, upload/accept pictures, record continuity checks and apply the plan. Export a draft reader. Read forward from the P02 bell through P03: do the actual picture, caption, alt text or sounds introduce a person who is not there yet? At P06 a signature stamp or cheering would imply an approval that never occurs. After checking the actual edition, share only the whole Reader ZIP; keep private notes and the editable backup separately.
 
-To read or edit the supplied edition, download the [v0.9.4 Last Light work bundle](../../docs/DOWNLOADS.md#末班灯--last-light) and extract it once. Open `Reader/index.html` in a desktop browser, no server needed. To edit, choose **示例与工程 → 手动导入与原文练习 → 导入可编辑工程** and select the included `Project.zip`, still zipped, not the outer bundle. Each import creates a new project. The short rain cue is synthesized ambience, not a macOS voice recording. Voice production is optional and requires listening and acceptance; cloud OpenAI speech has not been live-validated.
+To read or edit the supplied edition, download the [Last Light work bundle](../../docs/DOWNLOADS.md#works-and-downloads) and extract it once. Open `Reader/index.html` in a desktop browser, no server needed. To edit, choose **示例与工程 → 手动导入与原文练习 → 导入可编辑工程** and select the included `Project.zip`, still zipped, not the outer bundle. Each import creates a new project. The short rain cue is synthesized ambience, not a macOS voice recording. Voice production is optional and requires listening and acceptance; cloud OpenAI speech has not been live-validated.
 
 The workbench UI is currently Chinese. External-user usability has not yet been validated. Report the exact step where you get stuck; never submit API keys or an entire copyrighted novel merely to report a problem.
